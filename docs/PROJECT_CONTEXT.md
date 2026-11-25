@@ -220,7 +220,7 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 ## Partner hand-over, deployment targets, app distribution (2026-11-25)
 - README rewritten for the community partner (setup, running each app, where to change things, deployment, members with/without phone). SECURITY.md (reporting + breach response, NPC 72 h). .github/dependabot.yml + workflows/codeql.yml.
 - Hardening: production API without CORS_ORIGINS allows only the app origins; nginx server_tokens off; Caddy drops the Server header; .dockerignore excludes .env.*.
-- Deploy targets: Hostinger/VPS (docker-compose + Caddy), Render (render.yaml: API Docker + private MariaDB with disk, paid plans), Vercel (frontend/vercel.json, Staff Web only).
+- Deploy target: Hostinger VPS (docker-compose + Caddy), 1-year plan for the community partner. Render and Vercel configs were added and then removed on 2026-11-25 (developer decision).
 - Phone app distribution: frontend/scripts/lan-apk.sh (npm run android:lan | android:install-all | android:share; builds a debug APK pointing to http://<laptop Wi-Fi IP>:3000, installs on every adb device, or serves it with a terminal QR via scripts/share-apk.mjs on port 8090). With a domain: downloads/AklatOne.apk served by nginx at /download/AklatOne.apk; Printing > Mobile app QR prints a poster (Android link default = <site>/download/AklatOne.apk, optional iPhone link; saved in localStorage).
 - scripts/dev.mjs reads the DB port from backend/.env (no longer hard-coded 3307).
 - Cleanup: removed ~30 old phase/ui reports, Google OAuth guide, old API contract, AUDIT-2026-11-22, validate-openapi.mjs, Firebase/google-services Android plugin, Google welcome-email preview; .claude/, .opencode/, opencode.json, docs/OPENCODE_SKILLS.md are no longer tracked in Git (kept locally). Fictional test member is "Juan Dela Cruz" (Member ID initials JC).
@@ -232,6 +232,10 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - CodeQL fixes: CORS never `true` (dev = localhost + private LAN regex; test in security.test.ts); startup summary no longer prints the DB name or email; [DEV OTP] reset log uses the username; dev script logs no usernames; PhotoCropper renders only blob:/data:image sources; test checks hostnames. Alerts #10/#11 (password change needs current password only when changing password) are false positives to dismiss; [DEV OTP] logging is dev-only by design.
 - Docker images on node:24-bookworm-slim (LTS); Dependabot groups minor/patch per part and ignores odd Node majors. Do not merge Node 25 PRs.
 - Timing test in auth.test.ts compares against a bcrypt check measured at the same moment (was flaky under full-suite load).
+
+## Hostinger only, Docker rehearsal (2026-11-25)
+- Deployment target is a Hostinger VPS (1-year plan for the community partner; KVM 2 recommended: 2 vCPU / 8 GB / 100 GB, template Ubuntu 24.04 with Docker). Render (render.yaml) and Vercel (frontend/vercel.json) removed.
+- Docker Compose v5.8.0 installed on the dev PC as a user plugin (~/.docker/cli-plugins/docker-compose, checksum verified). Rehearsal on the dev PC: `bash scripts/docker-setup.sh` -> 5 containers healthy, Staff Web 200, setup/status OK, security headers present, aklatone_app denied DROP TABLE; then `docker compose stop` (volumes kept; root .env with random secrets exists locally, git-ignored).
 
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.

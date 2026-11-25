@@ -244,21 +244,29 @@ and the phones to the same Wi-Fi, open port 3000 in the laptop's firewall once
 **Frontend screens** (`frontend/src/features/`): one folder per screen group; `mobile/` is the phone app.
 API documentation: **http://localhost:3000/api-docs** while the API runs.
 
-## 4. Deploying (going live)
+## 4. Deploying (going live) on a Hostinger VPS
 
-Full guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+Full guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. One VPS runs the whole system (MariaDB, Redis, API,
+Staff Web Portal and HTTPS) with Docker; the phone and desktop apps connect to it.
 
-| Option | What runs where | Files |
-|---|---|---|
-| **Hostinger VPS** or any Linux server with Docker (recommended) | Everything on one server: MariaDB, Redis, API, Staff Web, Caddy HTTPS | `docker-compose.yml`, `Caddyfile`, `.env.example` |
-| **Render** | API (Docker) + private MariaDB with a disk | `render.yaml` (Blueprint) |
-| **Vercel** | Staff Web Portal only (with the API on Render or a VPS) | `frontend/vercel.json` |
+1. **Buy a Hostinger *VPS* plan** (not "Web Hosting": shared hosting cannot run Docker, Node.js or MariaDB).
+   **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe) fits the server requirements above for about 2,600 students;
+   KVM 1 (1 vCPU) is below the minimum.
+2. In hPanel choose the operating system template **Ubuntu 24.04 with Docker** (or plain Ubuntu 24.04 and install
+   Docker: <https://docs.docker.com/engine/install/ubuntu/>). Note the VPS IP address and root password.
+3. **Domain:** add an **A record** for your domain (e.g. `library.example.com`) pointing to the VPS IP.
+4. Connect and run the setup (replace the domain):
 
 ```bash
-# On the server (Docker), short version
-cp .env.example .env          # passwords, JWT_SECRET, SITE_ADDRESS=your.domain, EMAIL_USER / EMAIL_PASS
-docker compose up -d --build  # HTTPS certificate, migrations and roles happen automatically
+ssh root@<VPS IP>
+git clone https://github.com/Flynchmore/TNHS-AklatOne.git /opt/aklatone && cd /opt/aklatone
+bash scripts/docker-setup.sh library.example.com
+nano .env      # add EMAIL_USER and EMAIL_PASS (Gmail App Password), then run the setup line again
 ```
+
+5. Open `https://library.example.com`, create the librarian account, and follow
+   [docs/USER-GUIDE.md](docs/USER-GUIDE.md). Then set up the daily off-site backup copy (DEPLOYMENT.md, section 5)
+   and turn on Hostinger's VPS backups/snapshots as a second safety net.
 
 **Phone app for members after going live:** build the signed APK (push a tag `v1.0.0` and GitHub Actions builds
 it, or see DEPLOYMENT.md section 4), copy it to `downloads/AklatOne.apk` on the server, then print
@@ -293,7 +301,7 @@ frontend/mobile-capacitor/android | ios   phone app native projects
 docs/                    deployment, architecture, compatibility, business rules, diagrams, manuscript text
 downloads/               (server) the APK members download
 scripts/                 dev launcher, off-site backup
-docker-compose.yml, Caddyfile, render.yaml   deployment
+docker-compose.yml, Caddyfile   deployment (Hostinger VPS or any Docker server)
 ```
 
 How to use the system day to day: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)** (librarian and members).

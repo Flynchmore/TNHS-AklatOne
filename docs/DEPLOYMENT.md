@@ -3,36 +3,29 @@
 The repository is ready for GitHub and for Docker Compose on any Linux server with Docker, such as a **Hostinger VPS**.
 Hostinger *shared* web hosting cannot run the Node.js API together with MariaDB and Redis, so use a VPS plan.
 
-## 1. Put the code on GitHub
+## 1. The code on GitHub
 
-```bash
-git init
-git add .
-git commit -m "AklatOne"
-git branch -M main
-git remote add origin https://github.com/<your-account>/aklatone.git
-git push -u origin main
-```
-
-`.gitignore` keeps out every `.env`, `node_modules`, build output, APKs and signing keys. Check `git status` before the
-first commit: no `.env` file may appear in it. The GitHub Actions workflow (`.github/workflows/ci.yml`) then runs the
-backend tests on a temporary MariaDB and the frontend lint, tests and build on every push.
+The code is at <https://github.com/Flynchmore/TNHS-AklatOne> (branch `main`). `.gitignore` keeps out every `.env`,
+`node_modules`, build output, APKs and signing keys; check `git status` before each commit. On every push GitHub
+Actions (`.github/workflows/ci.yml`) runs the backend tests on a temporary MariaDB, the frontend lint, tests and
+build, builds the Windows, Linux, Android and iOS apps, and runs the one-command Docker setup; CodeQL scans the code.
 
 ## 2. Start the server (Hostinger VPS or any Docker host)
 
-1. Create the VPS with Ubuntu and install Docker (Hostinger offers an "Ubuntu with Docker" template).
+1. Create the VPS (Hostinger **KVM 2** recommended) with the **Ubuntu 24.04 with Docker** template.
 2. Point your domain (e.g. `library.example.com`) to the VPS IP address with an **A record**.
 3. On the VPS:
 
 ```bash
-git clone https://github.com/<your-account>/aklatone.git && cd aklatone
-cp .env.example .env
-nano .env        # set DB_PASSWORD, DB_ROOT_PASSWORD, DB_APP_PASSWORD, JWT_SECRET (openssl rand -hex 32), EMAIL_*, CORS_ORIGINS
-docker compose up -d --build
-docker compose logs -f api   # wait for "AklatOne startup checks" with database true
+git clone https://github.com/Flynchmore/TNHS-AklatOne.git /opt/aklatone && cd /opt/aklatone
+bash scripts/docker-setup.sh library.example.com   # creates .env with random passwords, builds, starts, waits
+nano .env                                          # add EMAIL_USER / EMAIL_PASS, then run the line above again
 ```
 
-The Staff Web is now on `http://<server>/`. On first visit it opens **First-time setup** to create the librarian account.
+`docker-setup.sh` writes `.env` only the first time (later runs keep the passwords). To fill `.env` by hand instead:
+`cp .env.example .env`, edit it, then `docker compose up -d --build`.
+
+The Staff Web is now on `https://library.example.com/`. On first visit it opens **First-time setup** to create the librarian account.
 
 What starts: `db` (MariaDB 10.11, data in the `db-data` volume), `redis`, `api` (applies database migrations and
 creates the roles on every start; never resets data, never creates test accounts in production) and `web`
@@ -116,25 +109,6 @@ files. Test a restore at least once each school year (Settings > Backup and Rest
   (`docker-compose.yml` mounts it into the web container), then print **Printing > Mobile app QR**; its default
   link is `https://<domain>/download/AklatOne.apk`. Add the App Store / TestFlight link there for iPhones.
 - Members without a phone are not left out: their Library ID card works for borrowing, returns and the Visitor's Log.
-
-## 7. Other hosts: Render (API + database) and Vercel (Staff Web)
-
-Use this when you cannot run your own server. The VPS setup above stays the simplest and cheapest for one school.
-
-1. **Render**: Dashboard > New > Blueprint > choose this repository. `render.yaml` creates `aklatone-api`
-   (Docker, from `backend/`) and `aklatone-db` (MariaDB 10.11 with a 5 GB disk). Both need a paid instance type:
-   free instances sleep and have no persistent disk. After the first deploy set `DATABASE_URL`, `CORS_ORIGINS`,
-   `EMAIL_USER` and `EMAIL_PASS` on `aklatone-api` (steps at the top of `render.yaml`). Copy the generated
-   `BACKUP_ENCRYPTION_KEY` somewhere safe.
-2. **Vercel**: New Project > import this repository > **Root Directory `frontend`**. Add the environment variable
-   `VITE_API_BASE_URL=https://<aklatone-api>.onrender.com`. `frontend/vercel.json` sets the build, the single-page
-   routing and the security headers.
-3. Put the Vercel address in `CORS_ORIGINS` on Render, and build the phone and desktop apps with the Render API
-   address (`API_BASE_URL` in GitHub).
-4. Differences from the VPS setup: the API connects to the database with the full user (no separate rows-only
-   user), there is no Redis (sign-in limits are kept in memory), the phone app download is not served by Vercel
-   (use the GitHub Release link in **Printing > Mobile app QR**), and scheduled backups and reminders run only while the
-   Render service is running (paid instances do not sleep).
 
 ## Settings reference (`.env` in the project root)
 
