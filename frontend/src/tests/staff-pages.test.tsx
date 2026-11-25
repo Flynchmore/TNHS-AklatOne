@@ -28,7 +28,7 @@ describe("staff portal pages", () => {
     wrap(<Layout />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     expect(within(nav).getAllByRole("link").map(l => l.textContent?.replace(/\d+$/, ""))).toEqual(["Dashboard", "Catalog", "Borrowing", "Suggestions", "Members", "Visitor's Log", "Reports", "Printing", "School Newspaper", "Settings"]);
-    expect(within(nav).getAllByRole("heading").map(h => h.textContent)).toEqual(["Overview", "Collection & Borrowing", "Members & Visitors", "Reports & Printing", "School & System"]);
+    expect(within(nav).getAllByRole("heading").map(h => h.textContent)).toEqual(["Overview", "Circulation", "Patrons", "Records", "System"]);
     expect(screen.getAllByRole("button", { name: /Search AklatOne/ }).length).toBeGreaterThan(0); // side nav + phone top bar
     expect(await within(nav).findByLabelText("3 pending requests")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Logout/ })).toBeInTheDocument();

@@ -16,18 +16,18 @@ type NavItem = { to: string; label: string; icon: LucideIcon; perm?: string; gro
 // Grouped like a school portal menu: a small category title, then its pages (developer request 2026-11-26).
 const webLinks: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, group: "Overview" },
-  { to: "/catalog", label: "Catalog", icon: Library, perm: "catalog:read", group: "Collection & Borrowing" },
-  { to: "/borrowing", label: "Borrowing", icon: ArrowLeftRight, perm: "circulation:read", group: "Collection & Borrowing" },
-  { to: "/suggestions", label: "Suggestions", icon: Lightbulb, perm: "circulation:read", group: "Collection & Borrowing" },
-  { to: "/members", label: "Members", icon: Users, perm: "users:read", group: "Members & Visitors" },
-  { to: "/visitors", label: "Visitor's Log", icon: DoorOpen, perm: "circulation:write", group: "Members & Visitors" },
-  { to: "/reports", label: "Reports", icon: BarChart3, perm: "reports:read", group: "Reports & Printing" },
-  { to: "/printing", label: "Printing", icon: Printer, perm: "reports:read", group: "Reports & Printing" },
-  { to: "/newspaper", label: "School Newspaper", icon: Newspaper, group: "School & System" },
-  { to: "/settings", label: "Settings", icon: Settings, group: "School & System" },
+  { to: "/catalog", label: "Catalog", icon: Library, perm: "catalog:read", group: "Circulation" },
+  { to: "/borrowing", label: "Borrowing", icon: ArrowLeftRight, perm: "circulation:read", group: "Circulation" },
+  { to: "/suggestions", label: "Suggestions", icon: Lightbulb, perm: "circulation:read", group: "Circulation" },
+  { to: "/members", label: "Members", icon: Users, perm: "users:read", group: "Patrons" },
+  { to: "/visitors", label: "Visitor's Log", icon: DoorOpen, perm: "circulation:write", group: "Patrons" },
+  { to: "/reports", label: "Reports", icon: BarChart3, perm: "reports:read", group: "Records" },
+  { to: "/printing", label: "Printing", icon: Printer, perm: "reports:read", group: "Records" },
+  { to: "/newspaper", label: "School Newspaper", icon: Newspaper, group: "System" },
+  { to: "/settings", label: "Settings", icon: Settings, group: "System" },
 ];
 // Desktop app (Tauri), "Offline Mode" of AklatOne LMS: the same sections as the web, plus Upload for changes made offline.
-const desktopLinks: NavItem[] = [...webLinks.slice(0, -1), { to: "/upload", label: "Upload", icon: UploadCloud, group: "School & System" }, webLinks[webLinks.length - 1]!];
+const desktopLinks: NavItem[] = [...webLinks.slice(0, -1), { to: "/upload", label: "Upload", icon: UploadCloud, group: "System" }, webLinks[webLinks.length - 1]!];
 /** Nav items split into their categories, in order. */
 const navGroups = (items: NavItem[]) => items.reduce<{ title: string; items: NavItem[] }[]>((groups, item) => {
   const last = groups[groups.length - 1];
