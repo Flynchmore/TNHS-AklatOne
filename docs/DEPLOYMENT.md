@@ -107,6 +107,35 @@ files. Test a restore at least once each school year (Settings > Backup and Rest
 **Uptime:** add a free monitor (e.g. UptimeRobot) for `https://library.example.com/health`; it should answer
 `{"status":"ok"}`. Settings > System status shows the database, email, backups and disk space.
 
+## 6. Phone app download for members
+
+- **Before a domain (LAN):** the laptop is the server. `npm run android:install-all` (phones on a USB hub) or
+  `npm run android:share` (QR in the terminal, download over the same Wi-Fi). These builds point to the laptop's
+  Wi-Fi address and only work on that Wi-Fi.
+- **With a domain (HTTPS):** copy the signed release APK to `downloads/AklatOne.apk` on the server
+  (`docker-compose.yml` mounts it into the web container), then print **Printing > Mobile app QR**; its default
+  link is `https://<domain>/download/AklatOne.apk`. Add the App Store / TestFlight link there for iPhones.
+- Members without a phone are not left out: their Library ID card works for borrowing, returns and the Visitor's Log.
+
+## 7. Other hosts: Render (API + database) and Vercel (Staff Web)
+
+Use this when you cannot run your own server. The VPS setup above stays the simplest and cheapest for one school.
+
+1. **Render**: Dashboard > New > Blueprint > choose this repository. `render.yaml` creates `aklatone-api`
+   (Docker, from `backend/`) and `aklatone-db` (MariaDB 10.11 with a 5 GB disk). Both need a paid instance type:
+   free instances sleep and have no persistent disk. After the first deploy set `DATABASE_URL`, `CORS_ORIGINS`,
+   `EMAIL_USER` and `EMAIL_PASS` on `aklatone-api` (steps at the top of `render.yaml`). Copy the generated
+   `BACKUP_ENCRYPTION_KEY` somewhere safe.
+2. **Vercel**: New Project > import this repository > **Root Directory `frontend`**. Add the environment variable
+   `VITE_API_BASE_URL=https://<aklatone-api>.onrender.com`. `frontend/vercel.json` sets the build, the single-page
+   routing and the security headers.
+3. Put the Vercel address in `CORS_ORIGINS` on Render, and build the phone and desktop apps with the Render API
+   address (`API_BASE_URL` in GitHub).
+4. Differences from the VPS setup: the API connects to the database with the full user (no separate rows-only
+   user), there is no Redis (sign-in limits are kept in memory), the phone app download is not served by Vercel
+   (use the GitHub Release link in **Printing > Mobile app QR**), and scheduled backups and reminders run only while the
+   Render service is running (paid instances do not sleep).
+
 ## Settings reference (`.env` in the project root)
 
 | Variable | Purpose |

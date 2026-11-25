@@ -7,8 +7,8 @@ import { adminToken, newMember } from "./helpers.js";
 
 describe("Member ID", () => {
   it("uses the first and last initials, without accents or symbols", () => {
-    expect(initials("Carla Aquino", "x")).toBe("CA");
     expect(initials("Juan Dela Cruz", "x")).toBe("JC");
+    expect(initials("Maria Clara dela Cruz", "x")).toBe("MC");
     expect(initials("Ñino Ébano-Santos", "x")).toBe("NE");
     expect(initials("Madonna", "x")).toBe("MA");
     expect(initials(null, "j.d")).toBe("JD");
@@ -23,13 +23,13 @@ describe("Member ID", () => {
     const auth = () => ({ Authorization: `Bearer ${admin}` });
 
     it("is made when the librarian adds a member, is unique, and survives a name change", async () => {
-      const a = await newMember(app, `mid_a_${stamp}`, { displayName: "Carla Aquino", gradeSection: "Grade 10 - Rizal" });
-      const b = await newMember(app, `mid_b_${stamp}`, { displayName: "Carla Aquino" });
+      const a = await newMember(app, `mid_a_${stamp}`, { displayName: "Juan Dela Cruz", gradeSection: "Grade 10 - Rizal" });
+      const b = await newMember(app, `mid_b_${stamp}`, { displayName: "Juan Dela Cruz" });
       const getA = async () => (await request(app).get(`/api/v1/users/${a.id}`).set(auth())).body.data;
       const idA = (await getA()).maskedId as string;
-      expect(idA).toMatch(/^CA\d{6}$/);
+      expect(idA).toMatch(/^JC\d{6}$/);
       expect((await request(app).get(`/api/v1/users/${b.id}`).set(auth())).body.data.maskedId).not.toBe(idA);
-      await request(app).patch(`/api/v1/users/${a.id}`).set(auth()).send({ displayName: "Carla Bautista" });
+      await request(app).patch(`/api/v1/users/${a.id}`).set(auth()).send({ displayName: "Juan Bautista" });
       expect((await getA()).maskedId).toBe(idA);
       // The member sees it in their own profile, and the librarian can search by it.
       expect((await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${a.token}`)).body.data.maskedId).toBe(idA);

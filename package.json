@@ -8,6 +8,9 @@
     "dev:all": "node scripts/dev.mjs all",
     "android": "npm --prefix frontend run android",
     "test": "npm --prefix backend test && npm --prefix frontend test",
-    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "android:lan": "npm --prefix frontend run android:lan",
+    "android:install-all": "npm --prefix frontend run android:install-all",
+    "android:share": "npm --prefix frontend run android:share"
   }
 }

@@ -5,3 +5,6 @@ dist
 tests
 coverage
 backups
+.env.*
+!.env.example
+email-preview

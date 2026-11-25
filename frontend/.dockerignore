@@ -6,3 +6,5 @@ desktop-tauri
 test-results
 .env
 *.log
+.env.*
+!.env.example

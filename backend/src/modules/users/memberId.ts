@@ -3,7 +3,7 @@ import { prisma } from "../../config/prisma.js";
 import { logger } from "../../config/logger.js";
 
 /**
- * Member ID ("masked ID" in the code): initials of the first and last name + 6 random digits, e.g. Carla Aquino -> CA123456.
+ * Member ID ("masked ID" in the code): initials of the first and last name + 6 random digits, e.g. Juan Dela Cruz -> JC123456.
  * It identifies a member on the Library ID card, the QR code and the visitor log without personal data
  * (no LRN, address or birthday). Made once and never changed, so printed cards keep working after a name change.
  */

@@ -9,7 +9,6 @@ Questions for Tagumpay National High School library representatives. These come 
 5. Can members reserve books that are currently borrowed?
 6. How are students and teachers identified (LRN, employee ID, school email, username)?
 7. May students and teachers create their own accounts (public registration), or must the library provision them?
-8. Is "Sign in with Google" allowed? If so, which email domains or accounts?
 9. Are one-time codes (OTP) by email acceptable for login and password reset?
 10. Which reports does the library need (inventory, circulation, overdue, popular books, others)?
 11. What devices and network access do library staff and members have?

@@ -64,6 +64,9 @@ services:
     restart: unless-stopped
     depends_on: [api]
     # Reached only through the HTTPS proxy below.
+    volumes:
+      # Phone app download: copy the signed AklatOne.apk here (served at https://<domain>/download/AklatOne.apk).
+      - ./downloads:/usr/share/nginx/html/download:ro,z
 
   proxy:
     image: caddy:2.10-alpine

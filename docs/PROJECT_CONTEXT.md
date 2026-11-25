@@ -54,7 +54,7 @@ AklatOne: Library Management System for Tagumpay National High School.
 - GSD Core: not installed; project uses AGENTS.md + PROJECT_CONTEXT.md + OPENCODE_SKILLS.md.
 
 ## Auth features
-- Self-registration (/auth/register) and Google sign-in (/auth/google) REMOVED 2026-11-24 (developer decision): members are created by the librarian (Members > Add), who will also issue the Library ID card. @capgo/capacitor-social-login uninstalled; ALLOW_PUBLIC_REGISTRATION / GOOGLE_CLIENT_ID no longer read (old values in .env files are ignored). Members first created through Google on dev can sign in with Forgot password (email code).
+- Self-registration (/auth/register) and Google sign-in (/auth/google, Google Cloud OAuth client, @capgo/capacitor-social-login) existed 2026-11-20..24 and were REMOVED 2026-11-24; Google Cloud Console is no longer used (Gmail is still the SMTP sender) (developer decision): members are created by the librarian (Members > Add), who will also issue the Library ID card. @capgo/capacitor-social-login uninstalled; ALLOW_PUBLIC_REGISTRATION / GOOGLE_CLIENT_ID no longer read (old values in .env files are ignored). Members first created through Google on dev can sign in with Forgot password (email code).
 - Kept as the second factor: email code at sign-in and forgot/reset password by email code (pending school confirmation).
 
 ## Borrow request workflow (2026-11-20)
@@ -90,16 +90,13 @@ AklatOne: Library Management System for Tagumpay National High School.
 - Migration 20261120080000_favourites_category_kinds (dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-favourites-categories.sql).
 - Main mobile panel background is the blurred TNHS logo (replaced the blurred quadrangle photo; cheaper to render).
 
-## Profile fields, SMS, Google (2026-11-20)
+## Profile fields, SMS (2026-11-20)
 - User.gender (Male / Female / Prefer not to say, all members) and User.studentRowNo (1-999, students only: number in the teacher's class record). Migrations 20261120090000_user_gender_row_no (empty, applied by mistake; harmless) and 20261120091000_user_gender_row_no_fields. Dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-gender-rowno.sql.
 - SMS removed (developer decision 2026-11-20): OTP and messages go by email only. Librarian overdue/reminder notices are also emailed when the member has an email ([DEV OTP] / "Email not configured" logs in dev).
-- Google sign-up stores only first + last name and email (no photo). Android app: native sign-in via @capgo/capacitor-social-login@8.7.5 (approved 2026-11-20), Credential Manager, webClientId = VITE_GOOGLE_CLIENT_ID (same Web client as backend GOOGLE_CLIENT_ID). Needs an Android OAuth client in Google Cloud for package com.aklatone.app + the signing key SHA-1.
 - Android launcher icon: docs/reference/aklat-one-image.jpg (mipmap-*, white adaptive background).
-- Google on Android verified on a real phone (2026-11-20): the error was "You CANNOT use scopes without modifying the main activity"; login now passes no custom scopes. Android OAuth client is in the same Cloud project as the Web client (849313390562); it is NOT passed to the app (Credential Manager uses the Web client ID).
 - Every sign-in response (login, OTP, Google, register, reset) now returns the full profile (same as /auth/me), so the saved photo shows right after a new login.
 - Web favicon and Tauri desktop icons use the AklatOne logo (public/aklatone-icon.png, desktop-tauri/icons/* (was src-tauri); old icons backed up in ~/aklatone-backups/icons-2026-11-20).
 - Mobile auth screens: curved header and cards, blurred TNHS logo background (AuthWatermark).
-- Google welcome toast (2026-11-20): /auth/google returns isNewUser; Home shows "Account created with Google" or "Signed in with Google" once per sign-in. My Books and Alerts tabs now appear together with their lists (no per-card stagger).
 - Android splash now shows the AklatOne logo on white (drawable*/splash.png, windowSplashScreenBackground white). Old TNHS-seal splashes: ~/aklatone-backups/splash-2026-11-20.
 - Librarian replaced on dev (developer request 2026-11-20): old account deactivated, email cleared, username replaced-librarian-20261120-<id>. Setup now counts only ACTIVE librarians, so /setup reopens when the librarian is deactivated. Dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-new-librarian.sql.
 - Staff Login/Setup polish: AklatOne logo as main mark, small TNHS seal by the school name; highlights hidden on phones.
@@ -139,7 +136,7 @@ AklatOne: Library Management System for Tagumpay National High School.
 - Members list/detail return avatarUrl; Members page shows photos. SplineArea chart (components/SplineArea.tsx) in Reports and mobile Statistics. LoadingScreen and index.html pre-load splash show the AklatOne logo.
 - Deployment: backend/Dockerfile (migrate deploy + seed roles + start dist/src/server.js), frontend/Dockerfile + nginx.conf (Staff Web, proxies /api), docker-compose.yml, root .env.example, .gitignore, .github/workflows/ci.yml, docs/DEPLOYMENT.md (Hostinger VPS). Backend start script fixed to dist/src/server.js. No docker compose plugin on the dev PC (images built with docker build).
 - Removed: unused PageHeader, StatCard, mobile BarChart, mockData, schemas, public/icons.svg, public/library-bg.svg, frontend/test-results, Vite template README, docs/api-contract.md (LearnTrack) and LearnTrack archive sections.
-- docs/AUDIT-2026-11-22.md: remaining risks (deactivated users keep access until token expiry; Google sign-in for any role; no in-app backup/restore; offline outbox password) and feature/UI suggestions.
+- (AUDIT-2026-11-22, now removed; superseded by docs/AUDIT-2026-11-24.md): remaining risks (deactivated users keep access until token expiry; Google sign-in for any role; no in-app backup/restore; offline outbox password) and feature/UI suggestions.
 
 ## Platform shell folders (2026-11-23)
 - frontend/src = shared app code. Shells: frontend/web-pwa (Staff Web PWA: manifest.webmanifest, sw.js, icons; Vite plugin webPwa() serves them in dev and emits them into dist; service worker registered only in the browser build, never caches /api), frontend/desktop-tauri (was src-tauri; Tauri CLI finds tauri.conf.json there), frontend/mobile-capacitor (was android; now android/ and ios/ inside it, capacitor.config.ts android.path / ios.path). Paths updated in run-android.sh, vite.config.ts, .dockerignore, .gitignore, guides. docs/ARCHITECTURE.md describes tiers/layers.
@@ -169,9 +166,8 @@ AklatOne: Library Management System for Tagumpay National High School.
 - QR + inventory audit (new deps approved 2026-11-24: qrcode 1.5.4, jsqr 1.4.0, @types/qrcode 1.5.5): Printing > Copy QR labels (QR holds only the copy code; filter by title/code). Catalog > Inventory audit (/inventory): start (one open at a time), scan with a USB scanner, typing, or the camera (components/staff/Scanner.tsx), report Not found / Records to check (scanned but BORROWED/LOST/RETIRED) / Scanned, Excel export, close. Statuses are never changed by the audit. BookCopy.lastVerifiedAt shown in Copies as "Verified <date>" / "Not verified". Migration 20261124040000_inventory_audit (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-inventory-audit.sql). Camera needs HTTPS or localhost; Tauri on Linux (WebKitGTK) may not allow it (USB scanner/typing still work).
 - Tests: backend 117 passed + 1 opt-in skipped (26 files); frontend 95 passed.
 
-## Idle sign-out, Google, mobile keystore, least-privilege DB (2026-11-24)
+## Idle sign-out, mobile keystore, least-privilege DB (2026-11-24)
 - Staff Web signs out after 30 idle minutes with a 1-minute "Still there?" warning (components/staff/IdleLogout.tsx; activity in any tab counts; not on Desktop). Developer decision 2026-11-24.
-- Google sign-in refused for LIBRARIAN/ADMIN (403).
 - Android app keeps the token in the Android keystore (capacitor-secure-storage-plugin, already installed); an old localStorage token is moved there on first start. Web and Desktop keep localStorage.
 - Docker production: API runs as aklatone_app (SELECT/INSERT/UPDATE/DELETE only, created by backend/db-init/01-app-user.sh on first DB start); migrations, seed, backup and restore use DATABASE_ADMIN_URL (full user). New env DB_APP_PASSWORD. Verified in throwaway containers: DROP/CREATE denied for aklatone_app, backup + restore work. Dev keeps one user (no .env change).
 - ERD (docs/diagrams/AklatOne-ERD.drawio + png/ERD.png) updated with InventoryAudit, InventoryScan, IdempotencyKey, User.sessionsRevokedAt, Book.isHidden, BookCopy.lastVerifiedAt (PNG export: flatpak run com.jgraph.drawio.desktop -x -f png -s 1.5, output path inside the home folder). docs/manuscript/Chapter1-Features-Alignment.md updated.
@@ -220,6 +216,14 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Tests no longer use the developer's real name (fictional "Carla Aquino").
 - docs/manuscript/AklatOne-System-Manuscript-Text.md: paste-ready system text (description, general/core features, scope and limitations, technologies, security, platforms). Hand it over when the developer asks for the manuscript text.
 - GitHub: https://github.com/Flynchmore/TNHS-AklatOne (branch main, first commit 2026-11-25). .gitignore updated for the android/ and ios/ build folders and generated web copies.
+
+## Partner hand-over, deployment targets, app distribution (2026-11-25)
+- README rewritten for the community partner (setup, running each app, where to change things, deployment, members with/without phone). SECURITY.md (reporting + breach response, NPC 72 h). .github/dependabot.yml + workflows/codeql.yml.
+- Hardening: production API without CORS_ORIGINS allows only the app origins; nginx server_tokens off; Caddy drops the Server header; .dockerignore excludes .env.*.
+- Deploy targets: Hostinger/VPS (docker-compose + Caddy), Render (render.yaml: API Docker + private MariaDB with disk, paid plans), Vercel (frontend/vercel.json, Staff Web only).
+- Phone app distribution: frontend/scripts/lan-apk.sh (npm run android:lan | android:install-all | android:share; builds a debug APK pointing to http://<laptop Wi-Fi IP>:3000, installs on every adb device, or serves it with a terminal QR via scripts/share-apk.mjs on port 8090). With a domain: downloads/AklatOne.apk served by nginx at /download/AklatOne.apk; Printing > Mobile app QR prints a poster (Android link default = <site>/download/AklatOne.apk, optional iPhone link; saved in localStorage).
+- scripts/dev.mjs reads the DB port from backend/.env (no longer hard-coded 3307).
+- Cleanup: removed ~30 old phase/ui reports, Google OAuth guide, old API contract, AUDIT-2026-11-22, validate-openapi.mjs, Firebase/google-services Android plugin, Google welcome-email preview; .claude/, .opencode/, opencode.json, docs/OPENCODE_SKILLS.md are no longer tracked in Git (kept locally). Fictional test member is "Juan Dela Cruz" (Member ID initials JC).
 
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.

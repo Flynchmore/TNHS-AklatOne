@@ -13,7 +13,6 @@ const all: Record<string, { subject: string; html: string }> = {
   "otp-login": otpEmail("482913", "login", "Juan Dela Cruz"),
   "otp-reset": otpEmail("771204", "reset", "Juan Dela Cruz"),
   "welcome-member": welcomeEmail("member", "Juan Dela Cruz", "juan.delacruz"),
-  "welcome-google": welcomeEmail("google", "Juan Dela Cruz", "juan@example.com"),
   "welcome-librarian": welcomeEmail("librarian", "Maria Santos", "librarian@example.com"),
   "welcome-created": welcomeEmail("created", "Juan Dela Cruz", "juan.delacruz"),
   "password-changed": passwordChangedEmail("Juan Dela Cruz"),

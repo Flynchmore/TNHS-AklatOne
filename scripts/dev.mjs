@@ -7,6 +7,7 @@
 import { spawn, execFileSync } from "node:child_process";
 import { createConnection } from "node:net";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const target = process.argv[2] ?? "web";
@@ -23,13 +24,12 @@ const portOpen = (port) => new Promise((resolve) => {
 });
 const tryRun = (cmd, args) => { try { execFileSync(cmd, args, { stdio: "ignore" }); return true; } catch { return false; } };
 
-// 1. Database (MariaDB on 3307, user service from development-environment.md).
-if (!(await portOpen(3307))) {
-  say("MariaDB is not running; starting the aklatone-mariadb service…");
-  tryRun("systemctl", ["--user", "start", "aklatone-mariadb"]);
-  await sleep(2000);
-}
-say((await portOpen(3307)) ? `${c("32", "✔")} MariaDB is running (port 3307)` : `${c("31", "✖")} MariaDB is still not running. Start it: systemctl --user start aklatone-mariadb`);
+// 1. Database: the port comes from DATABASE_URL in backend/.env (3306 by default). The original development laptop
+//    runs MariaDB as the user service "aklatone-mariadb"; it is started only if that service exists.
+let dbPort = 3306;
+try { dbPort = Number(/^DATABASE_URL=.*:(\d+)\//m.exec(readFileSync(`${root}backend/.env`, "utf8"))?.[1] ?? 3306); } catch { say(`${c("33", "⚠")} backend/.env not found: copy backend/.env.example and fill it in`); }
+if (!(await portOpen(dbPort)) && tryRun("systemctl", ["--user", "start", "aklatone-mariadb"])) await sleep(2000);
+say((await portOpen(dbPort)) ? `${c("32", "✔")} MariaDB is running (port ${dbPort})` : `${c("31", "✖")} MariaDB is not answering on port ${dbPort}. Start it (e.g. sudo systemctl start mariadb) and check DATABASE_URL in backend/.env`);
 
 // 2. Redis (Docker container). Optional: the API falls back to in-memory sign-in limits without it.
 if (!(await portOpen(6379)) && tryRun("docker", ["start", "aklatone-redis"])) await sleep(1000);

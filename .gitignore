@@ -48,3 +48,10 @@ frontend/mobile-capacitor/ios/DerivedData/
 *.p12
 *.pfx
 keystore.properties
+
+# AI assistant tooling (kept on the developer's computer, not part of the system)
+.claude/
+.opencode/
+opencode.json
+docs/OPENCODE_SKILLS.md
+frontend/release/

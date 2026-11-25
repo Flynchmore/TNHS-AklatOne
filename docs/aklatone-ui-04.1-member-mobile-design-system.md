@@ -5,7 +5,7 @@ Date: 2026-11-19. Scope: Member Mobile only. Approved decisions: primary `#3354B
 Legend: **Implemented** · **Tested – passed** · **Tested – failed** · **Not tested** · **Deferred**
 
 ## 1. Files inspected
-`AGENTS.md`, `docs/PROJECT_CONTEXT.md`, `docs/OPENCODE_SKILLS.md`, `DESIGN.md`, `docs/aklatone-ui-01r-premium-cross-platform-design-blueprint.md`, `docs/aklatone-ui-04.0-uiux-resource-evaluation.md`, `docs/aklatone-library-business-rules.md`; skills `frontend-react`, `frontend-design`, `design-system`, `ui-styling`, `ui-ux-pro-max`; `frontend/src/App.tsx`, `main.tsx`, `index.css`, `lib/api.ts`, `features/auth/auth.tsx`, all files in `features/mobile/` and `components/mobile/`, `capacitor.config.ts`, `android/app/src/main/AndroidManifest.xml`, `android/app/build.gradle`, `vitest.config.ts`, existing tests; backend `app.ts` (health, CORS, rate limits), auth/catalog/book-copies/circulation schemas (read only).
+`AGENTS.md`, `docs/PROJECT_CONTEXT.md`, `docs/OPENCODE_SKILLS.md`, `DESIGN.md`, `(earlier blueprint, removed)`, `(earlier evaluation, removed)`, `docs/aklatone-library-business-rules.md`; skills `frontend-react`, `frontend-design`, `design-system`, `ui-styling`, `ui-ux-pro-max`; `frontend/src/App.tsx`, `main.tsx`, `index.css`, `lib/api.ts`, `features/auth/auth.tsx`, all files in `features/mobile/` and `components/mobile/`, `capacitor.config.ts`, `android/app/src/main/AndroidManifest.xml`, `android/app/build.gradle`, `vitest.config.ts`, existing tests; backend `app.ts` (health, CORS, rate limits), auth/catalog/book-copies/circulation schemas (read only).
 
 ## 2. Files modified
 | File | Change |
@@ -14,7 +14,6 @@ Legend: **Implemented** · **Tested – passed** · **Tested – failed** · **N
 | `frontend/src/components/mobile/ui.tsx` | **New.** Field, FieldIconButton, Alert, Spinner, MobileHeader, SchoolHeader, ListState, MemberTypePicker, StrengthMeter, button/link classes, `mobileApi` (15 s timeout + friendly errors), `serverReachable`. |
 | `frontend/src/components/mobile/MobileLayout.tsx` | Labelled `<nav>`, `aria-current`, 64 px targets, tokens. |
 | `frontend/src/components/mobile/MobileProtected.tsx` | Remembers the requested page when redirecting to sign-in. |
-| `frontend/src/components/mobile/GoogleSignInButton.tsx` | Tokens, status roles, wording. |
 | `frontend/src/features/mobile/*.tsx` (8 screens) | Rebuilt on the shared blocks; details below. |
 | `frontend/src/tests/mobile.test.tsx` | **New.** 30 tests. |
 | `frontend/vitest.config.ts` | `css.include: [/index\.css/]` so the token test can read `index.css` (Vitest returns empty CSS by default). |
@@ -112,7 +111,6 @@ Findings during testing that were fixed: undersized "Back to Sign In" link; deep
 - **Background banner** `docs/reference/tnhs-background-image.png`: spells "TACUMPAY"; not used. No portrait image exists.
 - `frontend/.env` defines `VITE_API_BASE_URL` twice (not edited).
 - Token stored in `localStorage`; `capacitor-secure-storage-plugin` is installed but unused (shared `auth.tsx`).
-- Google sign-up shows "Account created" even when it signs in to an existing account.
 - `avatarUrl` is sent as a `data:` URL; whether the backend's `z.string().url()` accepts it was **Not tested**.
 - Screen reader (TalkBack), Android font scaling, and physical-device testing: **Not tested**.
 - Staff Web and Staff Desktop still use hard-coded colors: **Deferred**.

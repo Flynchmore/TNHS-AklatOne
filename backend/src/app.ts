@@ -50,7 +50,8 @@ export function createApp() {
   // Expose the rate-limit headers so sign-in screens can show "N attempts left".
   if (env.TRUST_PROXY) app.set("trust proxy", env.TRUST_PROXY);
   app.use(cors({
-    origin: env.CORS_ORIGINS.length ? [...env.CORS_ORIGINS, ...APP_ORIGINS] : true,
+    // Production without CORS_ORIGINS: only the phone / desktop apps (the web portal is same-origin behind nginx).
+    origin: env.CORS_ORIGINS.length ? [...env.CORS_ORIGINS, ...APP_ORIGINS] : env.NODE_ENV === "production" ? APP_ORIGINS : true,
     exposedHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After"],
   }));
   app.use(express.json({ limit: "1mb" }));

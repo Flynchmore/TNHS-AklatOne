@@ -16,7 +16,10 @@
     "tauri": "tauri",
     "cap": "cap",
     "cap:sync": "cap sync",
-    "cap:open:android": "cap open android"
+    "cap:open:android": "cap open android",
+    "android:lan": "bash scripts/lan-apk.sh build",
+    "android:install-all": "bash scripts/lan-apk.sh install-all",
+    "android:share": "bash scripts/lan-apk.sh share"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",

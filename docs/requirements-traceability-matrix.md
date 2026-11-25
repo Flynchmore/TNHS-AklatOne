@@ -6,7 +6,6 @@ Evidence is source code inspected on 2026-11-19. "Tested" means a test file exis
 |---|---|---|---|---|---|
 | Auth (login, JWT, /me) | modules/auth | Login.tsx, MobileLogin.tsx | auth.test.ts | Implemented | No |
 | Public registration (MEMBER) | POST /auth/register, ALLOW_PUBLIC_REGISTRATION | MobileRegister.tsx | auth.test.ts | Implemented, decision pending | Yes |
-| Google sign-in | POST /auth/google | Mobile login | None | Implemented, decision pending | Yes |
 | Login OTP / forgot-reset password | /auth/verify-login-otp, /forgot-password, /verify-otp, /reset-password | MobileForgotPassword.tsx | None | Implemented, decision pending | Yes |
 | Profile update | PATCH /auth/profile | MobileProfile.tsx | None | Implemented | No |
 | Users (read) | modules/users | None | None | Backend only | No |

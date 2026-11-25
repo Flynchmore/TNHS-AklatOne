@@ -9,7 +9,7 @@ import { ToastProvider } from "../components/Toast";
 import { LendDialog } from "../features/circulation/LendDialog";
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify({ success: status < 400, data, message: status >= 400 ? "No" : "OK" }), { status });
-const member = { id: "m1", maskedId: "CA123456", displayName: "Carla Aquino", memberType: "Student", gradeSection: "Grade 10 - Rizal", activeLoans: 1, isActive: true };
+const member = { id: "m1", maskedId: "JC123456", displayName: "Juan Dela Cruz", memberType: "Student", gradeSection: "Grade 10 - Rizal", activeLoans: 1, isActive: true };
 const show = (onLent = vi.fn()) => {
   render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><ToastProvider><LendDialog open onClose={() => {}} onLent={onLent} /></ToastProvider></MemoryRouter></QueryClientProvider>);
   return onLent;
@@ -28,16 +28,16 @@ describe("Lend a book (desk)", () => {
     show();
     scan("lend-member", "hello");
     expect(await screen.findByText(/is not a Member ID/)).toBeInTheDocument();
-    scan("lend-member", "ca123456");
-    expect(await screen.findByText("Carla Aquino")).toBeInTheDocument();
+    scan("lend-member", "jc123456");
+    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
     expect(screen.getByText(/Grade 10 - Rizal · 1 book\(s\) borrowed now/)).toBeInTheDocument();
   });
 
   it("tells the librarian to add a book that is not in AklatOne yet", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => (String(url).includes("/users") ? json({ items: [member] }) : json({ items: [], total: 0 })));
     show();
-    scan("lend-member", "CA123456");
-    await screen.findByText("Carla Aquino");
+    scan("lend-member", "JC123456");
+    await screen.findByText("Juan Dela Cruz");
     fireEvent.change(screen.getByLabelText(/No QR label\?/), { target: { value: "Ibong Adarna" } });
     expect(await screen.findByText(/"Ibong Adarna" is not in AklatOne yet/, {}, { timeout: 2000 })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Add this book/, hidden: true })).toBeInTheDocument();
@@ -50,13 +50,13 @@ describe("Lend a book (desk)", () => {
       return json({ items: [] });
     });
     const onLent = show();
-    scan("lend-member", "CA123456");
-    await screen.findByText("Carla Aquino");
+    scan("lend-member", "JC123456");
+    await screen.findByText("Juan Dela Cruz");
     scan("lend-copy", "nmt-001-01");
     expect(await screen.findByText("NMT-001-01")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Lend book/, hidden: true }));
     await waitFor(() => expect(onLent).toHaveBeenCalledWith("tx1"));
     const post = f.mock.calls.find(c => c[1]?.method === "POST")!;
-    expect(JSON.parse(String(post[1]!.body))).toEqual({ memberCode: "CA123456", copyCode: "NMT-001-01" });
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ memberCode: "JC123456", copyCode: "NMT-001-01" });
   });
 });

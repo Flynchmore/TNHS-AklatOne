@@ -10,7 +10,7 @@ codebase and talk to **one** backend API, which owns **one** MariaDB database.
  │  ├ web-pwa          Staff Web │  HTTPS/JSON │  security middleware          │   Prisma   │  (all records)       │
  │  ├ desktop-tauri    Staff Desk│ ──────────► │  validation (zod)             │ ─────────► │ Redis (optional,     │
  │  └ mobile-capacitor Member App│  /api/v1    │  routes → business rules      │            │  sign-in limits)     │
- └───────────────────────────────┘             │  integrations (email, Google) │            │ Backup files         │
+ └───────────────────────────────┘             │  integrations (email, covers)  │            │ Backup files         │
                                                 └──────────────────────────────┘            └──────────────────────┘
 ```
 

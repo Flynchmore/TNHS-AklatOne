@@ -22,7 +22,7 @@ const ACTIVITY: Record<string, string> = {
   "circulation.borrow": "lent a book", "circulation.return": "recorded a returned book",
   "notification.overdue": "sent an overdue notice", "notification.reminder": "sent a return reminder",
   "category.create": "added a category", "category.update": "updated a category", "category.delete": "deleted a category",
-  "setup.librarian": "set up the librarian account", "user.register": "registered in the mobile app", "user.google_register": "signed up with Google",
+  "setup.librarian": "set up the librarian account", "user.register": "registered in the mobile app",
   "user.create": "added a member", "user.update": "updated a member", "user.activate": "activated a member", "user.deactivate": "deactivated a member",
 };
 const ENTITY_ICON: Record<string, LucideIcon> = { Book: Library, BookCopy: BookOpen, BorrowRequest: ClipboardCheck, BorrowingTransaction: ArrowLeftRight, Category: Tag, User: UserCog };

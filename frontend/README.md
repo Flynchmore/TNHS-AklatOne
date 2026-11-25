@@ -6,7 +6,7 @@ One React + TypeScript + Vite + Tailwind codebase (`src/`) for three apps, each 
 |---|---|---|---|---|
 | Staff Web portal (PWA) | `web-pwa/` | Librarian / admin | `npm run dev` | `npm run build` (output in `dist/`) |
 | Staff Desktop (Tauri) | `desktop-tauri/` | Librarian / admin | `npm run dev:desktop` | `npm run build:desktop` |
-| Member Mobile (Capacitor, Android + iOS) | `mobile-capacitor/android`, `mobile-capacitor/ios` | Students / teachers | `npm run android` (USB phone) | `npm run build && npx cap sync android`, then Android Studio |
+| Member Mobile (Capacitor, Android + iOS) | `mobile-capacitor/android`, `mobile-capacitor/ios` | Students / teachers | `npm run android` (one USB phone), `npm run android:install-all` (USB hub), `npm run android:share` (QR over Wi-Fi) | `npm run build && npx cap sync android`, then Android Studio |
 
 The API address comes from `VITE_API_BASE_URL` in `.env` (default `http://localhost:3000`).
 From the project root, `npm run dev` starts Redis, the API and the Staff Web together.
