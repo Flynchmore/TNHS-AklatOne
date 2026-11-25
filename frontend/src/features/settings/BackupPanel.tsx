@@ -8,7 +8,7 @@ import { phDateTime } from "../../lib/dates";
 import { errorOf, fileNameOf, saveBlob } from "../../lib/download";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { Badge, FormSection, Panel, StaffDialog, btn, btnSm, input, label, table } from "../../components/staff/ui";
+import { Badge, FormSection, Panel, Skeleton, StaffDialog, btn, btnSm, input, label, table } from "../../components/staff/ui";
 
 interface ServerBackup { name: string; size: number; createdAt: string; encrypted: boolean }
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
@@ -117,7 +117,7 @@ export function BackupPanel() {
 
         <FormSection title="Backups saved on the server" icon={Server}>
           <p className="text-sm text-ink-muted">A copy is saved automatically every day, plus a safety copy before each restore.</p>
-          {files.isLoading ? <p className="text-sm text-ink-muted">Loading…</p> : !files.data?.length ? <p className="text-sm text-ink-muted">No server backups yet.</p> : (
+          {files.isLoading ? <Skeleton rows={3} className="h-10" /> : !files.data?.length ? <p className="text-sm text-ink-muted">No server backups yet.</p> : (
             <div className={table.wrap}>
               <table className={table.table}>
                 <thead className={table.head}><tr><th className={table.th}>File</th><th className={table.th}>Saved</th><th className={table.th}>Size</th><th className={`${table.th} text-right`}>Actions</th></tr></thead>

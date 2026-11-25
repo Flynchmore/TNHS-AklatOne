@@ -3,6 +3,7 @@ import { X, Printer } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { Receipt, type ReceiptData } from "../../components/Receipt";
+import { Skeleton } from "../../components/staff/ui";
 
 /** Staff receipt viewer. `transactionId` null = closed. */
 export function ReceiptDialog({ transactionId, onClose }: { transactionId: string | null; onClose: () => void }) {
@@ -34,7 +35,7 @@ export function ReceiptDialog({ transactionId, onClose }: { transactionId: strin
           </div>
         </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-        {!data && !error && <p role="status" className="text-sm text-slate-500">Loading…</p>}
+        {!data && !error && <Skeleton rows={4} className="h-8" />}
         {data && <Receipt data={data} />}
       </div>
     </dialog>

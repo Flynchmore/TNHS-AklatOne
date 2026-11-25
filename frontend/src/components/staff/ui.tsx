@@ -156,7 +156,16 @@ export function FormSection({ title, icon: Icon, children }: { title: string; ic
 export function Skeleton({ rows = 4, className = "h-14" }: { rows?: number; className?: string }) {
   return (
     <div role="status" aria-label="Loading" className="space-y-3">
-      {Array.from({ length: rows }, (_, i) => <div key={i} className={`${className} rounded-2xl bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 motion-safe:animate-pulse`} />)}
+      {/* Placeholder rows shaped like the content (a block and two text lines), visible in light and dark themes. */}
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} aria-hidden="true" className={`${className} rounded-2xl bg-surface border border-line flex items-center gap-4 px-4 overflow-hidden`}>
+          <div className="h-3/5 max-h-12 aspect-square shrink-0 rounded-xl bg-line motion-safe:animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-2/5 rounded-full bg-line motion-safe:animate-pulse" />
+            <div className="h-2.5 w-1/4 rounded-full bg-line motion-safe:animate-pulse" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -155,6 +155,7 @@ export function MobileHome() {
             </div>
             <ListState
               loading={featuredLoading && "Loading books…"}
+              skeleton="row"
               error={featuredError}
               onRetry={loadFeatured}
               empty={featured.length === 0 && (

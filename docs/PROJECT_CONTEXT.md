@@ -237,6 +237,9 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Deployment target is a Hostinger VPS (1-year plan for the community partner; KVM 2 recommended: 2 vCPU / 8 GB / 100 GB, template Ubuntu 24.04 with Docker). Render (render.yaml) and Vercel (frontend/vercel.json) removed.
 - Docker Compose v5.8.0 installed on the dev PC as a user plugin (~/.docker/cli-plugins/docker-compose, checksum verified). Rehearsal on the dev PC: `bash scripts/docker-setup.sh` -> 5 containers healthy, Staff Web 200, setup/status OK, security headers present, aklatone_app denied DROP TABLE; then `docker compose stop` (volumes kept; root .env with random secrets exists locally, git-ignored).
 
+## Skeleton loading (2026-11-25)
+- Phone app: ListState shows SkeletonList (card placeholders with a thumbnail and text lines; `skeleton="row"` = side-by-side book cards for Home Featured) instead of a spinner; the loading text stays for screen readers. Staff Web/Desktop: Skeleton rows now use surface + line tokens (were nearly invisible slate gradients) and are content-shaped; ReceiptDialog and Backup list use them too. Animations only with motion-safe. Tests: src/tests/skeleton.test.tsx. Checked in the browser with the catalog API slowed to 8 s.
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

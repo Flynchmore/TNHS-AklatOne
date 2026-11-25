@@ -333,8 +333,34 @@ export function useSlideDirection(index: number) {
 }
 
 /** Loading / empty / error block for lists. */
-export function ListState({ loading, error, empty, onRetry, children }: { loading?: string | false; error?: string; empty?: ReactNode; onRetry?: () => void; children?: ReactNode }) {
-  if (loading) return <div role="status" className="flex items-center justify-center gap-2 text-ink-muted py-8"><Spinner size={16} />{loading}</div>;
+/** Placeholder shapes shown while a list loads (instead of a spinner), so the screen keeps its layout. */
+export function SkeletonList({ label, shape = "list", count = shape === "row" ? 3 : 4 }: { label: string; shape?: "list" | "row"; count?: number }) {
+  const bar = "rounded-full bg-line motion-safe:animate-pulse";
+  return (
+    <div role="status" aria-live="polite" className={shape === "row" ? "flex gap-3 overflow-hidden" : "space-y-3"}>
+      <span className="sr-only">{label}</span>
+      {Array.from({ length: count }, (_, i) => shape === "row" ? (
+        <div key={i} aria-hidden="true" className="w-36 shrink-0 bg-surface rounded-3xl border border-line p-3 space-y-2">
+          <div className="h-40 rounded-2xl bg-line motion-safe:animate-pulse" />
+          <div className={`h-3 w-4/5 ${bar}`} />
+          <div className={`h-3 w-1/2 ${bar}`} />
+        </div>
+      ) : (
+        <div key={i} aria-hidden="true" className="flex gap-3 items-center bg-surface rounded-3xl border border-line p-4">
+          <div className="w-14 h-20 shrink-0 rounded-xl bg-line motion-safe:animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className={`h-3.5 w-3/4 ${bar}`} />
+            <div className={`h-3 w-1/2 ${bar}`} />
+            <div className={`h-3 w-1/3 ${bar}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ListState({ loading, error, empty, onRetry, children, skeleton = "list" }: { loading?: string | false; error?: string; empty?: ReactNode; onRetry?: () => void; children?: ReactNode; skeleton?: "list" | "row" }) {
+  if (loading) return <SkeletonList label={loading} shape={skeleton} />;
   if (error) return <Alert action={onRetry && <button type="button" onClick={onRetry} className={`${linkText} min-h-6`}>Try again</button>}>{error}</Alert>;
   if (empty) return <div className="text-center text-ink-muted py-8">{empty}</div>;
   return <>{children}</>;
