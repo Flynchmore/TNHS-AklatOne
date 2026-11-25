@@ -5,7 +5,7 @@ const blankToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? 
 const optionalText = (max: number) => z.preprocess(blankToNull, z.string().trim().max(max).nullable().optional());
 
 export const BOOK_TYPES = ["Textbook", "Teacher's Manual", "Worksheet", "Other"] as const;
-export const GRADE_LEVELS = ["Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12", "All grade levels"] as const;
+export const GRADE_LEVELS = ["Grade 7", "Grade 8", "Grade 9", "Grade 10", "All grade levels"] as const;
 // A date from a date field (YYYY-MM-DD, Philippine day) or blank.
 export const dateReceived = z.preprocess(blankToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-06-15").nullable().optional());
 export const phDate = (d: string) => new Date(`${d}T00:00:00+08:00`);

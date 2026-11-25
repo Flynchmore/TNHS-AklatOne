@@ -28,7 +28,7 @@ describe("book type, grade level, date received and location", () => {
     expect(await list("gradeLevel=Grade%208")).toEqual([`All Grades ${stamp}`, title]); // "All grade levels" books show under every grade
     expect(await list("gradeLevel=Grade%209")).toEqual([`All Grades ${stamp}`]);
     expect(await list("bookType=Textbook")).toEqual([title]);
-    expect((await request(app).post("/api/v1/catalog").set(as(admin)).send({ title: "x", gradeLevel: "Grade 13" })).status).toBe(400);
+    expect((await request(app).post("/api/v1/catalog").set(as(admin)).send({ title: "x", gradeLevel: "Grade 11" })).status).toBe(400);
   });
 
   it("edits the location, date received and notes of one copy (staff only)", async () => {
@@ -44,6 +44,6 @@ describe("book type, grade level, date received and location", () => {
 
   it("reads book type and grade level from Excel spellings", () => {
     expect(["textbook", "TEACHER'S MANUAL", "teachers manual", "Activity sheet", "other"].map(normBookType)).toEqual(["Textbook", "Teacher's Manual", "Teacher's Manual", "Worksheet", "Other"]);
-    expect(["7", "Grade 07", "grade 12", "All", "Grade 13"].map(normGradeLevel)).toEqual(["Grade 7", "Grade 7", "Grade 12", "All grade levels", "Grade 13"]);
+    expect(["7", "Grade 07", "grade 10", "All", "Grade 11"].map(normGradeLevel)).toEqual(["Grade 7", "Grade 7", "Grade 10", "All grade levels", "Grade 11"]);
   });
 });

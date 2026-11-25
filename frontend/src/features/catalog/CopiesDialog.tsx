@@ -86,14 +86,14 @@ export function CopiesDialog({ book, onClose }: { book: Book | null; onClose: ()
             <tbody>
               {list.data.items.map(c => (
                 <tr key={c.id} className={table.row}>
-                  <td className={`${table.td} font-semibold text-ink`}>{nameOf(c)}</td>
-                  <td className={table.td}>
+                  <td className={`${table.td} font-semibold text-ink whitespace-nowrap`}>{nameOf(c)}</td>
+                  <td className={`${table.td} min-w-[12rem]`}>
                     {edit?.id === c.id ? (
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
                         <label className="sr-only" htmlFor={`loc-${c.id}`}>Location</label>
-                        <input id={`loc-${c.id}`} value={edit.location} maxLength={100} placeholder="e.g. Shelf A3" onChange={e => setEdit({ ...edit, location: e.target.value })} className={`${input} !min-h-9 !py-1 max-w-36`} />
+                        <input id={`loc-${c.id}`} value={edit.location} maxLength={100} placeholder="e.g. Shelf A3" onChange={e => setEdit({ ...edit, location: e.target.value })} className={`${input} !min-h-9 !py-1 col-span-3`} />
                         <label className="sr-only" htmlFor={`rcv-${c.id}`}>Date received</label>
-                        <input id={`rcv-${c.id}`} type="date" value={edit.dateReceived} onChange={e => setEdit({ ...edit, dateReceived: e.target.value })} className={`${input} !min-h-9 !py-1 max-w-40`} />
+                        <input id={`rcv-${c.id}`} type="date" value={edit.dateReceived} onChange={e => setEdit({ ...edit, dateReceived: e.target.value })} className={`${input} !min-h-9 !py-1 !px-2 text-sm min-w-0`} />
                         <button type="button" aria-label="Save" disabled={saveDetails.isPending} onClick={() => saveDetails.mutate(edit)} className={`${btn.primary} ${btnSm}`}><Check size={14} aria-hidden="true" /></button>
                         <button type="button" aria-label="Cancel" onClick={() => setEdit(null)} className={`${btn.ghost} ${btnSm}`}><X size={14} aria-hidden="true" /></button>
                       </div>
@@ -106,7 +106,7 @@ export function CopiesDialog({ book, onClose }: { book: Book | null; onClose: ()
                   </td>
                   <td className={table.td}><Badge tone={STATUS_TONE[c.status] ?? "muted"}>{c.status}</Badge><div className="text-[11px] text-ink-muted mt-1">{c.lastVerifiedAt ? `Verified ${phDate(c.lastVerifiedAt)}` : "Not verified"}</div></td>
                   <td className={table.td}>
-                    <select aria-label={`Status of ${nameOf(c)}`} className={`${select} !min-h-9 !py-1 !rounded-xl max-w-40`} value={c.status} disabled={!canWrite || allowedTransitions(c.status).length === 0 || setStatus.isPending} onChange={e => setStatus.mutate({ c, status: e.target.value })}>
+                    <select aria-label={`Status of ${nameOf(c)}`} className={`${select} !min-h-9 !py-1 !rounded-xl min-w-[8.5rem]`} value={c.status} disabled={!canWrite || allowedTransitions(c.status).length === 0 || setStatus.isPending} onChange={e => setStatus.mutate({ c, status: e.target.value })}>
                       <option value={c.status}>{c.status}</option>
                       {allowedTransitions(c.status).map(st => <option key={st} value={st}>{st}</option>)}
                     </select>

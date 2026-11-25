@@ -39,7 +39,7 @@ export function normGradeLevel(v?: string): string | undefined {
   if (!v) return v;
   if (/^all/i.test(v.trim())) return "All grade levels";
   const n = Number(v.replace(/\D/g, ""));
-  return n >= 7 && n <= 12 ? `Grade ${n}` : v;
+  return n >= 7 && n <= 10 ? `Grade ${n}` : v;
 }
 type BookField = (typeof BOOK_FIELDS)[number];
 const LABEL: Record<string, string> = Object.fromEntries(COLUMNS.map((c) => [c.field, c.header]));
@@ -54,7 +54,7 @@ const FRIENDLY: Record<string, string> = {
   authors: "Author can have at most 255 characters.",
   publisher: "Publisher can have at most 255 characters.",
   bookType: "Book type must be Textbook, Teacher's Manual, Worksheet or Other.",
-  gradeLevel: "Grade level must be Grade 7 to Grade 12, or All grade levels.",
+  gradeLevel: "Grade level must be Grade 7 to Grade 10, or All grade levels.",
   description: "Description can have at most 2000 characters.",
 };
 
