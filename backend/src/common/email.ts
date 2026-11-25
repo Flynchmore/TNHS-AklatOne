@@ -151,11 +151,11 @@ const phDay = (d: Date) => d.toLocaleDateString("en-PH", { timeZone: "Asia/Manil
 
 const when = () => new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 
-export type OtpPurpose = "login" | "reset" | "session";
+export type OtpPurpose = "login" | "reset" | "session" | "activate" | "password";
 
 const CODE_NOTE = "This code expires in 10 minutes and works only once. The library staff will never ask you for it.";
 
-/** Sign-in code (2-step sign-in), password-reset code, or the code that confirms signing a device out. */
+/** Sign-in code, password-reset code, account activation code, password change code, or the code that confirms signing a device out. */
 export function otpEmail(otp: string, purpose: OtpPurpose, name?: string | null) {
   // The code is never in the subject or preview line: those show on locked phone screens.
   const kind = {
@@ -168,6 +168,16 @@ export function otpEmail(otp: string, purpose: OtpPurpose, name?: string | null)
       subject: "Your AklatOne password reset code", badge: "Password reset", tone: "warning" as Tone, title: "Reset your password",
       intro: "We received a request to reset your AklatOne password. To choose a new password, enter this code in the app:",
       security: "If you did not ask to reset your password, you can ignore this email: your password stays the same, and it cannot be changed without this code.",
+    },
+    activate: {
+      subject: "Activate your AklatOne account", badge: "Account activation", tone: "success" as Tone, title: "Activate your account",
+      intro: "Thank you for creating an AklatOne library account. To activate it, enter this activation code in the app:",
+      security: "If you did not create an AklatOne account, you can ignore this email: the account stays inactive and is removed if it is never activated.",
+    },
+    password: {
+      subject: "Your AklatOne password change code", badge: "Password change", tone: "warning" as Tone, title: "Confirm your new password",
+      intro: "You asked to change your AklatOne password. To confirm the change, enter this code in the app:",
+      security: "If you did not ask to change your password, someone may be using your account: do not share this code, sign out other devices in <strong>Settings &gt; Sign-in devices</strong> and tell the librarian.",
     },
     session: {
       subject: "Confirm signing out a device", badge: "Device sign-out", tone: "warning" as Tone, title: "Confirm signing out a device",
@@ -206,13 +216,14 @@ export function newDeviceEmail(name: string | null | undefined, d: { device: str
   };
 }
 
-export type WelcomeKind = "librarian" | "created";
+export type WelcomeKind = "librarian" | "created" | "member";
 
 /** Sent once when an account is created: librarian setup, or a librarian adding a member. */
 export function welcomeEmail(kind: WelcomeKind, name: string | null | undefined, username: string) {
   const intro: Record<WelcomeKind, string> = {
     librarian: "The librarian account for AklatOne Web and Desktop is ready. You can now manage the catalog, borrowing and members.",
     created: "The school librarian created an AklatOne library account for you. You can now browse the catalog, request books and track the books you borrowed from the AklatOne app.",
+    member: "Your AklatOne library account is now active. You can browse the catalog, request books and track the books you borrowed from the AklatOne app. Ask the librarian for your Library ID card.",
   };
   const signIn = p(`Sign in with: <strong style="font-family:Consolas,'Courier New',monospace;">${esc(username)}</strong>`);
   const firstTime = kind === "created" ? p("Ask the librarian for your first password, then change it in <strong>Settings &gt; Change password</strong> after you sign in.") : "";

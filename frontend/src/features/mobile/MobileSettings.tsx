@@ -114,6 +114,9 @@ function ChangePassword() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  // Step 2 (accounts with an email): the emailed password change code.
+  const [codeTo, setCodeTo] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -121,7 +124,13 @@ function ChangePassword() {
     if (passwordStrength(pw).score < 3) { setError("Please use a stronger password (12+ characters, mixed case, numbers, symbols)."); return; }
     if (pw !== confirm) { setError("Passwords do not match."); return; }
     setSaving(true);
-    const r = await mobileApi("/api/v1/auth/profile", { method: "PATCH", body: JSON.stringify({ password: pw, currentPassword: current }), token: auth.token });
+    if (codeTo === null) {
+      const c = await mobileApi("/api/v1/auth/password-code", { method: "POST", body: "{}", token: auth.token });
+      if (!c.ok) { setSaving(false); setError(c.message ?? "Could not send the code."); return; }
+      const sent = c.data as { needsCode: boolean; email?: string };
+      if (sent.needsCode) { setSaving(false); setCodeTo(sent.email ?? "your email"); toast({ tone: "success", title: "Code sent", message: "Check your email for the 6-digit code." }); return; }
+    } else if (code.length < 6) { setSaving(false); setError("Enter the 6-digit code from your email."); return; }
+    const r = await mobileApi("/api/v1/auth/profile", { method: "PATCH", body: JSON.stringify({ password: pw, currentPassword: current, ...(codeTo !== null ? { code } : {}) }), token: auth.token });
     setSaving(false);
     if (!r.ok) { setError(r.message ?? "Could not change your password."); return; }
     const fresh = (r.data as { token?: string } | null)?.token;
@@ -129,6 +138,8 @@ function ChangePassword() {
     setCurrent("");
     setPw("");
     setConfirm("");
+    setCodeTo(null);
+    setCode("");
     toast({ tone: "success", title: "Password changed", message: "Other phones and computers were signed out of your account." });
   };
   return (
@@ -141,9 +152,12 @@ function ChangePassword() {
           {pw && <StrengthMeter password={pw} />}
         </div>
         <Field label="Confirm new password" type="password" icon={<Lock size={18} />} autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} error={confirm && pw !== confirm ? "Passwords do not match." : undefined} />
+        {codeTo !== null && (
+          <Field label="6-digit code" icon={<KeyRound size={18} />} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="tracking-widest text-center font-bold" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} hint={`Sent to ${codeTo}. It expires in 10 minutes.`} />
+        )}
         <button type="submit" disabled={saving || !pw || !current} className={btnPrimary}>
           {saving ? <Spinner size={16} /> : <KeyRound size={16} aria-hidden="true" />}
-          {saving ? "Saving…" : "Change password"}
+          {saving ? "Please wait…" : codeTo !== null ? "Confirm new password" : "Change password"}
         </button>
       </form>
     </ScreenShell>

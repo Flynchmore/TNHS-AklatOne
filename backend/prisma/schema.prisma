@@ -54,7 +54,8 @@ model User {
   passwordHash      String
   displayName       String?
   email             String?                @unique
-  phoneNumber       String?
+  /// Self-registered account waiting for its emailed activation code (isActive stays false until then).
+  activationPending Boolean           @default(false)
   avatarUrl         String?                @db.MediumText // photos are stored as small JPEG data URLs (~30-60 KB)
   memberType        String?
   position          String?

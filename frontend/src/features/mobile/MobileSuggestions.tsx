@@ -78,7 +78,7 @@ export function MobileSuggestions() {
                 <li key={s.id} className="bg-surface rounded-2xl border border-line p-4 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-semibold text-ink">{s.kind === "BOOK" ? <BookPlus size={14} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" /> : <MessageSquareText size={14} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" />}{s.title}{s.author ? <span className="font-normal text-ink-muted"> · {s.author}</span> : null}</p>
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${st.cls}`}><st.Icon size={12} aria-hidden="true" />{s.kind === "BOOK" && s.status === "DONE" ? "Added" : st.label}</span>
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 leading-tight rounded-full shrink-0 ${st.cls}`}><st.Icon size={12} aria-hidden="true" />{s.kind === "BOOK" && s.status === "DONE" ? "Added" : st.label}</span>
                   </div>
                   {s.message && <p className="text-sm text-ink-muted">{s.message}</p>}
                   {s.reply && <p className="text-sm rounded-xl bg-page px-3 py-2"><b className="text-primary-strong">Librarian:</b> {s.reply}</p>}

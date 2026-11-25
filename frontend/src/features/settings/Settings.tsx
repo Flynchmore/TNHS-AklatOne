@@ -85,6 +85,9 @@ function PasswordPanel() {
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Step 2 (accounts with an email): the emailed password change code.
+  const [codeTo, setCodeTo] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const mismatch = confirm && pw !== confirm;
 
   const save = async (e: React.FormEvent) => {
@@ -92,12 +95,18 @@ function PasswordPanel() {
     if (passwordStrength(pw).score < 3) { toast({ tone: "error", title: "Password too weak", message: "Use 12+ characters with mixed case, numbers and symbols." }); return; }
     if (pw !== confirm) { toast({ tone: "error", title: "Passwords do not match", message: "Type the same new password twice." }); return; }
     setSaving(true);
-    const r = await apiFetch("/api/v1/auth/profile", { method: "PATCH", body: JSON.stringify({ password: pw, currentPassword: current }), token });
+    if (codeTo === null) {
+      const c = await apiFetch("/api/v1/auth/password-code", { method: "POST", body: "{}", token });
+      if (!c.ok) { setSaving(false); toast({ tone: "error", title: "Code not sent", message: c.message ?? "Please try again." }); return; }
+      const sent = c.data as { needsCode: boolean; email?: string };
+      if (sent.needsCode) { setSaving(false); setCodeTo(sent.email ?? "your email"); toast({ tone: "success", title: "Code sent", message: "Enter the 6-digit code from your email to confirm." }); return; }
+    }
+    const r = await apiFetch("/api/v1/auth/profile", { method: "PATCH", body: JSON.stringify({ password: pw, currentPassword: current, ...(codeTo !== null ? { code } : {}) }), token });
     setSaving(false);
     if (!r.ok) { toast({ tone: "error", title: "Password not changed", message: r.message ?? "Please try again." }); return; }
     const fresh = (r.data as { token?: string } | null)?.token;
     if (fresh) replaceToken(fresh);
-    setCurrent(""); setPw(""); setConfirm("");
+    setCurrent(""); setPw(""); setConfirm(""); setCodeTo(null); setCode("");
     toast({ tone: "success", title: "Password changed", message: "Other devices were signed out. A security email was sent to you." });
   };
 
@@ -120,7 +129,14 @@ function PasswordPanel() {
           <input id="confirm-password" type={show ? "text" : "password"} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={!!mismatch} aria-describedby={mismatch ? "confirm-error" : undefined} className={input} />
           {mismatch && <p id="confirm-error" className="text-xs text-danger mt-1">Passwords do not match.</p>}
         </div>
-        <button type="submit" disabled={saving || !current || !pw || !confirm} className={btn.primary}>{saving ? "Changing…" : "Change password"}</button>
+        {codeTo !== null && (
+          <div>
+            <label htmlFor="password-code" className={label}>6-digit code from your email</label>
+            <input id="password-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} aria-describedby="password-code-hint" className={`${input} tracking-widest font-bold`} />
+            <p id="password-code-hint" className="text-xs text-ink-muted mt-1">Sent to {codeTo}. It expires in 10 minutes.</p>
+          </div>
+        )}
+        <button type="submit" disabled={saving || !current || !pw || !confirm || (codeTo !== null && code.length < 6)} className={btn.primary}>{saving ? "Please wait…" : codeTo !== null ? "Confirm new password" : "Change password"}</button>
       </form>
     </Panel>
   );

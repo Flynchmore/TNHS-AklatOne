@@ -99,9 +99,12 @@ application or the librarian mode of the mobile application. All applications sh
 database.
 
 The system has the following limitations. Each member may borrow up to eight (8) books at a time for seven (7) days
-per book; renewals, reservations and fines are not included. Members cannot create their own accounts; the
-librarian creates them. The 6-digit sign-in and password-reset codes require the member to have an email address
-and the server to have a working email account. Book covers are retrieved from Open Library only for books with an
+per book; renewals, reservations and fines are not included. Members may create their own account (the
+same details as their personal information, with Student or Teacher chosen once) or the librarian adds them; a
+self-created account works only after the activation code sent to the member's email is entered. Only email is
+collected for contact; no phone numbers are stored. The 6-digit activation, sign-in, password-change and
+password-reset codes require an email address and a working email account on the server. The mobile application
+asks members to sign in again every time it is opened. Book covers are retrieved from Open Library only for books with an
 ISBN; DepEd textbooks without an ISBN show a title card instead. Borrowing, requests and other changes from the
 mobile application require an internet connection; offline, it only shows saved records. The desktop application
 works offline, but signing in and starting the Visitor's Log require a connection to the server. Camera scanning
@@ -133,7 +136,7 @@ built and signed on a Mac with an Apple Developer account.
 
 1. Role-based access control for Administrator, Librarian and Member, checked on the server for every request.
 2. Passwords hashed with bcrypt and a strong-password rule enforced by the server.
-3. Two-factor sign-in: password plus a 6-digit code sent by email; codes are random, valid for 10 minutes and stored only as a hash.
+3. Two-factor sign-in: password plus a 6-digit code sent by email; new accounts are activated and password changes confirmed with emailed codes; codes are random, valid for 10 minutes and stored only as a hash.
 4. Session control: sessions end immediately when an account is deactivated or its password changes; staff web sessions end after 30 idle minutes. Every user can see the devices signed in to their account and sign one out after confirming their password and an emailed code, and receives an email when a new device signs in.
 5. Limits on failed sign-ins, wrong codes and request rates, counted per account so students on the same school Wi-Fi do not block each other.
 6. Sign-in screens and password reset do not reveal whether an account exists.

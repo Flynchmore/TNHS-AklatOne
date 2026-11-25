@@ -28,6 +28,9 @@ export const openApiSpec = {
   paths: {
     "/auth/login": { post: pub("/auth", "Sign in; accounts with an email get a 6-digit code first", { "401": "Invalid credentials", "429": "Too many failed attempts" }) },
     "/auth/verify-login-otp": { post: pub("/auth", "Finish sign-in with the emailed code", { "401": "Wrong or expired code", "429": "Too many failed attempts" }) },
+    "/auth/register": { post: pub("/auth", "Member self-registration (Personal information + email); emails an activation code, the account stays inactive until activated", { "409": "Username or email already used" }) },
+    "/auth/activate": { post: pub("/auth", "Enter the emailed activation code (username + code); activates and signs in", { "400": "Wrong or expired code" }) },
+    "/auth/password-code": { post: auth("/auth", "Email the code that confirms a password change (accounts with an email)", undefined, { "429": "Sent less than a minute ago" }) },
     "/auth/forgot-password": { post: pub("/auth", "Email a password reset code") },
     "/auth/verify-otp": { post: pub("/auth", "Check a password reset code", { "401": "Wrong or expired code" }) },
     "/auth/reset-password": { post: pub("/auth", "Set a new password with the reset code", { "401": "Wrong or expired code" }) },
@@ -80,6 +83,7 @@ export const openApiSpec = {
       delete: auth("/catalog", "Cancel the availability notification"),
     },
     "/catalog/by-copy/{code}": { get: auth("/catalog", "Find the book of a copy QR label code", undefined, { "404": "Not found" }) },
+    "/catalog/wishlist": { get: auth("/catalog", "The member's Wishlist (books waiting for a copy, with availability)") },
     "/catalog/reviews": { get: auth("/catalog", "Written reviews by status (default PENDING) and the pending count", "catalog:write") },
     "/catalog/reviews/{id}": { patch: auth("/catalog", "Approve (APPROVED) or hide (HIDDEN) a written review", "catalog:write", { "404": "Not found" }) },
     "/catalog/{id}/view": { post: auth("/catalog", "Count a member's view of a book") },

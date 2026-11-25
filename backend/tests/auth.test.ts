@@ -10,9 +10,9 @@ describe("auth", () => {
   const app = createApp();
   const username = `testuser_${Date.now()}`;
 
-  it("has no self-registration or Google sign-in (members are added by the librarian)", async () => {
-    expect((await request(app).post("/api/v1/auth/register").send({ username: "x_self", password: "Test-Pass-2026!" })).status).toBe(404);
+  it("has no Google sign-in; registration needs every required detail", async () => {
     expect((await request(app).post("/api/v1/auth/google").send({ idToken: "x" })).status).toBe(404);
+    expect((await request(app).post("/api/v1/auth/register").send({ username: "x_self", password: "Test-Pass-2026!" })).status).toBe(400);
     await newMember(app, username);
   });
 

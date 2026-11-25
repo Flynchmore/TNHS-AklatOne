@@ -48,6 +48,8 @@ body { @apply bg-page text-ink antialiased; }
 @keyframes akScaleIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 @keyframes akToastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 .ak-fade { animation: akFadeIn .5s ease-out both; }
+/* Phone screens: the whole screen (header and content) fades in at once, so nothing appears before the rest. */
+.ak-page { animation: akFadeIn .25s ease-out both; }
 .ak-slide { animation: akSlideUp .55s cubic-bezier(.2,.8,.2,1) both; }
 .ak-scale { animation: akScaleIn .45s cubic-bezier(.2,.8,.2,1) both; }
 .ak-toast-in { animation: akToastIn .35s cubic-bezier(.2,.8,.2,1) both; }
@@ -93,15 +95,16 @@ body { @apply bg-page text-ink antialiased; }
   --color-page: #0E1424;
   --color-surface: #172036;
   --color-ink: #E7ECF6;
-  --color-ink-muted: #A3AEC4;
-  --color-line: #2A3552;
+  --color-ink-muted: #B4BED2;
+  --color-line: #34416A;
   --color-line-strong: #6B7894;
   --color-focus: #9DB5FF;
-  --color-primary-soft: #22305A;
-  --color-info-soft: #22305A;
-  --color-danger-soft: #3A1D22;
-  --color-success-soft: #13301F;
-  --color-warning-soft: #35280F;
+  /* Soft chips stay clearly coloured in dark mode, so icons, badges and shapes keep their highlight (text on them >= 4.5:1). */
+  --color-primary-soft: #2B3E78;
+  --color-info-soft: #1F3F6B;
+  --color-danger-soft: #5A2530;
+  --color-success-soft: #1C4A31;
+  --color-warning-soft: #4D3A12;
   --color-chart: #7F9CF5;
   --color-slate-50: #1C2740;
   --color-slate-100: #26314A;
@@ -113,6 +116,7 @@ body { @apply bg-page text-ink antialiased; }
 :root.ak-dark .text-danger { color: #FF9B9B; }
 :root.ak-dark .text-success { color: #6EE7A0; }
 :root.ak-dark .text-warning { color: #FCC36B; }
+:root.ak-dark .text-info { color: #8EC5FF; }
 :root.ak-dark img[src="/tnhs-logo.png"]:not(.ak-watermark) { background: #FFFFFF; border-radius: 9999px; }
 
 /* Theme switch: one quick cross-fade of the whole screen (a GPU snapshot, so it stays smooth on phones). */
@@ -164,7 +168,7 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in, .ak-fade, .ak-slide, .ak-scale, .ak-toast-in,
+  .animate-fade-in, .ak-fade, .ak-page, .ak-slide, .ak-scale, .ak-toast-in,
   .ak-float, .ak-float-slow, .ak-from-left, .ak-from-right, .ak-bg-drift, .ak-ring, .ak-badge-pop, .ak-heart-pop, .ak-signal-pulse, .ak-wobble, .ak-blink, .ak-loading-bar { animation: none; }
   .ak-heart-dot { display: none; }
   .ak-toast-out { animation-duration: 1ms; }

@@ -17,7 +17,7 @@ export const usersRouter = Router();
 
 // Staff "Members" page: librarians manage MEMBER accounts only (never staff accounts).
 const memberFields = {
-  id: true, username: true, displayName: true, email: true, phoneNumber: true, memberType: true, gradeSection: true,
+  id: true, username: true, displayName: true, email: true, memberType: true, gradeSection: true,
   department: true, position: true, gender: true, studentRowNo: true, isActive: true, createdAt: true, updatedAt: true, role: { select: { name: true } },
   // Profile photo the member set in the app (small JPEG data URL, ~30-60 KB; 20 per page).
   avatarUrl: true,
@@ -33,7 +33,6 @@ const memberBase = {
   displayName: z.string().trim().min(1, "Name is required").max(100),
   email: z.preprocess(blankToNull, z.string().trim().toLowerCase().email().max(191).nullable().optional()),
   memberType: z.enum(["Student", "Teacher"]),
-  phoneNumber: optText(20),
   gradeSection: optText(50),
   department: optText(100),
   position: optText(100),
@@ -66,6 +65,8 @@ usersRouter.get("/", authenticate, requirePermission("users:read"), async (req, 
     const status = req.query.status === "active" ? true : req.query.status === "inactive" ? false : undefined;
     const where: Prisma.UserWhereInput = {
       role: { name: "MEMBER" },
+      // Self-registered accounts appear once they are activated by their emailed code.
+      activationPending: false,
       ...(type ? { memberType: type } : {}),
       ...(status !== undefined ? { isActive: status } : {}),
       ...(q ? { OR: [{ username: { contains: q } }, { displayName: { contains: q } }, { email: { contains: q } }, { gradeSection: { contains: q } }, { maskedId: { contains: q } }] } : {}),

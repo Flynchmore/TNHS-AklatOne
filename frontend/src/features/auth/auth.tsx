@@ -7,15 +7,15 @@ import { secretDelete, secretGet, secretSet } from "../../lib/secrets";
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
-interface User { id: string; username: string; role: string; permissions: string[]; displayName?: string | null; email?: string | null; phoneNumber?: string | null; avatarUrl?: string | null; memberType?: string | null; position?: string | null; department?: string | null; }
-interface AuthCtx { user: User | null; token: string | null; ready: boolean; login: (u: string, p: string) => Promise<boolean | { requiresOtp: true; email: string }>; verifyLoginOtp: (username: string, otp: string) => Promise<boolean>; logout: (expired?: boolean) => void; expired: boolean; hasPerm: (p: string) => boolean; updateUser: (u: Partial<User>) => void; replaceToken: (t: string) => void; lastAuthError: () => { status: number; message?: string; remaining?: number } | null; }
+interface User { id: string; username: string; role: string; permissions: string[]; displayName?: string | null; email?: string | null; avatarUrl?: string | null; memberType?: string | null; position?: string | null; department?: string | null; }
+interface AuthCtx { user: User | null; token: string | null; ready: boolean; login: (u: string, p: string) => Promise<boolean | { requiresOtp?: true; requiresActivation?: true; email: string }>; verifyLoginOtp: (username: string, otp: string) => Promise<boolean>; activate: (username: string, code: string) => Promise<boolean>; logout: (expired?: boolean) => void; expired: boolean; hasPerm: (p: string) => boolean; updateUser: (u: Partial<User>) => void; replaceToken: (t: string) => void; lastAuthError: () => { status: number; message?: string; remaining?: number } | null; }
 
 const Ctx = createContext<AuthCtx>({} as AuthCtx);
 const TOKEN_KEY = "aklatone_token";
 
-// Where the sign-in token is kept: the Android app uses the system keystore (capacitor-secure-storage-plugin), the
-// Desktop app the OS credential store (lib/secrets.ts), so a copied WebView profile does not carry it. The Web keeps
-// localStorage. Desktop falls back to localStorage on a computer without a credential store.
+// Where the sign-in token is kept: the phone app keeps it only in memory (sign in again on every start; an older
+// token in the keystore is removed), the Desktop app in the OS credential store (lib/secrets.ts), so a copied WebView
+// profile does not carry it. The Web keeps localStorage. Desktop falls back to localStorage without a credential store.
 const native = Capacitor.isNativePlatform();
 async function secureGet(key: string): Promise<string | null> {
   if (isDesktop) {
@@ -27,17 +27,11 @@ async function secureGet(key: string): Promise<string | null> {
       return old;
     } catch { return localStorage.getItem(key); }
   }
-  if (!native) return localStorage.getItem(key);
-  try {
-    return (await SecureStoragePlugin.get({ key })).value;
-  } catch {
-    // Not in the keystore yet: move a token saved by an older app version, so the member stays signed in.
-    const old = localStorage.getItem(key);
-    if (old) { localStorage.removeItem(key); await SecureStoragePlugin.set({ key, value: old }).catch(() => localStorage.setItem(key, old)); }
-    return old;
-  }
+  return localStorage.getItem(key);
 }
 function secureSet(key: string, value: string): void {
+  // Phone app: the token lives only in memory, so the member signs in again every time the app is opened.
+  if (native) return;
   if (isDesktop) { void secretSet(key, value).then(() => localStorage.removeItem(key), () => localStorage.setItem(key, value)); return; }
   if (!native) { localStorage.setItem(key, value); return; }
   void SecureStoragePlugin.set({ key, value }).catch(() => localStorage.setItem(key, value));
@@ -102,8 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastError.current = null;
       if (body.data.requiresOtp) {
         // 2FA: OTP sent to email, need to verify
-        return { requiresOtp: true, email: body.data.email } as any;
+        return { requiresOtp: true, email: body.data.email } as const;
       }
+      // Self-registered account not activated yet: a new activation code was emailed.
+      if (body.data.requiresActivation) return { requiresActivation: true, email: body.data.email } as const;
       setUser(body.data.user);
       setToken(body.data.token);
       secureSet(TOKEN_KEY, body.data.token);
@@ -123,12 +119,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const verifyLoginOtp = async (username: string, otp: string) => {
+  const verifyLoginOtp = (username: string, otp: string) => codeSignIn("/api/v1/auth/verify-login-otp", { username, otp });
+  const activate = (username: string, code: string) => codeSignIn("/api/v1/auth/activate", { username, code });
+  /** Finishes signing in with an emailed code (2-step sign-in or account activation). */
+  const codeSignIn = async (path: string, payload: Record<string, string>) => {
     try {
-      const res = await fetch(`${BASE}/api/v1/auth/verify-login-otp`, {
+      const res = await fetch(`${BASE}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...appHeader },
-        body: JSON.stringify({ username, otp }),
+        body: JSON.stringify(payload),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) { const left = res.headers.get("RateLimit-Remaining"); lastError.current = { status: res.status, message: body?.message, remaining: left === null ? undefined : Number(left) }; return false; }
@@ -181,8 +180,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .finally(() => setReady(true));
   }
-  useEffect(() => { void secureGet(TOKEN_KEY).then(restore); }, []);
+  useEffect(() => {
+    // Phone app: every start begins at the sign-in screen (nothing is restored; an old saved token is removed).
+    if (native) { secureRemove(TOKEN_KEY); clearOfflineUser(); setReady(true); return; }
+    void secureGet(TOKEN_KEY).then(restore);
+  }, []);
 
-  return <Ctx.Provider value={{ user, token, ready, login, verifyLoginOtp, logout, expired, hasPerm, updateUser: (u: Partial<User>) => setUser(cur => (cur ? { ...cur, ...u } : cur)), replaceToken, lastAuthError: () => lastError.current }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, ready, login, verifyLoginOtp, activate, logout, expired, hasPerm, updateUser: (u: Partial<User>) => setUser(cur => (cur ? { ...cur, ...u } : cur)), replaceToken, lastAuthError: () => lastError.current }}>{children}</Ctx.Provider>;
 }
 export const useAuth = () => useContext(Ctx);

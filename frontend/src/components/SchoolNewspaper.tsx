@@ -36,7 +36,7 @@ export function SchoolNewspaper({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-4 rounded-3xl border border-dashed border-line-strong bg-page p-4">
         <span className="w-12 h-12 rounded-2xl bg-accent-soft text-on-accent flex items-center justify-center shrink-0" aria-hidden="true"><FileText size={22} /></span>
         <div>
-          <p className="font-bold text-ink">Online newspaper (PDF) <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-warning-soft text-warning align-middle">Coming soon</span></p>
+          <p className="font-bold text-ink">Online newspaper (PDF) <span className="ml-1 text-xs font-bold px-3 py-1 leading-tight rounded-full bg-warning-soft text-warning align-middle">Coming soon</span></p>
           <p className="text-sm text-ink-muted">Issues of The Victor and Masid will be readable here once they are published online.</p>
         </div>
       </div>

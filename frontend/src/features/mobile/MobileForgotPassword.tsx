@@ -3,7 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, KeyRound } from "lucide-react";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
-import { Alert, Field, FieldIconButton, AuthWatermark, SchoolHeader, Spinner, StrengthMeter, btnPrimary, focusRing, linkText, mobileApi, passwordStrength } from "../../components/mobile/ui";
+import { Alert, Field, FieldIconButton, Spinner, StrengthMeter, btnPrimary, focusRing, linkText, mobileApi, passwordStrength } from "../../components/mobile/ui";
+import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
 
 type Step = "email" | "otp" | "reset" | "done";
 
@@ -85,17 +86,12 @@ export function MobileForgotPassword() {
 
   if (step === "done") {
     return (
-      <main className="relative isolate min-h-screen bg-page flex flex-col items-center justify-center px-6 py-8">
-      <AuthWatermark />
-        <div role="status" className="bg-surface/70 rounded-[2rem] shadow-xl border border-line p-8 max-w-sm w-full text-center ak-scale">
-          <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4" aria-hidden="true">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-success" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-          </div>
-          <h1 className="text-2xl font-bold text-primary-strong mb-2">Password changed</h1>
-          <p className="text-sm text-ink-muted mb-6">Your password has been updated. You can now sign in with your new password.</p>
-          <button onClick={() => nav("/m/login")} className={btnPrimary}>Go to Sign In</button>
+      <MobileAuthShell title="Password changed" subtitle="Your password has been updated. You can now sign in with your new password.">
+        <div role="status" className="w-20 h-20 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
         </div>
-      </main>
+        <button onClick={() => nav("/m/login")} className={btnPrimary}>Go to Sign In</button>
+      </MobileAuthShell>
     );
   }
 
@@ -107,11 +103,7 @@ export function MobileForgotPassword() {
   );
 
   return (
-    <main className="relative isolate min-h-screen bg-page flex flex-col">
-      <AuthWatermark />
-      <SchoolHeader title={title} subtitle={subtitle} small />
-      <div className="flex-1 px-5 pt-6 pb-8">
-        <div className="bg-surface/70 rounded-[2rem] shadow-xl border border-line p-6 space-y-4 max-w-sm mx-auto ak-slide">
+    <MobileAuthShell title={title} subtitle={subtitle}>
           {error && <Alert>{error}</Alert>}
           {info && <Alert tone="info">{info}</Alert>}
 
@@ -158,8 +150,6 @@ export function MobileForgotPassword() {
           <p className="text-center text-sm pt-2">
             <Link to="/m/login" className={`${linkText} inline-block py-1`}>Back to Sign In</Link>
           </p>
-        </div>
-      </div>
-    </main>
+    </MobileAuthShell>
   );
 }

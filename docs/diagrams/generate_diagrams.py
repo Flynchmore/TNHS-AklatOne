@@ -111,9 +111,11 @@ def flowchart_member():
     f.node("start", "terminal", "Start", 1, 0)
     f.node("open", "process", "Open the AklatOne app", 1, 1)
     f.node("first", "decision", "First launch or\nterms changed?", 1, 2)
-    f.node("walk", "io", "5 walkthrough slides; accept Terms,\nPrivacy Policy and on-device storage", 2, 2)
-    f.node("sess", "decision", "Saved session?", 1, 3)
-    f.node("login", "io", "Sign in with username / email and\npassword (account made by the librarian)", 2, 3)
+    f.node("walk", "io", "6 tutorial slides; accept Terms,\nPrivacy Policy and on-device storage", 2, 2)
+    f.node("sess", "decision", "Has an account?", 1, 3)
+    f.node("login", "io", "Sign in with username and password\n(every time the app is opened)", 2, 3)
+    f.node("reg", "io", "Create an account: Personal information\n+ email; Student / Teacher set once", 0, 3)
+    f.node("act", "io", "Enter the activation code\nsent to the email", 0, 4)
     f.node("code", "io", "Enter 6-digit email code\n(accounts with an email)", 2, 4)
     f.node("ok", "decision", "Signed in?", 2, 5)
     f.node("err", "process", "Show error and\nattempts left", 3, 5)
@@ -123,7 +125,7 @@ def flowchart_member():
     f.node("off", "process", "Offline banner: show saved catalog,\nloans and receipts (read-only)", 0, 7)
     f.node("home", "process", "Home: featured books, due dates,\nquick menu", 1, 8)
     f.node("menu", "decision", "Choose", 1, 9)
-    f.node("cat", "process", "Catalog: search, filters,\nbook details, favourite", 0, 9)
+    f.node("cat", "process", "Catalog: search, scan book QR; heart\n(hold: folder / Wishlist), reviews", 0, 9)
     f.node("req", "io", "Request to borrow\n(max 8 books*)", 0, 10)
     f.node("pend", "process", "Librarian approves or declines;\napp alert + email with receipt", 0, 11)
     f.node("books", "process", "My Books: borrowed, requests,\nfavourites, history, receipts", 1, 10)
@@ -131,17 +133,18 @@ def flowchart_member():
     f.node("tin", "process", "First scan today = Time In,\nnext scan = Time Out", 2, 11)
     f.node("other", "process", "Alerts, Suggestion Box, School\nNewspaper, Profile and Settings", 3, 9)
     f.node("more", "decision", "More to do?", 1, 13)
-    f.node("out", "process", "Sign out (saved data on the\nphone is cleared)", 1, 14)
+    f.node("out", "process", "Sign out or close the app (sign in\nagain next time; saved data cleared)", 1, 14)
     f.node("end", "terminal", "End", 1, 15)
     e = f.edge
     e("start", "open"); e("open", "first")
     e("first", "walk", "Yes"); e("first", "sess", "No")
-    # First launch: no saved session yet, so the walkthrough leads straight to sign-in.
-    e("walk", "login")
-    e("sess", "login", "No"); e("login", "code"); e("code", "ok")
+    # The app keeps no session between launches: it always starts at sign-in or account creation.
+    e("walk", "sess", exit=(0.5, 1), entry=(0.5, 0), points=[(f.cx(2), f.cy(2) + 50), (f.cx(1), f.cy(2) + 50)])
+    e("sess", "login", "Yes"); e("sess", "reg", "No"); e("reg", "act")
+    e("act", "ok", exit=(0.5, 1), entry=(0, 0.5), points=[(f.cx(0), f.cy(5))])
+    e("login", "code"); e("code", "ok")
     e("ok", "err", "No"); e("err", "login", exit=(0.5, 0), entry=(1, 0.5), points=[(f.cx(3), f.cy(3))])
-    e("ok", "role", "Yes", exit=(0, 0.5), entry=(1, 0.5), points=[(f.cx(1) + 160, f.cy(5)), (f.cx(1) + 160, f.cy(6))])
-    e("sess", "role", "Yes", exit=(0.5, 1), entry=(0.5, 0))
+    e("ok", "role", "Yes", exit=(0.5, 1), entry=(1, 0.5), points=[(f.cx(2), f.cy(6))])
     e("role", "lib", "Librarian / Admin"); e("role", "reach", "Member")
     e("reach", "off", "No"); e("reach", "home", "Yes")
     e("off", "home", exit=(0.5, 1), entry=(0, 0.5), points=[(f.cx(0), f.cy(8))])
@@ -375,7 +378,7 @@ def flowchart_kiosk():
 FLOW_H = 30
 STORES = {
     "D1": "Users and Roles", "D2": "Books and Categories", "D3": "Book Copies", "D4": "Borrow Requests",
-    "D5": "Borrowing Transactions", "D6": "Notifications", "D7": "Audit Log", "D8": "Favourites, Ratings, Reviews, Book Watches and Views",
+    "D5": "Borrowing Transactions", "D6": "Notifications", "D7": "Audit Log", "D8": "Favourites, Wishlist, Ratings, Reviews and Views",
     "D9": "Library Visits", "D10": "App Usage", "D11": "Suggestions", "D12": "Inventory Audits",
     "D13": "Device Cache and Outbox (local)", "D14": "Idempotency Keys", "D15": "Backup Files", "D16": "Sign-in Sessions",
 }
@@ -428,7 +431,8 @@ def dfd_rows(page, rows, x_ent=200, x_proc=760, x_store=1240, y=40, ent_w=190, p
 def dfd_level0():
     p = Page("DFD Level 0 - Context Diagram", 1700, 900)
     left = [
-        ("Member", ">", "Credentials, email code, borrow requests, favourites, ratings"),
+        ("Member", ">", "Registration, activation / sign-in codes, credentials"),
+        ("Member", ">", "Borrow requests, favourites, Wishlist, ratings, reviews"),
         ("Member", ">", "Visit check-in (kiosk QR / code), suggestions, app time"),
         ("Member", "<", "Catalog, loans, receipts, alerts, Time In / Out, statistics"),
         ("Librarian / Admin", ">", "Credentials, books, copies, Excel catalog, members"),
@@ -438,18 +442,18 @@ def dfd_level0():
         ("Librarian / Admin", "<", "Suggestions, backup files, system status"),
     ]
     right = [
-        ("Email Service", ">", "Sign-in codes, receipts, notices, reminders"),
+        ("Email Service", ">", "Codes (sign-in, activation, password), notices"),
         ("Open Library (covers)", "<", "Book cover images (by ISBN)"),
     ]
     y, _ = dfd_rows(p, [("", "0\nAklatOne Library\nManagement System", left, right)], x_ent=80, x_proc=760, x_store=1300, ent_w=200, proc_w=300, store_w=220)
     p.box("t", "title", "AklatOne: Data Flow Diagram, Level 0 (Context Diagram)", 80, y + 10, 1200, 34)
-    p.box("n", "note", "Google sign-in and self-registration were removed (2026-11-24): the librarian creates every member account.", 80, y + 50, 1300, 24)
+    p.box("n", "note", "Members create their own account (active only after the emailed activation code) or the librarian adds them. Google sign-in is not used.", 80, y + 50, 1300, 24)
     return p
 
 
 L1 = [
     ("1.0", "Authenticate and\nManage Accounts",
-     [("Member", ">", "Credentials, email code, profile"), ("Member", "<", "Session, profile, Member ID"),
+     [("Member", ">", "Registration, activation code, credentials, email code, profile"), ("Member", "<", "Session, profile, Member ID"),
       ("Member", ">", "Sign out a device (password + code)"),
       ("Librarian / Admin", ">", "Credentials, member details"), ("Librarian / Admin", "<", "Member list, Library ID cards")],
      [("D1", ">", "Account data, card printed"), ("D1", "<", "Accounts, permissions"),
@@ -508,7 +512,7 @@ def dfd_level1():
 
 
 L2 = [
-    ("1.0 Authenticate and\nManage Accounts", [("1.1", "Check username /\nemail and password", "D1"), ("1.2", "Send and check the\n6-digit email code", "Email Service"), ("1.3", "Issue session token;\nwrite sign-in audit", "D7"), ("1.4", "Add / edit members;\nmake Member ID", "D1"), ("1.5", "Print Library ID\ncards, mark printed", "D1"), ("1.6", "Record devices; sign\none out (password + code)", "D16")]),
+    ("1.0 Authenticate and\nManage Accounts", [("1.1", "Check username /\nemail and password", "D1"), ("1.2", "Email codes: sign-in,\nactivation, password change", "Email Service"), ("1.3", "Issue session token;\nwrite sign-in audit", "D7"), ("1.4", "Register (member) or add\n(librarian); make Member ID", "D1"), ("1.5", "Print Library ID\ncards, mark printed", "D1"), ("1.6", "Record devices; sign\none out (password + code)", "D16")]),
     ("2.0 Manage Catalog,\nCopies and Inventory", [("2.1", "Add / edit / hide\nbooks", "D2"), ("2.2", "Add copies; make\ncopy codes", "D3"), ("2.3", "Excel import:\npreview, then apply", "D2"), ("2.4", "Print copy\nQR labels", "D3"), ("2.5", "Inventory audit:\nscan copies, report", "D12")]),
     ("3.0 Search Catalog and\nTrack Engagement", [("3.1", "Search, filter\nand sort", "D2"), ("3.2", "Show availability\nand cover", "D3"), ("3.3", "Favourite, rate, review,\nnotify me, count views", "D8")]),
     ("4.0 Process Borrow\nRequests", [("4.1", "Check limit (8*)\nand free copy", "D5"), ("4.2", "Save pending\nrequest", "D4"), ("4.3", "Approve or decline;\nalert member", "D4"), ("4.4", "Approved: lend\n(goes to 5.3)", None)]),

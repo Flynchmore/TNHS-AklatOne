@@ -31,11 +31,11 @@ export function useHistory() {
 }
 
 /** One borrowing record, styled like the My Books cards; opens its receipt. */
-export function HistoryCard({ t, idx = 0, now }: { t: Tx; idx?: number; now: number }) {
+export function HistoryCard({ t, now }: { t: Tx; now: number }) {
   const st = loanStatus(t, now);
   const book = t.bookCopy?.book;
   return (
-    <li className="ak-slide" style={{ animationDelay: `${idx * 0.05}s` }}>
+    <li>
       <Link to={`/m/receipt/${t.id}`} className={`bg-surface rounded-3xl border border-line shadow-sm p-3 flex gap-3 items-center active:scale-[0.99] transition ${focusRing}`}>
         <BookCover isbn={book?.isbn} coverUrl={book?.coverUrl} title={book?.title ?? "Book"} className="w-12 h-[4.5rem] rounded-lg shrink-0 shadow-sm" />
         <span className="flex-1 min-w-0">
@@ -43,7 +43,7 @@ export function HistoryCard({ t, idx = 0, now }: { t: Tx; idx?: number; now: num
           <span className="block text-xs text-ink-muted mt-0.5">
             {t.returnedAt ? `Returned ${fmt(t.returnedAt)}` : t.dueAt ? `Due ${fmt(t.dueAt)}` : `Borrowed ${fmt(t.borrowedAt)}`}
           </span>
-          <span className={`inline-block mt-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+          <span className={`inline-block mt-1.5 text-xs font-semibold px-3 py-1 leading-tight rounded-full ${st.cls}`}>{st.text}</span>
         </span>
         <ChevronRight size={18} className="text-ink-muted shrink-0" aria-hidden="true" />
       </Link>
@@ -66,7 +66,7 @@ export function MobileHistory() {
   return (
     <ScreenShell title="History" subtitle="Your borrowing transactions" icon={HistoryIcon} back="/m/profile">
       <ListState loading={loading && "Loading history…"} error={error} onRetry={load}>
-        {txs.length === 0 ? <HistoryEmpty /> : <ul className="space-y-3">{txs.map((t, i) => <HistoryCard key={t.id} t={t} idx={i} now={now} />)}</ul>}
+        {txs.length === 0 ? <HistoryEmpty /> : <ul className="space-y-3">{txs.map(t => <HistoryCard key={t.id} t={t} now={now} />)}</ul>}
       </ListState>
     </ScreenShell>
   );

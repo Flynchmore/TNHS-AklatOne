@@ -3,8 +3,8 @@ import { writeAudit } from "../../common/audit.js";
 import { z } from "zod";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
-import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema } from "./auth.schemas.js";
-import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword } from "./auth.service.js";
+import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema, registerSchema, activateSchema } from "./auth.schemas.js";
+import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode } from "./auth.service.js";
 import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
 import { authenticate } from "../../middleware/auth.js";
@@ -33,7 +33,7 @@ const failedSignIn = (req: Request, method: string) => (err: unknown) => {
 async function sessionUser(id: string) {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, username: true, displayName: true, email: true, phoneNumber: true, avatarUrl: true, memberType: true, position: true, department: true, gradeSection: true, hobbies: true, gender: true, studentRowNo: true, readingGoal: true, maskedId: true, role: true },
+    select: { id: true, username: true, displayName: true, email: true, avatarUrl: true, memberType: true, position: true, department: true, gradeSection: true, hobbies: true, gender: true, studentRowNo: true, readingGoal: true, maskedId: true, role: true },
   });
   if (!user) return null;
   const { role, ...rest } = user;
@@ -46,6 +46,8 @@ authRouter.post("/login", validate({ body: loginSchema }), async (req, res, next
     const result = await login(req.body.username, req.body.password).catch(failedSignIn(req, "password"));
     if (result.requiresOtp) {
       ok(res, { requiresOtp: true, email: result.email }, "OTP required");
+    } else if (result.requiresActivation) {
+      ok(res, { requiresActivation: true, email: result.email }, "Activation code sent");
     } else {
       auditAuth(req, "auth.login", result.user.id, { method: "password" });
       ok(res, await withProfile({ user: result.user, token: await openSession(result.user, req) }), "Authenticated");
@@ -60,6 +62,36 @@ authRouter.post("/verify-login-otp", validate({ body: z.object({ username: z.str
     const result = await verifyLoginOtp(req.body.username, req.body.otp).catch(failedSignIn(req, "password+code"));
     auditAuth(req, "auth.login", result.user.id, { method: "password+code" });
     ok(res, await withProfile({ user: result.user, token: await openSession(result.user, req) }), "Authenticated");
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Member self-registration: the account stays inactive until the emailed activation code is entered. */
+authRouter.post("/register", validate({ body: registerSchema }), async (req, res, next) => {
+  try {
+    const result = await register(req.body);
+    ok(res, { requiresActivation: true, email: result.email }, "Activation code sent");
+  } catch (err) {
+    next(err);
+  }
+});
+
+authRouter.post("/activate", validate({ body: activateSchema }), async (req, res, next) => {
+  try {
+    const user = await activate(req.body.username, req.body.code);
+    auditAuth(req, "auth.activate", user.id);
+    ok(res, await withProfile({ user, token: await openSession(user, req) }), "Account activated");
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Emails the code that confirms a password change in Settings (accounts with an email). */
+authRouter.post("/password-code", authenticate, async (req, res, next) => {
+  try {
+    if (req.user!.role === "KIOSK") return fail(res, 403, "Not available on the kiosk");
+    ok(res, await sendPasswordCode(req.user!.id), "Code sent");
   } catch (err) {
     next(err);
   }

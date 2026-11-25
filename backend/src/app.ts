@@ -35,7 +35,7 @@ import { isRestoring } from "./modules/backup/backup.service.js";
 import { verifyToken } from "./modules/auth/auth.service.js";
 
 // Signed-in account calls: counted per account by the global limiter, never per school IP.
-const SESSION_PATHS = /^\/api\/v1\/auth\/(me|profile|sessions(\/.*)?)$/;
+const SESSION_PATHS = /^\/api\/v1\/auth\/(me|profile|password-code|sessions(\/.*)?)$/;
 // Password and code checks: only FAILED attempts count, per account (IP + username).
 // Password checks: sign-in, and leaving the Visitor's Log kiosk (asks the librarian's password).
 const CREDENTIAL_PATHS = /^\/api\/v1\/(auth\/(login|verify-login-otp)|visits\/kiosk\/exit)$/;
@@ -111,7 +111,7 @@ export function createApp() {
     ...store("rl:login:"),
   });
 
-  // Wrong password-reset codes per email address (any IP): an attacker with many IPs still gets only a few guesses
+  // Wrong password-reset and activation codes per email / username (any IP): an attacker with many IPs still gets only a few guesses
   // at the 6-digit code while it is valid (10 minutes). Correct codes never count.
   const resetCodeLimiter = rateLimit({
     windowMs: env.RATE_LIMIT_WINDOW_MS,
@@ -119,9 +119,9 @@ export function createApp() {
     skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => `reset:${String(req.body?.email ?? req.body?.phone ?? "").trim().toLowerCase()}`,
+    keyGenerator: (req) => `reset:${String(req.body?.email ?? req.body?.username ?? "").trim().toLowerCase()}`,
     message: { success: false, message: "Too many wrong codes for this account. Please wait a few minutes, then ask for a new code." },
-    skip: (req) => !/^\/api\/v1\/auth\/(verify-otp|reset-password)$/.test(pathOf(req)),
+    skip: (req) => !/^\/api\/v1\/auth\/(verify-otp|reset-password|activate)$/.test(pathOf(req)),
     ...store("rl:reset:"),
   });
 

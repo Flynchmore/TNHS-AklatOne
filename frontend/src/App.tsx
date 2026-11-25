@@ -42,6 +42,7 @@ const MobileHistory = lazy(() => import("./features/mobile/MobileHistory").then(
 const MobileProfile = lazy(() => import("./features/mobile/MobileProfile").then(m => ({ default: m.MobileProfile })));
 const MobileOpenLibrary = lazy(() => import("./features/mobile/MobileOpenLibrary").then(m => ({ default: m.MobileOpenLibrary })));
 const MobileForgotPassword = lazy(() => import("./features/mobile/MobileForgotPassword").then(m => ({ default: m.MobileForgotPassword })));
+const MobileRegister = lazy(() => import("./features/mobile/MobileRegister").then(m => ({ default: m.MobileRegister })));
 const MobileLoans = lazy(() => import("./features/mobile/MobileLoans").then(m => ({ default: m.MobileLoans })));
 const MobileReceipt = lazy(() => import("./features/mobile/MobileReceipt").then(m => ({ default: m.MobileReceipt })));
 const MobileNotifications = lazy(() => import("./features/mobile/MobileNotifications").then(m => ({ default: m.MobileNotifications })));
@@ -98,6 +99,7 @@ function AppRoutes() {
           <>
             <Route path="/m/login" element={<MobileLogin />} />
             <Route path="/m/forgot-password" element={<MobileForgotPassword />} />
+            <Route path="/m/register" element={<MobileRegister />} />
             <Route element={<MobileProtected><MobileLayout /></MobileProtected>}>
               <Route path="/m" element={<MobileHome />} />
               <Route path="/m/catalog" element={<MobileCatalog />} />

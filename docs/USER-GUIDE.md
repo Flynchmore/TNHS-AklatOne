@@ -52,23 +52,31 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 ### With the AklatOne app
 1. **Install:** scan the *Get the AklatOne library app* poster, or ask the librarian. On Android, allow
    *Install unknown apps* if asked.
-2. **Sign in** with the username (or email) and password the librarian gave you. If your account has an email,
-   enter the 6-digit code sent there. Then change your password: **Profile > Settings > Change password**.
-3. **Find a book:** **Catalog** (search, filters, *Available now only*), then **Request to borrow**. You may have up
+2. **New here?** Tap **Create an account** and fill in your details (full name, username, email, Student or
+   Teacher, gender, grade and section or department, hobbies) and a password. Choose Student or Teacher carefully:
+   it is set once; to change it later, ask the librarian. Enter the **activation code** sent to your email; your
+   account then works and gets its Member ID. (The librarian can also make the account for you.)
+3. **Sign in** with your username and password, then the 6-digit code sent to your email. The app asks you to sign
+   in **every time it is opened**. To change your password: **Profile > Settings > Change password**; a code is
+   emailed to confirm it.
+4. **Find a book:** **Catalog** (search, filters, *Available now only*), then **Request to borrow**. You may have up
    to 8 books (borrowed + requested) for 7 days each.
-4. **My Books:** borrowed books with due dates, requests, favourites and history; tap a loan for its receipt.
-5. **Alerts:** approvals, reminders, overdue notices and answers to your suggestions.
-6. **Visit Log:** at the library door, tap **Visit Log** and scan the QR code on the kiosk screen (or type its
+5. **My Books:** borrowed books with due dates, requests, favourites and history; tap a loan for its receipt.
+6. **Alerts:** approvals, reminders, overdue notices and answers to your suggestions.
+7. **Visit Log:** at the library door, tap **Visit Log** and scan the QR code on the kiosk screen (or type its
    6-digit code). First scan of the day = Time In, the next = Time Out.
-7. **Suggestion Box:** suggest a book or send feedback (Home > Suggest).
-8. **Is someone else using my account?** **Profile > Settings > Sign-in devices** shows every device signed in;
+8. **Suggestion Box:** suggest a book or send feedback (Home > Suggest).
+9. **Is someone else using my account?** **Profile > Settings > Sign-in devices** shows every device signed in;
    sign out one you do not know and change your password. You get an email when a new device signs in.
-9. **No connection?** The app still shows your saved catalog, loans and receipts; borrowing needs the internet.
-10. **All copies borrowed?** Tap **Notify me when available** on the book; you get an alert (and an email) when a
-    copy is back. It is not a reservation: whoever requests first gets it.
-11. **Reviews:** after borrowing a book, rate it and write a short review. Others see it after the librarian approves it.
-12. **Reading goal:** **Profile > Activity > Reading goal** sets how many books you want to borrow this month.
-13. **Scan book QR:** in the library, **Catalog > Scan book QR** and scan the label on a book to see its details.
+10. **Connection lost?** While you are signed in, the app still shows your saved catalog, books and receipts;
+    signing in and borrowing need the internet.
+11. **All copies borrowed?** Tap **Notify me when available** on the book, or **press and hold the heart** and choose
+    **Add to Wishlist**; you get an alert (and an email) when a copy is back. It is not a reservation: whoever
+    requests first gets it. Holding the heart also saves a book straight to one of your folders.
+    Your Wishlist is in **My Books > Favourites > Wishlist**.
+12. **Reviews:** after borrowing a book, rate it and write a short review. Others see it after the librarian approves it.
+13. **Reading goal:** **Profile > Activity > Reading goal** sets how many books you want to borrow this month.
+14. **Scan book QR:** in the library, **Catalog > Scan book QR** and scan the label on a book to see its details.
 
 ### Without a phone
 Your **Library ID card** is enough: show it at the desk to borrow and return books, and scan it at the Visitor's

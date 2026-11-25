@@ -52,11 +52,16 @@ export function MobileLoans() {
     Promise.all([
       mobileApi("/api/v1/favourites/mine", { token: auth.token }),
       mobileApi("/api/v1/borrow-requests/mine", { token: auth.token }),
-    ]).then(([f, r]) => {
+      mobileApi("/api/v1/circulation/transactions?limit=100", { token: auth.token }),
+    ]).then(([f, r, t]) => {
       if (f.ok && f.data) setFavs(f.data as FavData);
       if (r.ok) {
         const data = r.data as { items: Req[]; policy: { loanDays: number; maxBooks: number } };
-        setItems(data.items);
+        // Books lent at the library desk have no request: add them to Borrowed so the count matches the server's limit.
+        const viaRequest = new Set(data.items.map(i => i.transaction?.id).filter(Boolean));
+        type DeskTx = { id: string; status: string; receiptNo?: string | null; dueAt?: string | null; borrowedAt: string; bookCopy: { book: Req["book"] } };
+        const desk = t.ok ? ((t.data as { items: DeskTx[] }).items ?? []).filter(x => x.status === "ACTIVE" && !viaRequest.has(x.id)) : [];
+        setItems([...desk.map((x): Req => ({ id: `desk-${x.id}`, status: "APPROVED", createdAt: x.borrowedAt, book: x.bookCopy.book, transaction: { id: x.id, receiptNo: x.receiptNo, dueAt: x.dueAt, status: "ACTIVE" } })), ...data.items]);
         setPolicy(data.policy);
       } else setError(r.message ?? "Could not load your books.");
       setLoading(false);
@@ -135,7 +140,7 @@ export function MobileLoans() {
   return (
     <ScreenShell title="My Books" subtitle="Borrowed books, requests, favourites and history" icon={Library} floating={summary}>
       <ListState loading={loading && "Loading your books…"} error={error} onRetry={load}>
-        <div className="ak-slide space-y-6">
+        <div className="space-y-6">
         <SlidingTabs label="My books" tabs={tabs} active={active} onChange={setTab} columns={2} />
 
         {/* Slide only when the member switches tabs, so the first view appears together with the tabs. */}
@@ -146,7 +151,7 @@ export function MobileLoans() {
                 const due = dueChip(i.transaction?.dueAt, now);
                 return card(i, (
                   <>
-                    <span className={`self-start mt-2 text-xs font-semibold px-2.5 py-1 rounded-full ${due.cls}`}>{due.text}</span>
+                    <span className={`self-start mt-2 text-xs font-semibold px-3 py-1 leading-tight rounded-full ${due.cls}`}>{due.text}</span>
                     <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                       <span className="text-xs text-ink-muted">Return by {fmt(i.transaction?.dueAt)}</span>
                       <Link to={`/m/receipt/${i.transaction!.id}`} className={`inline-flex items-center gap-1 px-3 min-h-9 rounded-full bg-primary-soft text-primary text-xs font-semibold ${focusRing}`}><ReceiptIcon size={14} aria-hidden="true" />Receipt</Link>
@@ -161,7 +166,7 @@ export function MobileLoans() {
             <ul className="space-y-3">
               {requests.map(i => card(i, (
                 <>
-                  <span className="self-start mt-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-warning-soft text-warning inline-flex items-center gap-1"><Hourglass size={12} aria-hidden="true" />Waiting for librarian</span>
+                  <span className="self-start mt-2 text-xs font-semibold px-3 py-1 leading-tight rounded-full bg-warning-soft text-warning inline-flex items-center gap-1"><Hourglass size={12} aria-hidden="true" />Waiting for librarian</span>
                   <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                     <span className="text-xs text-ink-muted">Requested {fmt(i.createdAt)}</span>
                     <button type="button" onClick={() => cancel(i)} disabled={cancelling === i.id} className={`px-3 min-h-9 rounded-full border border-danger/40 text-danger text-xs font-semibold disabled:opacity-60 ${focusRing}`}>{cancelling === i.id ? "Cancelling…" : "Cancel"}</button>
@@ -179,7 +184,7 @@ export function MobileLoans() {
                 const st = i.status === "REJECTED" ? { text: "Declined", cls: "bg-slate-100 text-ink-muted" } : loanStatus(i.transaction!, now);
                 return <li key={i.id}><SwipeToDelete label={i.book.title} onDelete={() => hide(i)} buttonAt="top-2 right-2">{cardBody(i, (
                   <>
-                    <span className={`self-start mt-2 text-xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${st.cls}`}>{i.status === "REJECTED" && <XCircle size={12} aria-hidden="true" />}{st.text}</span>
+                    <span className={`self-start mt-2 text-xs font-semibold px-3 py-1 leading-tight rounded-full inline-flex items-center gap-1 ${st.cls}`}>{i.status === "REJECTED" && <XCircle size={12} aria-hidden="true" />}{st.text}</span>
                     {i.decisionNote && <p className="text-xs text-ink-muted mt-1.5">Reason: {i.decisionNote}</p>}
                     <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                       <span className="text-xs text-ink-muted">{i.transaction?.returnedAt ? `Returned ${fmt(i.transaction.returnedAt)}` : `Requested ${fmt(i.createdAt)}`}</span>

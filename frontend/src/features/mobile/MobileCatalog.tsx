@@ -132,14 +132,14 @@ export function MobileCatalog() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <PhotoHeader>
-        <div className="flex items-center gap-3 ak-fade">
+        <div className="flex items-center gap-3">
           <span className="w-12 h-12 rounded-2xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-on-primary" aria-hidden="true"><Library size={24} /></span>
           <div>
             <h1 className="text-2xl font-bold text-on-primary">Catalog</h1>
             <p className="text-sm text-white/90">Browse the school library collection</p>
           </div>
         </div>
-        {!loading && !error && <p className="text-sm text-white/90 mt-3 ak-fade">{debounced ? `${total} result(s) for "${debounced}"` : activeFilters ? `${total} book(s) match the filters` : `${total} book(s) in the collection`}</p>}
+        {!loading && !error && <p className="text-sm text-white/90 mt-3">{debounced ? `${total} result(s) for "${debounced}"` : activeFilters ? `${total} book(s) match the filters` : `${total} book(s) in the collection`}</p>}
       </PhotoHeader>
 
       <CurvedPanel label="Catalog">
@@ -204,7 +204,7 @@ export function MobileCatalog() {
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-semibold text-ink line-clamp-2">{b.title}</span>
                       <span className="block text-sm text-ink-muted line-clamp-1">{b.authors || "Unknown author"}</span>
-                      <span className={`inline-block mt-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${av.ok ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>{av.ok ? `${b.availability!.available} of ${b.availability!.total} available` : av.text}</span>
+                      <span className={`inline-block mt-1.5 text-xs font-medium px-3 py-1 leading-tight rounded-full ${av.ok ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>{av.ok ? `${b.availability!.available} of ${b.availability!.total} available` : av.text}</span>
                       <span className="flex items-center gap-3 mt-1.5 text-xs text-ink-muted">
                         <span className="inline-flex items-center gap-1" aria-label={b.rating?.count ? `Rated ${b.rating.average.toFixed(1)} out of 5` : "No ratings yet"}>
                           <Star size={13} className={b.rating?.count ? "text-amber-500 fill-amber-400" : "text-slate-400"} aria-hidden="true" />
@@ -219,7 +219,8 @@ export function MobileCatalog() {
                   </button>
                   {auth.user?.role === "MEMBER" && (
                     <span className="absolute top-3 right-3">
-                      <FavouriteButton bookId={b.id} title={b.title} favourite={!!b.favourite} onChange={fav => setBooks(bs => bs.map(x => (x.id === b.id ? { ...x, favourite: fav } : x)))} />
+                      <FavouriteButton bookId={b.id} title={b.title} favourite={!!b.favourite} available={b.availability?.available} watching={!!b.watching}
+                        onChange={fav => setBooks(bs => bs.map(x => (x.id === b.id ? { ...x, favourite: fav } : x)))} onWatch={w => setBooks(bs => bs.map(x => (x.id === b.id ? { ...x, watching: w } : x)))} />
                     </span>
                   )}
                 </li>
@@ -350,7 +351,7 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
           <div className="flex justify-center pt-2" aria-hidden="true"><span className="w-10 h-1.5 rounded-full bg-slate-300" /></div>
           <div className="flex justify-between items-start gap-4 px-6 pt-3 pb-3">
             <h2 id="book-sheet-title" tabIndex={-1} autoFocus className="flex-1 text-xl font-bold text-primary-strong outline-none">{book.title}</h2>
-            {auth.user?.role === "MEMBER" && <FavouriteButton bookId={book.id} title={book.title} favourite={!!book.favourite} size="lg" onChange={fav => onUpdated({ ...book, favourite: fav })} />}
+            {auth.user?.role === "MEMBER" && <FavouriteButton bookId={book.id} title={book.title} favourite={!!book.favourite} size="lg" available={book.availability?.available} watching={!!book.watching} onChange={fav => onUpdated({ ...book, favourite: fav })} onWatch={w => onUpdated({ ...book, watching: w })} />}
             <button type="button" onClick={onClose} aria-label="Close" className={`w-11 h-11 shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-ink-muted ${focusRing}`}><X size={18} aria-hidden="true" /></button>
           </div>
 

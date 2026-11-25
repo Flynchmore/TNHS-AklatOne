@@ -85,7 +85,7 @@ export function MobileHome() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <PhotoHeader>
-        <div className="flex items-center gap-3 mb-3 ak-fade">
+        <div className="flex items-center gap-3 mb-3">
           {user?.avatarUrl ? (
             <img src={user.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow" />
           ) : (
@@ -96,7 +96,7 @@ export function MobileHome() {
             <h1 className="text-xl font-bold text-on-primary">Hello, {firstName}!</h1>
           </div>
         </div>
-        <p className="text-sm text-white/90 ak-fade">Discover and keep track of your library books.</p>
+        <p className="text-sm text-white/90">Discover and keep track of your library books.</p>
       </PhotoHeader>
 
       <CurvedPanel label="Home">
@@ -170,7 +170,7 @@ export function MobileHome() {
                       <BookCover isbn={b.isbn} coverUrl={b.coverUrl} title={b.title} className="w-full aspect-[2/3] rounded-xl mb-2 shadow-sm" />
                       <div className="text-sm font-semibold text-ink line-clamp-2">{b.title}</div>
                       <div className="text-sm text-ink-muted line-clamp-1 mt-0.5">{b.authors || "Unknown author"}</div>
-                      <span className="inline-block mt-2 text-xs font-medium px-2 py-0.5 rounded-full bg-primary-soft text-primary">Borrowed {b.times}×</span>
+                      <span className="inline-block mt-2 text-xs font-medium px-3 py-1 leading-tight rounded-full bg-primary-soft text-primary">Borrowed {b.times}×</span>
                     </Link>
                   </li>
                 ))}
@@ -207,7 +207,7 @@ export function MobileHome() {
                         <div className="text-sm font-semibold text-ink line-clamp-2">{b.title}</div>
                         <div className="text-sm text-ink-muted line-clamp-1 mt-0.5">{b.authors || "Unknown author"}</div>
                         {b.availability && (
-                          <span className={`inline-block mt-2 text-xs font-medium px-2 py-0.5 rounded-full ${available ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
+                          <span className={`inline-block mt-2 text-xs font-medium px-3 py-1 leading-tight rounded-2xl ${available ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
                             {available ? `${b.availability.available} of ${b.availability.total} available` : "All copies borrowed"}
                           </span>
                         )}

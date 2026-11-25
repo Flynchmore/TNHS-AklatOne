@@ -124,7 +124,7 @@ export function MobileNotifications() {
                           </span>
                           <span className="block text-sm text-ink-muted mt-1">{n.message}</span>
                           <span className="flex flex-wrap items-center gap-2 mt-2">
-                            {isNotice && <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cls}`}>From the librarian</span>}
+                            {isNotice && <span className={`text-[11px] font-semibold px-3 py-1 leading-tight rounded-full ${cls}`}>From the librarian</span>}
                             {n.transactionId && <span className="text-xs font-semibold text-primary">View receipt ›</span>}
                             {!n.readAt && <span className="sr-only">Unread.</span>}
                           </span>
@@ -156,7 +156,7 @@ export function MobileNotifications() {
   return (
     <ScreenShell title="Alerts" subtitle="Library notices and updates on your requests" icon={Bell} floating={summary}>
       <ListState loading={loading && "Loading your alerts…"} error={error} onRetry={load}>
-        <div className="ak-slide space-y-6">
+        <div className="space-y-6">
         <SlidingTabs label="Alert types" tabs={tabs} active={tab} onChange={setPicked} />
         {/* Slide only when the member switches tabs, so the first view appears together with the tabs. */}
         <div key={tab} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className={`space-y-5 ${picked ? direction : ""}`}>

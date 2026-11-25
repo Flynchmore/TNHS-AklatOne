@@ -71,7 +71,7 @@ export function SignInSessions() {
             <li key={s.id} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
               <span className="w-10 h-10 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true"><Icon size={20} /></span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-ink">{s.device}{s.current && <span className="ml-2 align-middle text-[11px] font-bold px-2 py-0.5 rounded-full bg-success-soft text-success">This device</span>}</span>
+                <span className="block font-semibold text-ink">{s.device}{s.current && <span className="ml-2 align-middle text-[11px] font-bold px-3 py-1 leading-tight rounded-full bg-success-soft text-success">This device</span>}</span>
                 <span className="block text-xs text-ink-muted">{s.network}</span>
                 <span className="block text-xs text-ink-muted">Signed in {phDateTime(s.createdAt)} · Last active {phDateTime(s.lastSeenAt)}</span>
               </span>

@@ -31,6 +31,7 @@ describe("member extras", () => {
 
     expect((await request(app).put(`/api/v1/catalog/${book.id}/watch`).set(as(waiter.token))).status).toBe(200);
     expect((await request(app).get(`/api/v1/catalog/${book.id}`).set(as(waiter.token))).body.data.watching).toBe(true);
+    expect((await request(app).get("/api/v1/catalog/wishlist").set(as(waiter.token))).body.data.map((b: { id: string }) => b.id)).toEqual([book.id]);
     expect((await request(app).put(`/api/v1/catalog/${book.id}/watch`).set(as(admin))).status).toBe(403);
 
     expect((await request(app).post("/api/v1/circulation/return").set(as(admin)).send({ copyCode: book.code })).status).toBe(200);

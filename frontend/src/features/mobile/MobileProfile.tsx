@@ -4,7 +4,7 @@ import { useAuth } from "../../features/auth/auth";
 import { HistoryCard, HistoryEmpty, useHistory, type Tx } from "./MobileHistory";
 import { useToast } from "../../components/Toast";
 import {
-  User as UserIcon, Camera, Save, LogOut, Phone, CircleUser, History as HistoryIcon, UserCog, BookCheck, BookOpenCheck, AlertTriangle, Mail,
+  User as UserIcon, Camera, Save, LogOut, CircleUser, History as HistoryIcon, UserCog, BookCheck, BookOpenCheck, AlertTriangle, Mail,
   GraduationCap, Briefcase, Settings, BarChart3, ChevronRight, Pencil, Hash, Users, X, IdCard, Building2, Award, Heart, Smartphone, Clock, CheckCircle2, BookX, SearchX, CalendarDays, QrCode, Library, LogIn, Target,
 } from "lucide-react";
 import { Alert, Field, ListState, MemberTypePicker, ScreenShell, SlidingTabs, Spinner, btnPrimary, btnSecondary, focusRing, mobileApi, useSlideDirection, type MemberType, type TabDef } from "../../components/mobile/ui";
@@ -13,7 +13,7 @@ import { SplineArea } from "../../components/SplineArea";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
 import { phISODate } from "../../lib/dates";
 
-interface Details { displayName?: string | null; username: string; email?: string | null; phoneNumber?: string | null; avatarUrl?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null; hobbies?: string | null; gender?: string | null; studentRowNo?: number | null; role?: string; maskedId?: string | null; readingGoal?: number | null }
+interface Details { displayName?: string | null; username: string; email?: string | null; avatarUrl?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null; hobbies?: string | null; gender?: string | null; studentRowNo?: number | null; role?: string; maskedId?: string | null; readingGoal?: number | null }
 type Tab = "activity" | "account" | "stats";
 
 /** Books borrowed per calendar month, oldest first (last `n` months). */
@@ -116,7 +116,7 @@ export function MobileProfile() {
         <div className="min-w-0 flex-1">
           <p className="font-bold text-ink text-lg leading-tight truncate">{name}</p>
           <p className="text-sm text-ink-muted flex items-center gap-1 min-w-0"><Mail size={14} className="shrink-0" aria-hidden="true" /><span className="truncate">{me?.email ?? "No email"}</span></p>
-          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-soft text-primary"><TypeIcon size={12} aria-hidden="true" />{memberType}</span>
+          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold px-3 py-1 leading-tight rounded-full bg-primary-soft text-primary"><TypeIcon size={12} aria-hidden="true" />{memberType}</span>
         </div>
       </div>
       {/* Same look as Home's Quick Menu: white tiles with a soft icon; each opens the matching list. Overdue turns red when there is one. */}
@@ -157,7 +157,7 @@ export function MobileProfile() {
               {history.txs.length > 5 && <Link to="/m/history" className={`text-sm text-primary font-semibold min-h-8 inline-flex items-center rounded ${focusRing}`}>See all</Link>}
             </div>
             <ListState loading={history.loading && "Loading history…"} error={history.error} onRetry={history.load}>
-              {history.txs.length === 0 ? <HistoryEmpty /> : <ul className="space-y-3">{history.txs.slice(0, 5).map((t, i) => <HistoryCard key={t.id} t={t} idx={i} now={now} />)}</ul>}
+              {history.txs.length === 0 ? <HistoryEmpty /> : <ul className="space-y-3">{history.txs.slice(0, 5).map(t => <HistoryCard key={t.id} t={t} now={now} />)}</ul>}
             </ListState>
           </section>
           </>
@@ -228,7 +228,7 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
     setSaving(true);
     const payload: Record<string, unknown> = {
       displayName: form.displayName?.trim() ?? "", username: form.username.trim(), memberType: type,
-      phoneNumber: form.phoneNumber?.trim() ?? "", hobbies: form.hobbies?.trim() ?? "",
+      hobbies: form.hobbies?.trim() ?? "",
       gender: form.gender ?? "",
       ...(type === "Student"
         ? { gradeSection: form.gradeSection?.trim() ?? "", studentRowNo: rowNo === "" ? null : Number(rowNo) }
@@ -247,11 +247,12 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       { label: "Member ID", value: me.maskedId, Icon: QrCode },
       { label: "Full name", value: me.displayName, Icon: IdCard },
       { label: "Username", value: me.username, Icon: UserIcon },
+      { label: "Email", value: me.email, Icon: Mail },
+      { label: "Role", value: me.memberType, Icon: type === "Teacher" ? Briefcase : GraduationCap },
       { label: "Gender", value: me.gender, Icon: Users },
       ...(type === "Student"
         ? [{ label: "Grade & section", value: me.gradeSection, Icon: GraduationCap }, { label: "Student Row No.", value: me.studentRowNo ? String(me.studentRowNo) : null, Icon: Hash }]
         : [{ label: "Department", value: me.department, Icon: Building2 }, { label: "Designation", value: me.position, Icon: Award }]),
-      { label: "Phone number", value: me.phoneNumber, Icon: Phone },
       { label: "Favourites & hobbies", value: me.hobbies, Icon: Heart },
     ];
     return (
@@ -310,7 +311,6 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
           <Field label="Designation" icon={<Award size={18} />} placeholder="e.g. Teacher III" value={form.position ?? ""} onChange={set("position")} maxLength={100} />
         </>
       )}
-      <Field label="Phone number" type="tel" icon={<Phone size={18} />} autoComplete="tel" placeholder="+63 9XX XXX XXXX" value={form.phoneNumber ?? ""} onChange={set("phoneNumber")} hint="Optional. Lets the library contact you." />
       <div>
         <label htmlFor="hobbies" className="block text-sm font-medium text-ink mb-1.5">Favourites & hobbies</label>
         <textarea id="hobbies" rows={3} maxLength={300} value={form.hobbies ?? ""} onChange={set("hobbies")} placeholder="e.g. Mystery novels, drawing, basketball" className="w-full border border-line-strong rounded-xl px-3 py-2.5 text-sm text-ink bg-surface resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus" />
@@ -384,7 +384,7 @@ function StatsPanel({ txs, loading, userId, now }: { txs: Tx[]; loading: boolean
       <section aria-labelledby="st-library" className={card}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="st-library" className="font-semibold text-primary-strong flex items-center gap-2"><Library size={18} aria-hidden="true" />Time in the library</h2>
-          {time?.library.insideNow && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-success-soft text-success">Inside now</span>}
+          {time?.library.insideNow && <span className="text-[11px] font-bold px-3 py-1 leading-tight rounded-full bg-success-soft text-success">Inside now</span>}
         </div>
         {!time ? <p className="text-sm text-ink-muted">Needs a connection to the library server.</p> : (
           <>

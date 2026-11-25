@@ -30,7 +30,7 @@ const STAFF: [string, string, object?][] = [
   ["post", "/api/v1/backup/files/auto-2026-11-24-0200.sql.gz/restore", { currentPassword: "x", confirm: "RESTORE" }],
 ];
 // Signed-in (any role) endpoints.
-const SIGNED_IN: [string, string][] = [["get", "/api/v1/auth/me"], ["get", "/api/v1/borrow-requests/mine"], ["get", "/api/v1/notifications/mine"], ["get", "/api/v1/favourites/mine"], ["patch", "/api/v1/auth/profile"]];
+const SIGNED_IN: [string, string][] = [["get", "/api/v1/auth/me"], ["post", "/api/v1/auth/password-code"], ["get", "/api/v1/borrow-requests/mine"], ["get", "/api/v1/notifications/mine"], ["get", "/api/v1/favourites/mine"], ["patch", "/api/v1/auth/profile"]];
 
 describe("API security", () => {
   let app: any;

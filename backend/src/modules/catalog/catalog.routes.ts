@@ -226,6 +226,17 @@ catalogRouter.get("/:id/reviews", authenticate, validate({ params: idParamSchema
   } catch (err) { next(err); }
 });
 
+/** The member's Wishlist: books they asked to be notified about (a wait ends when the alert is sent). */
+catalogRouter.get("/wishlist", authenticate, async (req, res, next) => {
+  try {
+    const rows = await prisma.bookWatch.findMany({
+      where: { userId: req.user!.id, book: { isHidden: false } }, orderBy: { createdAt: "desc" },
+      select: { createdAt: true, book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true, copies: { select: { status: true } } } } },
+    });
+    ok(res, rows.map(({ createdAt, book: { copies, ...book } }) => ({ ...book, since: createdAt, availability: { total: copies.length, available: copies.filter(c => c.status === "AVAILABLE").length } })));
+  } catch (err) { next(err); }
+});
+
 /** "Notify me when available": only members, only while no copy is on the shelf. */
 catalogRouter.put("/:id/watch", authenticate, validate({ params: idParamSchema }), async (req, res, next) => {
   try {

@@ -253,7 +253,7 @@ export function Printing() {
             <ol className="text-left max-w-md mx-auto text-sm text-ink list-decimal pl-5 space-y-1">
               <li>Scan the code with your phone camera and open the link.</li>
               <li>Android: open the downloaded file; if asked, allow installing apps from your browser.</li>
-              <li>Sign in with the account the librarian gave you. No phone? Your Library ID card works at the desk and the Visitor's Log.</li>
+              <li>Tap <b>Create an account</b> and enter the activation code sent to your email (or sign in with the account the librarian gave you). No phone? Your Library ID card works at the desk and the Visitor's Log.</li>
             </ol>
           </div>
         ) : labels ? (

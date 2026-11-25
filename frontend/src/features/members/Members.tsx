@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, UserPlus, Search, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Phone, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
+import { Users, UserPlus, Search, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
@@ -13,7 +13,7 @@ import { fmtDuration } from "../../components/mobile/screenTime";
 import { queuedToast } from "../../lib/offline";
 
 export interface Member {
-  id: string; username: string; displayName?: string | null; email?: string | null; phoneNumber?: string | null; memberType?: string | null;
+  id: string; username: string; displayName?: string | null; email?: string | null; memberType?: string | null;
   gradeSection?: string | null; department?: string | null; position?: string | null; gender?: string | null; studentRowNo?: number | null;
   isActive: boolean; createdAt: string; updatedAt?: string; activeLoans?: number; totalLoans?: number; avatarUrl?: string | null;
   maskedId?: string | null; cardPrintedAt?: string | null;
@@ -109,7 +109,7 @@ export function Members() {
       {list.data && list.data.items.length > 0 && (
         <div className={`${table.wrap} ak-slide`}>
           <table className={table.table}>
-            <thead className={table.head}><tr>{["Member", "Role", "Contact", "Borrowed", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr></thead>
+            <thead className={table.head}><tr>{["Member", "Role", "Email", "Borrowed", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr></thead>
             <tbody>
               {list.data.items.map(m => (
                 <tr key={m.id} className={table.row}>
@@ -123,7 +123,7 @@ export function Members() {
                     {m.memberType ? <Badge tone={m.memberType === "Teacher" ? "warning" : "primary"}>{m.memberType === "Teacher" ? <Briefcase size={12} aria-hidden="true" /> : <GraduationCap size={12} aria-hidden="true" />}{m.memberType}</Badge> : <span className="text-ink-muted text-xs">Not set</span>}
                     <div className="text-xs text-ink-muted mt-1">{m.memberType === "Teacher" ? [m.position, m.department].filter(Boolean).join(" · ") : m.gradeSection}</div>
                   </td>
-                  <td className={`${table.td} text-xs text-ink-muted`}>{m.email && <div className="flex items-center gap-1"><Mail size={12} aria-hidden="true" />{m.email}</div>}{m.phoneNumber && <div className="flex items-center gap-1"><Phone size={12} aria-hidden="true" />{m.phoneNumber}</div>}{!m.email && !m.phoneNumber && "—"}</td>
+                  <td className={`${table.td} text-xs text-ink-muted`}>{m.email && <div className="flex items-center gap-1"><Mail size={12} aria-hidden="true" />{m.email}</div>}{!m.email && "—"}</td>
                   <td className={`${table.td} tabular-nums`}><span className="text-ink font-semibold">{m.activeLoans ?? 0} now</span><div className="text-xs text-ink-muted">{m.totalLoans ?? 0} in all</div></td>
                   <td className={table.td}><Badge tone={m.isActive ? "success" : "muted"}>{m.isActive ? "Active" : "Deactivated"}</Badge></td>
                   <td className={table.td}>
@@ -162,8 +162,8 @@ export function Members() {
   );
 }
 
-type Form = { displayName: string; username: string; memberType: "Student" | "Teacher"; email: string; phoneNumber: string; gradeSection: string; studentRowNo: string; department: string; position: string; gender: string; password: string };
-const blank: Form = { displayName: "", username: "", memberType: "Student", email: "", phoneNumber: "", gradeSection: "", studentRowNo: "", department: "", position: "", gender: "", password: "" };
+type Form = { displayName: string; username: string; memberType: "Student" | "Teacher"; email: string; gradeSection: string; studentRowNo: string; department: string; position: string; gender: string; password: string };
+const blank: Form = { displayName: "", username: "", memberType: "Student", email: "", gradeSection: "", studentRowNo: "", department: "", position: "", gender: "", password: "" };
 
 function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | null; onClose: () => void; onSaved: () => void }) {
   const { token } = useAuth();
@@ -179,7 +179,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
     setError(""); setShow(false);
     setForm(member === "new" ? blank : {
       displayName: member.displayName ?? "", username: member.username, memberType: member.memberType === "Teacher" ? "Teacher" : "Student",
-      email: member.email ?? "", phoneNumber: member.phoneNumber ?? "", gradeSection: member.gradeSection ?? "", studentRowNo: member.studentRowNo ? String(member.studentRowNo) : "",
+      email: member.email ?? "", gradeSection: member.gradeSection ?? "", studentRowNo: member.studentRowNo ? String(member.studentRowNo) : "",
       department: member.department ?? "", position: member.position ?? "", gender: member.gender ?? "", password: "",
     });
   }, [member]);
@@ -241,7 +241,6 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
             <div><p className={label}>Username</p><p className="min-h-11 flex items-center px-4 rounded-2xl bg-page text-ink-muted text-sm">@{form.username}</p></div>
           )}
           {field("Email", "email", { type: "email", maxLength: 191, autoComplete: "off" })}
-          {field("Phone", "phoneNumber", { inputMode: "tel", maxLength: 20 })}
           <div>
             <label htmlFor="member-gender" className={label}>Gender</label>
             <select id="member-gender" value={form.gender} onChange={set("gender")} className={select}>
@@ -297,7 +296,7 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
   const m = detail.data ?? member;
   const teacher = m?.memberType === "Teacher";
   // Each role only shows its own details.
-  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", m.email], ["Phone", m.phoneNumber], ["Gender", m.gender], ["Member since", phDate(m.createdAt)]] : [];
+  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", m.email], ["Gender", m.gender], ["Member since", phDate(m.createdAt)]] : [];
   const roleRows: [string, string | number | null | undefined][] = !m ? [] : teacher ? [["Department", m.department], ["Position", m.position]] : m.memberType === "Student" ? [["Grade & section", m.gradeSection], ["Class record no.", m.studentRowNo]] : [];
   const list = (rows: [string, string | number | null | undefined][]) => (
     <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">

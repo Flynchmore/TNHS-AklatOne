@@ -110,7 +110,7 @@ export function MobileLayout() {
       <PullToRefresh onRefresh={refresh}>
         {/* Clip sideways overflow so slide-in animations never widen the page (which makes phones zoom out). */}
         <main className="flex-1 pb-24 overflow-x-clip">
-          <Suspense fallback={<div className="p-5 pt-16"><SkeletonList label="Loading…" /></div>}><Outlet key={refreshKey} /></Suspense>
+          <Suspense fallback={<div className="p-5 pt-16"><SkeletonList label="Loading…" /></div>}><div key={`${location.pathname}-${refreshKey}`} className="ak-page"><Outlet /></div></Suspense>
         </main>
       </PullToRefresh>
       <nav aria-label="Main" className="ak-mobile-nav fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur border-t border-line flex justify-around items-stretch z-40 px-1 shadow-[0_-6px_20px_rgba(30,50,109,0.08)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>

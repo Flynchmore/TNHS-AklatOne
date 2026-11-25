@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, FolderPlus, Folder, FolderMinus, Trash2, Check, X, FolderInput } from "lucide-react";
+import { Heart, FolderPlus, Folder, FolderMinus, Trash2, Check, X, FolderInput, BellRing, BellOff } from "lucide-react";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
 import { BookCover, CategoryChips, focusRing, mobileApi, type CategoryLike } from "../../components/mobile/ui";
@@ -8,6 +8,7 @@ import { FavouriteButton } from "../../components/mobile/FavouriteButton";
 
 export interface FavItem { id: string; folderId: string | null; createdAt: string; book: { id: string; title: string; authors?: string | null; isbn?: string | null; coverUrl?: string | null; categories?: CategoryLike[] } }
 export interface FavFolder { id: string; name: string; count: number }
+interface WishItem { id: string; title: string; authors?: string | null; isbn?: string | null; coverUrl?: string | null; availability: { total: number; available: number } }
 export interface FavData { items: FavItem[]; folders: FavFolder[] }
 
 const chip = (on: boolean) =>
@@ -22,6 +23,20 @@ export function FavouritesPanel({ data, onChange }: { data: FavData; onChange: (
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [moving, setMoving] = useState<FavItem | null>(null);
+  // Wishlist: books waiting for a copy (Notify me when available), opened from the "Wishlist" chip.
+  const [wishOpen, setWishOpen] = useState(false);
+  const [wishlist, setWishlist] = useState<WishItem[] | null>(null);
+  const loadWishlist = async () => {
+    const r = await mobileApi("/api/v1/catalog/wishlist", { token: auth.token });
+    setWishlist(r.ok ? (r.data as WishItem[]) : []);
+  };
+  useEffect(() => { void loadWishlist(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const unwish = async (w: WishItem) => {
+    const r = await mobileApi(`/api/v1/catalog/${w.id}/watch`, { method: "DELETE", token: auth.token });
+    if (!r.ok) { toast({ tone: "error", title: "Wishlist not updated", message: r.message ?? "Please try again." }); return; }
+    setWishlist(l => (l ?? []).filter(x => x.id !== w.id));
+    toast({ tone: "info", title: "Removed from Wishlist", message: w.title });
+  };
 
   const current = data.folders.find(f => f.id === folder) ?? null;
   const shown = current ? data.items.filter(i => i.folderId === current.id) : data.items;
@@ -64,10 +79,11 @@ export function FavouritesPanel({ data, onChange }: { data: FavData; onChange: (
     <div className="space-y-4">
       {/* Folders: All, the member's own folders, and New folder. */}
       <div role="group" aria-label="Favourite folders" className="-mx-5 px-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-        <button type="button" onClick={() => setFolder(null)} aria-pressed={folder === null} className={chip(folder === null)}><Heart size={15} aria-hidden="true" />All <span className="opacity-80">{data.items.length}</span></button>
+        <button type="button" onClick={() => { setWishOpen(false); setFolder(null); }} aria-pressed={!wishOpen && folder === null} className={chip(!wishOpen && folder === null)}><Heart size={15} aria-hidden="true" />All <span className="opacity-80">{data.items.length}</span></button>
         {data.folders.map(f => (
-          <button key={f.id} type="button" onClick={() => setFolder(f.id)} aria-pressed={folder === f.id} className={chip(folder === f.id)}><Folder size={15} aria-hidden="true" />{f.name} <span className="opacity-80">{f.count}</span></button>
+          <button key={f.id} type="button" onClick={() => { setWishOpen(false); setFolder(f.id); }} aria-pressed={!wishOpen && folder === f.id} className={chip(!wishOpen && folder === f.id)}><Folder size={15} aria-hidden="true" />{f.name} <span className="opacity-80">{f.count}</span></button>
         ))}
+        <button type="button" onClick={() => setWishOpen(true)} aria-pressed={wishOpen} className={chip(wishOpen)}><BellRing size={15} aria-hidden="true" />Wishlist <span className="opacity-80">{wishlist?.length ?? 0}</span></button>
         <button type="button" onClick={() => setCreating(true)} className={`${chip(false)} border-dashed text-primary`}><FolderPlus size={15} aria-hidden="true" />New folder</button>
       </div>
 
@@ -80,14 +96,39 @@ export function FavouritesPanel({ data, onChange }: { data: FavData; onChange: (
         </form>
       )}
 
-      {current && (
+      {wishOpen && (
+        !wishlist?.length ? (
+          <div className="text-center py-10 px-4 bg-surface rounded-3xl border border-line">
+            <span className="w-16 h-16 rounded-full bg-warning-soft text-warning flex items-center justify-center mx-auto mb-3" aria-hidden="true"><BellRing size={28} /></span>
+            <p className="text-ink font-medium">Your Wishlist is empty. Press and hold the heart on a book with no copy on the shelf, then choose Add to Wishlist.</p>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {wishlist.map(w => (
+              <li key={w.id} className="bg-surface rounded-3xl border border-line shadow-sm p-3 flex gap-3">
+                <BookCover isbn={w.isbn} coverUrl={w.coverUrl} title={w.title} className="w-16 h-24 rounded-xl shrink-0 shadow-sm" />
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <h3 className="text-sm font-semibold text-ink line-clamp-2">{w.title}</h3>
+                  <p className="text-xs text-ink-muted line-clamp-1">{w.authors || "Unknown author"}</p>
+                  <span className={`self-start mt-1.5 text-xs font-semibold px-3 py-1 rounded-full ${w.availability.available ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>{w.availability.available ? "On the shelf now" : "Waiting for a copy"}</span>
+                  <div className="mt-auto pt-2 flex justify-end">
+                    <button type="button" onClick={() => unwish(w)} className={`inline-flex items-center gap-1.5 px-3.5 min-h-9 rounded-full border border-line-strong text-ink text-xs font-semibold active:scale-95 ${focusRing}`}><BellOff size={14} aria-hidden="true" />Remove</button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+
+      {!wishOpen && current && (
         <div className="flex items-center justify-between gap-2 px-1 ak-fade">
           <p className="text-sm font-semibold text-primary-strong flex items-center gap-1.5 min-w-0"><Folder size={16} aria-hidden="true" /><span className="truncate">{current.name}</span></p>
           <button type="button" onClick={() => deleteFolder(current)} className={`shrink-0 inline-flex items-center gap-1 px-3 min-h-9 rounded-full border border-danger/40 text-danger text-xs font-semibold active:scale-95 transition ${focusRing}`}><Trash2 size={14} aria-hidden="true" />Delete folder</button>
         </div>
       )}
 
-      {shown.length === 0 ? (
+      {wishOpen ? null : shown.length === 0 ? (
         <div className="text-center py-10 px-4 bg-surface rounded-3xl border border-line">
           <span className="w-16 h-16 rounded-full bg-danger-soft text-danger flex items-center justify-center mx-auto mb-3" aria-hidden="true"><Heart size={28} /></span>
           <p className="text-ink font-medium">{current ? "This folder is empty. Open All and use the folder button on a book to add it here." : "No favourites yet. Tap the heart on any book to save it here."}</p>

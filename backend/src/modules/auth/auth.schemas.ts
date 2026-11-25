@@ -17,27 +17,48 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const verifyOtpSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().max(20).optional(),
+  email: z.string().email(),
   otp: z.string().length(6),
-}).refine(d => d.email || d.phone, { message: "Email or phone is required" });
+});
 
 export const resetPasswordSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().max(20).optional(),
+  email: z.string().email(),
   otp: z.string().length(6),
   newPassword: strongPassword,
-}).refine(d => d.email || d.phone, { message: "Email or phone is required" });
+});
+
+const optText = (max: number) => z.string().trim().max(max).optional();
+const usernameRule = z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9_.-]+$/, "Username: letters, numbers, dot, dash and underscore only");
+
+/** Member self-registration: the same details as Personal information (Member ID is made by the system). */
+export const registerSchema = z.object({
+  username: usernameRule,
+  password: strongPassword,
+  displayName: z.string().trim().min(1, "Full name is required").max(100),
+  email: z.string().trim().toLowerCase().email().max(191),
+  memberType: z.enum(["Student", "Teacher"]),
+  gender: z.enum(["Male", "Female", "Prefer not to say"]).optional(),
+  gradeSection: optText(50),
+  department: optText(100),
+  position: optText(100),
+  hobbies: optText(300),
+});
+
+export const activateSchema = z.object({
+  username: z.string().trim().min(1).max(50),
+  code: z.string().length(6),
+});
 
 export const profileUpdateSchema = z.object({
   username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
   password: strongPassword.optional(),
   // Required whenever password is set (checked in updateProfile).
   currentPassword: z.string().min(1).max(128).optional(),
+  // Emailed password change code (POST /auth/password-code); needed when the account has an email.
+  code: z.string().length(6).optional(),
   displayName: z.string().max(100).optional(),
   memberType: z.enum(["Student", "Teacher"]).optional(),
   avatarUrl: photo.optional(),
-  phoneNumber: z.string().max(20).optional(),
   gradeSection: z.string().trim().max(50).optional(),
   department: z.string().trim().max(100).optional(),
   position: z.string().trim().max(100).optional(),

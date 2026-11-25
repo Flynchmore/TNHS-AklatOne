@@ -80,35 +80,6 @@ export function FieldIconButton({ label, onClick, children }: { label: string; o
 }
 
 
-/** School building photo header at low opacity over navy; the overlay keeps white text >= 4.5:1. */
-export function SchoolHeader({ title, subtitle, small }: { title: string; subtitle: string; small?: boolean }) {
-  return (
-    <div className={`relative overflow-hidden rounded-b-[2.5rem] shadow-lg bg-primary-strong ${small ? "h-[34vh] min-h-[200px]" : "h-[46vh] min-h-[260px]"} landscape:h-auto landscape:min-h-0 landscape:py-6`}>
-      <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: "url('/tnhs-facade-small.webp')" }} aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-b from-primary-strong/75 via-primary/70 to-primary-strong/80" aria-hidden="true" />
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 ak-fade landscape:flex-row landscape:gap-4">
-        <div className={`ak-scale inline-flex items-center justify-center rounded-2xl bg-surface shadow-xl mb-3 landscape:mb-0 ${small ? "w-16 h-16" : "w-20 h-20"}`}>
-          <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className={small ? "w-12 h-12 object-contain" : "w-16 h-16 object-contain"} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-on-primary drop-shadow">{title}</h1>
-          <p className="text-sm text-on-primary mt-1">{subtitle}</p>
-          {!small && <p className="text-xs text-white/90 mt-2">Tagumpay National High School</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Sign-in, OTP and password screens: the school logo as a faint background. Parent <main> must be `isolate`. */
-export function AuthWatermark() {
-  return (
-    <div className="fixed inset-0 -z-10 pointer-events-none flex items-center justify-center pt-[38vh]" aria-hidden="true">
-      <img src="/tnhs-logo.png" alt="" className="ak-watermark w-[min(110vw,30rem)] aspect-square object-contain opacity-[0.24] [transform:translateZ(0)]" />
-    </div>
-  );
-}
-
 export type MemberType = "Student" | "Teacher";
 
 /** Student/Teacher toggle (Profile). */
@@ -174,7 +145,7 @@ export function BookCover({ isbn, coverUrl, title, className = "", isNew = false
       ) : (
         <img src={src} alt={`Cover of ${title}`} loading="lazy" onError={() => setFailed(true)} className="w-full h-full object-cover bg-primary-soft" />
       )}
-      {isNew && <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-accent text-on-accent text-[10px] font-extrabold uppercase tracking-wide shadow ak-scale">New</span>}
+      {isNew && <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-accent text-on-accent text-[10px] font-extrabold uppercase tracking-wide shadow ak-scale">New</span>}
     </span>
   );
 }
@@ -193,7 +164,7 @@ export function CategoryChips({ categories, className = "" }: { categories?: Cat
   const sorted = [...categories].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
   return (
     <ul aria-label="Categories" className={`flex flex-wrap gap-1.5 ${className}`}>
-      {sorted.map(c => <li key={c.id} className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${KIND_CLS[c.kind] ?? "bg-slate-100 text-ink-muted"}`}>{categoryLabel(c)}</li>)}
+      {sorted.map(c => <li key={c.id} className={`text-[11px] font-semibold px-3 py-1 leading-tight rounded-full ${KIND_CLS[c.kind] ?? "bg-slate-100 text-ink-muted"}`}>{categoryLabel(c)}</li>)}
     </ul>
   );
 }
@@ -249,7 +220,7 @@ export function ScreenShell({ title, subtitle, icon: Icon, back, headerExtra, ac
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <PhotoHeader>
-        <div className="flex items-center gap-3 ak-fade">
+        <div className="flex items-center gap-3">
           {back ? (
             <button type="button" onClick={() => nav(back)} aria-label="Back" className="w-12 h-12 shrink-0 rounded-2xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-on-primary active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
               <ChevronLeft size={24} aria-hidden="true" />
@@ -267,7 +238,7 @@ export function ScreenShell({ title, subtitle, icon: Icon, back, headerExtra, ac
         {headerExtra}
       </PhotoHeader>
       <CurvedPanel label={title}>
-        {floating ? <div className="relative z-10 -mt-8 ak-slide">{floating}</div> : <div className="pt-1" aria-hidden="true" />}
+        {floating ? <div className="relative z-10 -mt-8">{floating}</div> : <div className="pt-1" aria-hidden="true" />}
         {children}
       </CurvedPanel>
     </div>
@@ -277,7 +248,7 @@ export function ScreenShell({ title, subtitle, icon: Icon, back, headerExtra, ac
 /** Short pill search field and a separate round button, floating centred on the CurvedPanel's edge. */
 export function FloatingSearch({ id, label, placeholder, value, onChange, onSubmit, buttonLabel }: { id: string; label: string; placeholder: string; value: string; onChange: (v: string) => void; onSubmit: () => void; buttonLabel: string }) {
   return (
-    <form role="search" onSubmit={e => { e.preventDefault(); onSubmit(); }} className="relative z-10 -mt-7 flex items-center justify-center gap-3 ak-slide">
+    <form role="search" onSubmit={e => { e.preventDefault(); onSubmit(); }} className="relative z-10 -mt-7 flex items-center justify-center gap-3">
       <div className="flex-1 max-w-64 bg-surface rounded-full shadow-lg border border-line-strong px-5 focus-within:ring-2 focus-within:ring-focus">
         <label htmlFor={id} className="sr-only">{label}</label>
         <input id={id} type="search" enterKeyHint="search" className="w-full min-h-12 outline-none text-ink placeholder:text-ink-muted bg-transparent text-sm" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
@@ -338,7 +309,10 @@ export function SlidingTabs<K extends string>({ label, tabs, active, onChange, c
 /** "ak-from-right" when moving to a later tab, "ak-from-left" when moving back: content slides in from that side. */
 export function useSlideDirection(index: number) {
   const prev = useRef(index);
-  const direction = index >= prev.current ? "ak-from-right" : "ak-from-left";
+  // Nothing slides when the screen first opens: the tabs and their content appear together.
+  const moved = useRef(false);
+  if (index !== prev.current) moved.current = true;
+  const direction = !moved.current ? "" : index >= prev.current ? "ak-from-right" : "ak-from-left";
   useEffect(() => { prev.current = index; }, [index]);
   return direction;
 }

@@ -74,7 +74,7 @@ export function MobileOpenLibrary() {
 
   return (
     <ScreenShell title="Open Library" subtitle="Books from the internet, not the school library" back="/m" headerExtra={
-        <form role="search" onSubmit={e => { e.preventDefault(); fetchBooks(query); }} className="mt-4 bg-white/15 rounded-full flex items-center gap-2 pl-4 pr-1 ak-slide focus-within:ring-2 focus-within:ring-white">
+        <form role="search" onSubmit={e => { e.preventDefault(); fetchBooks(query); }} className="mt-4 bg-white/15 rounded-full flex items-center gap-2 pl-4 pr-1 focus-within:ring-2 focus-within:ring-white">
           <Search className="text-white/85 shrink-0" size={18} aria-hidden="true" />
           <label htmlFor="ol-search" className="sr-only">Search Open Library</label>
           <input id="ol-search" type="search" enterKeyHint="search" className="flex-1 min-h-11 bg-transparent text-on-primary placeholder:text-white/80 outline-none text-sm" placeholder="Search by title or author" value={query} onChange={e => setQuery(e.target.value)} />
@@ -130,7 +130,7 @@ export function MobileOpenLibrary() {
                 {selected.firstPublishYear && <p className="flex items-center gap-2"><Calendar size={14} className="text-ink-muted" aria-hidden="true" />First published {selected.firstPublishYear}</p>}
                 {selected.subjects.length > 0 && (
                   <ul className="flex flex-wrap gap-1 mt-2" aria-label="Subjects">
-                    {selected.subjects.slice(0, 4).map(s => <li key={s} className="text-xs bg-primary-soft text-primary px-2 py-0.5 rounded-full">{s}</li>)}
+                    {selected.subjects.slice(0, 4).map(s => <li key={s} className="text-xs bg-primary-soft text-primary px-3 py-1 leading-tight rounded-full">{s}</li>)}
                   </ul>
                 )}
               </div>
