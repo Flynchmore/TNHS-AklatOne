@@ -9,7 +9,8 @@ import { ok, created, fail } from "../../common/response.js";
 import { writeAudit } from "../../common/audit.js";
 import { authenticate, requirePermission } from "../../middleware/auth.js";
 import { validate } from "../../middleware/validate.js";
-import { KIOSK_PERMISSION, signKioskToken, signToken, verifyPassword } from "../auth/auth.service.js";
+import { KIOSK_PERMISSION, signKioskToken, verifyPassword } from "../auth/auth.service.js";
+import { openSession } from "../auth/sessions.routes.js";
 
 /**
  * Visitor's Log (library attendance). A member scans their Library ID card (or types the Member ID) at the kiosk, or
@@ -67,7 +68,7 @@ visitsRouter.post("/kiosk/exit", authenticate, requirePermission(KIOSK_PERMISSIO
     // 400, not 401: the apps sign out on any 401, and a student typing a wrong password must not end the kiosk session.
     if (!u || !u.isActive || !(await verifyPassword(req.body.password, u.passwordHash))) return fail(res, 400, "Wrong password.");
     await writeAudit({ actorId: u.id, action: "visits.kiosk_exit", entityType: "User", entityId: u.id });
-    ok(res, { token: signToken({ id: u.id, username: u.username, role: u.role.name, permissions: Array.isArray(u.role.permissions) ? (u.role.permissions as string[]) : [] }) }, "Visitor's Log closed");
+    ok(res, { token: await openSession({ id: u.id, username: u.username, role: u.role.name, permissions: Array.isArray(u.role.permissions) ? (u.role.permissions as string[]) : [] }, req) }, "Visitor's Log closed");
   } catch (err) { next(err); }
 });
 

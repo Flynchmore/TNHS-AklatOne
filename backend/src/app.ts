@@ -10,6 +10,7 @@ import { logger } from "./config/logger.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { sessionsRouter } from "./modules/auth/sessions.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { catalogRouter } from "./modules/catalog/catalog.routes.js";
 import { categoriesRouter } from "./modules/categories/categories.routes.js";
@@ -32,7 +33,8 @@ import { suggestionsRouter } from "./modules/suggestions/suggestions.routes.js";
 import { isRestoring } from "./modules/backup/backup.service.js";
 import { verifyToken } from "./modules/auth/auth.service.js";
 
-const SESSION_PATHS = /^\/api\/v1\/auth\/(me|profile)$/;
+// Signed-in account calls: counted per account by the global limiter, never per school IP.
+const SESSION_PATHS = /^\/api\/v1\/auth\/(me|profile|sessions(\/.*)?)$/;
 // Password and code checks: only FAILED attempts count, per account (IP + username).
 // Password checks: sign-in, and leaving the Visitor's Log kiosk (asks the librarian's password).
 const CREDENTIAL_PATHS = /^\/api\/v1\/(auth\/(login|verify-login-otp)|visits\/kiosk\/exit)$/;
@@ -135,6 +137,8 @@ export function createApp() {
 
   const api = express.Router();
   api.use(idempotency);
+  // Signed-in devices: per-account limits only (see SESSION_PATHS); mounted before /auth so the sign-in limiters skip it.
+  api.use("/auth/sessions", sessionsRouter);
   api.use("/auth", authLimiter, loginLimiter, resetCodeLimiter, authRouter);
   api.use("/users", usersRouter);
   api.use("/catalog", catalogRouter);

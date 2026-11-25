@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useRef, useEffect } from "react";
 import { isDesktop, isPhone, offlineUser, saveOfflineUser, clearOfflineUser, cacheClear } from "../../lib/offline";
-import { SESSION_ENDED } from "../../lib/api";
+import { SESSION_ENDED, appHeader } from "../../lib/api";
 import { Capacitor } from "@capacitor/core";
 import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 import { secretDelete, secretGet, secretSet } from "../../lib/secrets";
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${BASE}/api/v1/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...appHeader },
         body: JSON.stringify({ username: u, password: p }),
       });
       const body = await res.json().catch(() => null);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${BASE}/api/v1/auth/verify-login-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...appHeader },
         body: JSON.stringify({ username, otp }),
       });
       const body = await res.json().catch(() => null);

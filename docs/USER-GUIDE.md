@@ -43,6 +43,8 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 - **Settings > Backup and Restore**: download a backup now and then (optionally with a password). The server also
   makes one every night. Restoring replaces all data; a safety copy is saved first.
 - **Settings > System status** shows whether the database, email and automatic backups are working.
+- **Settings > Sign-in devices** lists every device signed in to your account; sign out one you do not know
+  (your password and an emailed code are asked). You also get an email when your account is used on a new device.
 - Never share the librarian password. If something looks wrong, follow [SECURITY.md](../SECURITY.md).
 
 ## For students and teachers
@@ -59,7 +61,9 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 6. **Visit Log:** at the library door, tap **Visit Log** and scan the QR code on the kiosk screen (or type its
    6-digit code). First scan of the day = Time In, the next = Time Out.
 7. **Suggestion Box:** suggest a book or send feedback (Home > Suggest).
-8. **No connection?** The app still shows your saved catalog, loans and receipts; borrowing needs the internet.
+8. **Is someone else using my account?** **Profile > Settings > Sign-in devices** shows every device signed in;
+   sign out one you do not know and change your password. You get an email when a new device signs in.
+9. **No connection?** The app still shows your saved catalog, loans and receipts; borrowing needs the internet.
 
 ### Without a phone
 Your **Library ID card** is enough: show it at the desk to borrow and return books, and scan it at the Visitor's

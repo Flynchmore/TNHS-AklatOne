@@ -1,7 +1,6 @@
-import { MobileSettings } from "./features/mobile/MobileSettings";
 import { MobileWelcome, hasConsented } from "./features/mobile/MobileWelcome";
 import { applyTheme } from "./components/mobile/theme";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./features/auth/auth";
@@ -10,37 +9,41 @@ import { Layout } from "./components/Layout";
 import { MobileLayout } from "./components/mobile/MobileLayout";
 import { MobileProtected } from "./components/mobile/MobileProtected";
 import { Login } from "./features/auth/Login";
-import { LibrarianSetup } from "./features/auth/LibrarianSetup";
-import { Dashboard } from "./features/dashboard/Dashboard";
-import { Catalog } from "./features/catalog/Catalog";
-import { Borrowing } from "./features/circulation/Borrowing";
-import { Members } from "./features/members/Members";
-import { Reports } from "./features/reports/Reports";
-import { Printing } from "./features/printing/Printing";
-import { Inventory } from "./features/inventory/Inventory";
-import { MobileSuggestions } from "./features/mobile/MobileSuggestions";
-import { Visitors } from "./features/visits/Visitors";
-import { Suggestions } from "./features/suggestions/Suggestions";
-import { Newspaper, MobileNewspaper } from "./features/newspaper/Newspaper";
-import { Kiosk } from "./features/visits/Kiosk";
-import { ChooseApp } from "./features/visits/ChooseApp";
-import { MobileStaff } from "./features/mobile/MobileStaff";
-import { MobileVisit } from "./features/mobile/MobileVisit";
-import { Settings } from "./features/settings/Settings";
-import { Upload } from "./features/upload/Upload";
 import { TitleBar, ResizeEdges } from "./components/staff/TitleBar";
 import { isDesktop } from "./lib/offline";
 import { MobileLogin } from "./features/mobile/MobileLogin";
-import { MobileHome } from "./features/mobile/MobileHome";
-import { MobileCatalog } from "./features/mobile/MobileCatalog";
-import { MobileHistory } from "./features/mobile/MobileHistory";
-import { MobileProfile } from "./features/mobile/MobileProfile";
-import { MobileOpenLibrary } from "./features/mobile/MobileOpenLibrary";
-import { MobileForgotPassword } from "./features/mobile/MobileForgotPassword";
 import { ToastProvider } from "./components/Toast";
-import { MobileLoans } from "./features/mobile/MobileLoans";
-import { MobileReceipt } from "./features/mobile/MobileReceipt";
-import { MobileNotifications } from "./features/mobile/MobileNotifications";
+
+// Every screen is loaded when it is first opened (code splitting), so the first download stays small.
+const MobileSettings = lazy(() => import("./features/mobile/MobileSettings").then(m => ({ default: m.MobileSettings })));
+const LibrarianSetup = lazy(() => import("./features/auth/LibrarianSetup").then(m => ({ default: m.LibrarianSetup })));
+const Dashboard = lazy(() => import("./features/dashboard/Dashboard").then(m => ({ default: m.Dashboard })));
+const Catalog = lazy(() => import("./features/catalog/Catalog").then(m => ({ default: m.Catalog })));
+const Borrowing = lazy(() => import("./features/circulation/Borrowing").then(m => ({ default: m.Borrowing })));
+const Members = lazy(() => import("./features/members/Members").then(m => ({ default: m.Members })));
+const Reports = lazy(() => import("./features/reports/Reports").then(m => ({ default: m.Reports })));
+const Printing = lazy(() => import("./features/printing/Printing").then(m => ({ default: m.Printing })));
+const Inventory = lazy(() => import("./features/inventory/Inventory").then(m => ({ default: m.Inventory })));
+const MobileSuggestions = lazy(() => import("./features/mobile/MobileSuggestions").then(m => ({ default: m.MobileSuggestions })));
+const Visitors = lazy(() => import("./features/visits/Visitors").then(m => ({ default: m.Visitors })));
+const Suggestions = lazy(() => import("./features/suggestions/Suggestions").then(m => ({ default: m.Suggestions })));
+const Newspaper = lazy(() => import("./features/newspaper/Newspaper").then(m => ({ default: m.Newspaper })));
+const MobileNewspaper = lazy(() => import("./features/newspaper/Newspaper").then(m => ({ default: m.MobileNewspaper })));
+const Kiosk = lazy(() => import("./features/visits/Kiosk").then(m => ({ default: m.Kiosk })));
+const ChooseApp = lazy(() => import("./features/visits/ChooseApp").then(m => ({ default: m.ChooseApp })));
+const MobileStaff = lazy(() => import("./features/mobile/MobileStaff").then(m => ({ default: m.MobileStaff })));
+const MobileVisit = lazy(() => import("./features/mobile/MobileVisit").then(m => ({ default: m.MobileVisit })));
+const Settings = lazy(() => import("./features/settings/Settings").then(m => ({ default: m.Settings })));
+const Upload = lazy(() => import("./features/upload/Upload").then(m => ({ default: m.Upload })));
+const MobileHome = lazy(() => import("./features/mobile/MobileHome").then(m => ({ default: m.MobileHome })));
+const MobileCatalog = lazy(() => import("./features/mobile/MobileCatalog").then(m => ({ default: m.MobileCatalog })));
+const MobileHistory = lazy(() => import("./features/mobile/MobileHistory").then(m => ({ default: m.MobileHistory })));
+const MobileProfile = lazy(() => import("./features/mobile/MobileProfile").then(m => ({ default: m.MobileProfile })));
+const MobileOpenLibrary = lazy(() => import("./features/mobile/MobileOpenLibrary").then(m => ({ default: m.MobileOpenLibrary })));
+const MobileForgotPassword = lazy(() => import("./features/mobile/MobileForgotPassword").then(m => ({ default: m.MobileForgotPassword })));
+const MobileLoans = lazy(() => import("./features/mobile/MobileLoans").then(m => ({ default: m.MobileLoans })));
+const MobileReceipt = lazy(() => import("./features/mobile/MobileReceipt").then(m => ({ default: m.MobileReceipt })));
+const MobileNotifications = lazy(() => import("./features/mobile/MobileNotifications").then(m => ({ default: m.MobileNotifications })));
 
 const qc = new QueryClient();
 export const detectNative = () => {
@@ -82,6 +85,7 @@ function AppRoutes() {
   if (!ready) return <LoadingScreen />;
   return (
     <BrowserRouter>
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {isNative && !consented ? (
           <>
@@ -141,6 +145,7 @@ function AppRoutes() {
           </>
         )}
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -5,6 +5,7 @@ import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema } from "./auth.schemas.js";
 import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword } from "./auth.service.js";
+import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
 import { authenticate } from "../../middleware/auth.js";
 import { fail } from "../../common/response.js";
@@ -47,7 +48,7 @@ authRouter.post("/login", validate({ body: loginSchema }), async (req, res, next
       ok(res, { requiresOtp: true, email: result.email }, "OTP required");
     } else {
       auditAuth(req, "auth.login", result.user.id, { method: "password" });
-      ok(res, await withProfile({ user: result.user, token: result.token }), "Authenticated");
+      ok(res, await withProfile({ user: result.user, token: await openSession(result.user, req) }), "Authenticated");
     }
   } catch (err) {
     next(err);
@@ -58,7 +59,7 @@ authRouter.post("/verify-login-otp", validate({ body: z.object({ username: z.str
   try {
     const result = await verifyLoginOtp(req.body.username, req.body.otp).catch(failedSignIn(req, "password+code"));
     auditAuth(req, "auth.login", result.user.id, { method: "password+code" });
-    ok(res, await withProfile(result), "Authenticated");
+    ok(res, await withProfile({ user: result.user, token: await openSession(result.user, req) }), "Authenticated");
   } catch (err) {
     next(err);
   }
@@ -87,8 +88,7 @@ authRouter.post("/reset-password", validate({ body: resetPasswordSchema }), asyn
   try {
     const user = await resetPassword(req.body);
     auditAuth(req, "auth.password_reset", user.id);
-    const token = signToken(user);
-    ok(res, await withProfile({ user, token }), "Password reset successful");
+    ok(res, await withProfile({ user, token: await openSession(user, req) }), "Password reset successful");
   } catch (err) {
     next(err);
   }
@@ -110,7 +110,8 @@ authRouter.patch("/profile", authenticate, validate({ body: profileUpdateSchema 
     const updated = await updateProfile(req.user!.id, req.body);
     if (req.body.password) auditAuth(req, "auth.password_change", updated.id);
     // A password change ends every other session, so this device gets a fresh token.
-    ok(res, req.body.password ? { ...updated, token: signToken(updated) } : updated, "Profile updated");
+    // Keep this device's session (the password change ended the others); older tokens without a session get a new one.
+    ok(res, req.body.password ? { ...updated, token: req.user!.sid ? signToken(updated, req.user!.sid) : await openSession(updated, req) } : updated, "Profile updated");
   } catch (err) {
     next(err);
   }

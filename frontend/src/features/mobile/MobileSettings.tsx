@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Library, Lightbulb, Newspaper } from "lucide-react";
+import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Library, Lightbulb, Newspaper, MonitorSmartphone } from "lucide-react";
+import { SignInSessions } from "../../components/SignInSessions";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
 import { Alert, Field, ScreenShell, Spinner, StrengthMeter, btnPrimary, focusRing, mobileApi, passwordStrength } from "../../components/mobile/ui";
@@ -81,7 +82,10 @@ function SettingsHome() {
       </section>
       <section aria-labelledby="set-security">
         <h2 id="set-security" className={heading}>Security</h2>
-        <ul className={group}><Row to="/m/settings/password" icon={KeyRound} label="Change password" hint="Update the password you sign in with" /></ul>
+        <ul className={group}>
+          <Row to="/m/settings/password" icon={KeyRound} label="Change password" hint="Update the password you sign in with" />
+          <Row to="/m/settings/devices" icon={MonitorSmartphone} label="Sign-in devices" hint="See where your account is signed in" />
+        </ul>
       </section>
       <section aria-labelledby="set-library">
         <h2 id="set-library" className={heading}>Library</h2>
@@ -255,6 +259,7 @@ function About() {
 export function MobileSettings() {
   const { page } = useParams();
   if (page === "password") return <ChangePassword />;
+  if (page === "devices") return <ScreenShell title="Sign-in devices" subtitle="Keep your account safe" back="/m/settings"><div className="bg-surface rounded-3xl shadow-sm border border-line p-5"><SignInSessions /></div></ScreenShell>;
   if (page === "privacy") return <Privacy />;
   if (page === "terms") return <Terms />;
   if (page === "about") return <About />;

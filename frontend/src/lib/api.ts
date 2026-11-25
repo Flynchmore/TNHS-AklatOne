@@ -1,4 +1,8 @@
-import { cacheGet, cacheSet, enqueue, isDesktop, type OutboxKind } from "./offline";
+import { Capacitor } from "@capacitor/core";
+import { cacheGet, cacheSet, enqueue, isDesktop, isPhone, type OutboxKind } from "./offline";
+
+/** Tells the server which app sends a request, so Settings > Sign-in devices can name the device (web, desktop, android, ios). */
+export const appHeader = { "X-AklatOne-App": isDesktop ? "desktop" : isPhone ? Capacitor.getPlatform() : "web" };
 
 /** Window event fired when the server rejects the saved token (handled by the auth provider). */
 export const SESSION_ENDED = "aklatone:session-ended";
@@ -10,7 +14,7 @@ export function apiUrl(path: string): string {
 }
 
 export async function api<T = any>(path: string, init?: RequestInit, token?: string | null): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", ...(init?.headers as Record<string, string> | undefined) };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...appHeader, ...(init?.headers as Record<string, string> | undefined) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(apiUrl(path), { ...init, headers });
   const body = await res.json().catch(() => null);
@@ -26,7 +30,7 @@ export interface ApiResult { ok: boolean; status: number; data: unknown; message
 export async function apiFetch(path: string, init?: RequestInit & { token?: string | null; offline?: { kind: OutboxKind; label: string } }): Promise<ApiResult> {
   const { token, offline, ...rest } = init ?? {};
   const method = (rest.method ?? "GET").toUpperCase();
-  const headers: Record<string, string> = { "Content-Type": "application/json", ...(rest.headers as Record<string, string> | undefined) };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...appHeader, ...(rest.headers as Record<string, string> | undefined) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   try {
     const res = await fetch(apiUrl(path), { ...rest, headers });

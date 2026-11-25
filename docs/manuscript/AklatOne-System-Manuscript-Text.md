@@ -134,7 +134,7 @@ built and signed on a Mac with an Apple Developer account.
 1. Role-based access control for Administrator, Librarian and Member, checked on the server for every request.
 2. Passwords hashed with bcrypt and a strong-password rule enforced by the server.
 3. Two-factor sign-in: password plus a 6-digit code sent by email; codes are random, valid for 10 minutes and stored only as a hash.
-4. Session control: sessions end immediately when an account is deactivated or its password changes; staff web sessions end after 30 idle minutes.
+4. Session control: sessions end immediately when an account is deactivated or its password changes; staff web sessions end after 30 idle minutes. Every user can see the devices signed in to their account and sign one out after confirming their password and an emailed code, and receives an email when a new device signs in.
 5. Limits on failed sign-ins, wrong codes and request rates, counted per account so students on the same school Wi-Fi do not block each other.
 6. Sign-in screens and password reset do not reveal whether an account exists.
 7. Input validation on every request, secure HTTP headers and a Content Security Policy on the web and desktop applications.

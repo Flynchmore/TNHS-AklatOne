@@ -14,7 +14,9 @@ school's ICT Coordinator directly. Include what you did, what you saw, and the d
 - Passwords hashed with bcrypt; strong-password rule on the server; two-factor sign-in with a 6-digit email code
   (random, valid 10 minutes, stored only as a hash).
 - Sessions end at once when an account is deactivated or its password changes; staff web sessions end after
-  30 idle minutes.
+  30 idle minutes. Every user (members too) sees their signed-in devices in **Settings > Sign-in devices** and can
+  sign one out, or all others, after confirming the password and an emailed 6-digit code. A sign-in from a new
+  device sends a *New sign-in* email (device, network, time).
 - Limits on failed sign-ins, wrong codes and requests, per account; sign-in and password reset never reveal whether
   an account exists.
 - Input validation on every request, secure HTTP headers, Content Security Policy (web and desktop), HTTPS with

@@ -87,6 +87,7 @@ model User {
   libraryVisits     LibraryVisit[]
   appUsage          AppUsage[]
   suggestions       Suggestion[]           @relation("MemberSuggestions")
+  signInSessions    Session[]
   auditLogs         AuditLog[]             @relation("ActorAuditLogs")
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
@@ -389,4 +390,18 @@ model Suggestion {
 
   @@index([status, createdAt])
   @@index([memberId, createdAt])
+}
+
+/// One sign-in (device) of an account. Tokens carry the session id; signing a session out makes its token invalid at once.
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device     String    @db.VarChar(120)
+  ip         String?   @db.VarChar(64)
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId, revokedAt])
 }

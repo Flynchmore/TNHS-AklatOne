@@ -1,19 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { otpEmail, welcomeEmail, passwordChangedEmail, noticeEmail, borrowApprovedEmail, bookReturnedEmail, bookCard, esc } from "../src/common/email.js";
+import { newDeviceEmail, otpEmail, welcomeEmail, passwordChangedEmail, noticeEmail, borrowApprovedEmail, bookReturnedEmail, bookCard, esc } from "../src/common/email.js";
 
 describe("email templates", () => {
-  it("login and reset codes have their own subject, title and security notice", () => {
+  it("code emails keep the code out of the subject and preview (lock screens), and each has its own wording", () => {
     const login = otpEmail("123456", "login", "Juan");
     const reset = otpEmail("654321", "reset");
-    expect(login.subject).toBe("AklatOne sign-in code: 123456");
+    const device = otpEmail("112233", "session");
+    expect(login.subject).toBe("Your AklatOne sign-in code");
+    expect(reset.subject).toBe("Your AklatOne password reset code");
+    expect(device.subject).toBe("Confirm signing out a device");
     expect(login.html).toContain("Finish signing in");
     expect(login.html).toContain("did not try to sign in");
-    expect(reset.subject).toBe("AklatOne password reset code: 654321");
     expect(reset.html).toContain("Reset your password");
-    for (const m of [login, reset]) {
+    for (const [m, code] of [[login, "123456"], [reset, "654321"], [device, "112233"]] as const) {
+      expect(m.subject).not.toContain(code);
+      expect(m.html.split("<body")[1]!.slice(0, 600)).not.toContain(code); // hidden preview line comes first
+      expect(m.html).toContain(code);
       expect(m.html).toContain("Security notice");
       expect(m.html).toContain("Expires in 10 minutes");
+      expect(m.html).toContain("will never ask you for it");
     }
+  });
+
+  it("the new sign-in email shows the device, network and time, escaped", () => {
+    const m = newDeviceEmail("Juan <b>", { device: "Chrome on Windows <script>", network: "Internet (IP address 203.0.113.9)" });
+    expect(m.subject).toBe("New sign-in to your AklatOne account");
+    expect(m.html).toContain("Chrome on Windows &lt;script&gt;");
+    expect(m.html).toContain("203.0.113.9");
+    expect(m.html).toContain("Philippine time");
+    expect(m.html).toContain("Sign-in devices");
+    expect(m.html).not.toContain("<script>");
   });
 
   it("escapes names and librarian messages", () => {

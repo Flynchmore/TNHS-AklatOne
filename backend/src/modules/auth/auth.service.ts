@@ -9,9 +9,9 @@ import type { Prisma } from "@prisma/client";
 // 6-digit sign-in / reset codes: cryptographically random, and only a SHA-256 hash is stored in the database.
 let dummy: Promise<string> | undefined;
 const dummyHash = () => (dummy ??= bcrypt.hash("aklatone-no-such-user", env.BCRYPT_ROUNDS));
-const newOtp = () => String(randomInt(100000, 1000000));
-const otpHash = (otp: string) => createHash("sha256").update(otp).digest("hex");
-const otpMatches = (stored: string, otp: string) => {
+export const newOtp = () => String(randomInt(100000, 1000000));
+export const otpHash = (otp: string) => createHash("sha256").update(otp).digest("hex");
+export const otpMatches = (stored: string, otp: string) => {
   const a = Buffer.from(stored), b = Buffer.from(otpHash(otp));
   return a.length === b.length && timingSafeEqual(a, b);
 };
@@ -21,6 +21,8 @@ export interface AuthUser {
   username: string;
   role: string;
   permissions: string[];
+  /** Sign-in session (device) of this request, when the token has one. */
+  sid?: string | undefined;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -31,10 +33,11 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function signToken(user: AuthUser): string {
+export function signToken(user: AuthUser, sid?: string): string {
   return jwt.sign(
     // ia = issue time in milliseconds (iat is whole seconds), so a revocation in the same second still applies.
-    { sub: user.id, username: user.username, role: user.role, permissions: user.permissions, ia: Date.now() },
+    // sid = the sign-in session (device); signing that session out ends this token at once.
+    { sub: user.id, username: user.username, role: user.role, permissions: user.permissions, ia: Date.now(), ...(sid ? { sid } : {}) },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions,
   );
@@ -46,7 +49,7 @@ export function signKioskToken(user: { id: string; username: string }): string {
   return jwt.sign({ sub: user.id, username: user.username, role: "KIOSK", permissions: [KIOSK_PERMISSION], kiosk: true, ia: Date.now() }, env.JWT_SECRET, { expiresIn: "12h" });
 }
 
-export function verifyToken(token: string): AuthUser & { issuedAt?: number | undefined; kiosk?: boolean | undefined } {
+export function verifyToken(token: string): AuthUser & { issuedAt?: number | undefined; kiosk?: boolean | undefined; sid?: string | undefined } {
   const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ["HS256"] }) as {
     iat?: number;
     ia?: number;
@@ -55,9 +58,11 @@ export function verifyToken(token: string): AuthUser & { issuedAt?: number | und
     role: string;
     permissions: string[];
     kiosk?: boolean;
+    sid?: string;
   };
   return {
     kiosk: payload.kiosk === true,
+    sid: payload.sid,
     id: payload.sub,
     username: payload.username,
     role: payload.role,

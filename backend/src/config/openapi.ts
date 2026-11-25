@@ -33,6 +33,9 @@ export const openApiSpec = {
     "/auth/reset-password": { post: pub("/auth", "Set a new password with the reset code", { "401": "Wrong or expired code" }) },
     "/auth/me": { get: auth("/auth", "Current user profile") },
     "/auth/profile": { patch: auth("/auth", "Update own profile or password (password change needs currentPassword)") },
+    "/auth/sessions": { get: auth("/auth", "Own signed-in devices (device, network, first and last activity; current marks this device)") },
+    "/auth/sessions/code": { post: auth("/auth", "Email the 6-digit code that confirms signing a device out (accounts with an email)") },
+    "/auth/sessions/revoke": { post: auth("/auth", "Sign out one device (sessionId) or all other devices (others: true); needs password and, with an email, the code") },
 
     "/setup/status": { get: pub("/setup", "Whether the first librarian account still has to be created") },
     "/setup/librarian": { post: pub("/setup", "Create the first librarian (only while none is active)", { "201": "Created", "409": "A librarian already exists" }) },

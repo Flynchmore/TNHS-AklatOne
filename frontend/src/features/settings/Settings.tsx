@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check } from "lucide-react";
+import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone } from "lucide-react";
+import { SignInSessions } from "../../components/SignInSessions";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
@@ -18,6 +19,7 @@ export function Settings() {
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <ProfilePanel />
         <PasswordPanel />
+        <Panel title="Sign-in devices" icon={MonitorSmartphone} delay={0.12}><SignInSessions /></Panel>
         <ThemePanel />
         <AboutPanel />
         {hasPerm("backup:manage") && <SystemPanel />}

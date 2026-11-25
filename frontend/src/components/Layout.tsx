@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { Skeleton } from "./staff/ui";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, X, LogOut, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
@@ -124,7 +125,7 @@ export function Layout() {
           <span className="font-bold">AklatOne</span>
         </div>
         <main id="main" className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
-          <Outlet />
+          <Suspense fallback={<Skeleton rows={6} />}><Outlet /></Suspense>
           {!isDesktop && <IdleLogout onTimeout={() => { logout(true); nav("/login"); }} />}
         </main>
       </div>

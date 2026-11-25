@@ -31,6 +31,8 @@ const logoAttachments = ASSET_DIR
   : [];
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  // Automated tests never send real email (a developer's .env may hold the school Gmail account).
+  if (process.env.VITEST) return false;
   const t = getTransporter();
   if (!t) {
     logger.warn("Email not configured (EMAIL_USER/EMAIL_PASS missing). Email not sent.");
@@ -149,31 +151,57 @@ const phDay = (d: Date) => d.toLocaleDateString("en-PH", { timeZone: "Asia/Manil
 
 const when = () => new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 
-export type OtpPurpose = "login" | "reset";
+export type OtpPurpose = "login" | "reset" | "session";
 
-/** Sign-in code (2-step login) or password-reset code. */
+const CODE_NOTE = "This code expires in 10 minutes and works only once. The library staff will never ask you for it.";
+
+/** Sign-in code (2-step sign-in), password-reset code, or the code that confirms signing a device out. */
 export function otpEmail(otp: string, purpose: OtpPurpose, name?: string | null) {
-  if (purpose === "login") {
-    return {
-      subject: `AklatOne sign-in code: ${otp}`,
-      html: emailLayout({
-        preheader: `Your AklatOne sign-in code is ${otp}. It expires in 10 minutes.`,
-        badge: "Sign-in code",
-        title: "Finish signing in",
-        body: hello(name) + p("Someone (hopefully you) entered your password on AklatOne. Enter this code to finish signing in:") + codeBox(otp) + p(`Requested on ${esc(when())} (Philippine time).`),
-        security: "If you did not try to sign in, someone may know your password. Do not share this code, and change your password right away.",
-      }),
-    };
-  }
+  // The code is never in the subject or preview line: those show on locked phone screens.
+  const kind = {
+    login: {
+      subject: "Your AklatOne sign-in code", badge: "Sign-in code", tone: "primary" as Tone, title: "Finish signing in",
+      intro: "Your password was just entered on AklatOne. To finish signing in, enter this code:",
+      security: "If you did not try to sign in, someone may know your password. Do not share this code; change your password now in <strong>Settings &gt; Change password</strong> and sign out other devices.",
+    },
+    reset: {
+      subject: "Your AklatOne password reset code", badge: "Password reset", tone: "warning" as Tone, title: "Reset your password",
+      intro: "We received a request to reset your AklatOne password. To choose a new password, enter this code in the app:",
+      security: "If you did not ask to reset your password, you can ignore this email: your password stays the same, and it cannot be changed without this code.",
+    },
+    session: {
+      subject: "Confirm signing out a device", badge: "Device sign-out", tone: "warning" as Tone, title: "Confirm signing out a device",
+      intro: "You asked to sign out a device from your AklatOne account. To confirm, enter this code:",
+      security: "If you did not ask for this, someone may be using your account: change your password now and tell the librarian.",
+    },
+  }[purpose];
   return {
-    subject: `AklatOne password reset code: ${otp}`,
+    subject: kind.subject,
     html: emailLayout({
-      preheader: `Your AklatOne password reset code is ${otp}. It expires in 10 minutes.`,
-      badge: "Password reset",
+      preheader: "Your 6-digit AklatOne code is inside. It expires in 10 minutes.",
+      badge: kind.badge,
+      tone: kind.tone,
+      title: kind.title,
+      body: hello(name) + p(kind.intro) + codeBox(otp) + p(`${CODE_NOTE} Requested on ${esc(when())} (Philippine time).`),
+      security: kind.security,
+    }),
+  };
+}
+
+/** Sent when an account signs in on a device it has not used before. */
+export function newDeviceEmail(name: string | null | undefined, d: { device: string; network: string }) {
+  return {
+    subject: "New sign-in to your AklatOne account",
+    html: emailLayout({
+      preheader: `Your account was used on ${d.device}.`,
+      badge: "New sign-in",
       tone: "warning",
-      title: "Reset your password",
-      body: hello(name) + p("We received a request to reset your AklatOne password. Enter this code in the app to choose a new one:") + codeBox(otp) + p(`Requested on ${esc(when())} (Philippine time).`),
-      security: "If you did not ask to reset your password, ignore this email. Your password stays the same, and no one can change it without this code.",
+      title: "New sign-in to your account",
+      body: hello(name) + p("Your AklatOne account was just used on a device it has not used before:")
+        + `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 14px;width:100%;font-size:15px;">`
+        + [["Device", d.device], ["Network", d.network], ["Time", `${when()} (Philippine time)`]].map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:${C.muted};width:90px;">${k}</td><td style="padding:4px 0;color:${C.ink};"><strong>${esc(v!)}</strong></td></tr>`).join("")
+        + `</table>` + p("If this was you, no action is needed."),
+      security: "If this was not you, change your password right away, then open <strong>Settings &gt; Sign-in devices</strong> and sign that device out. Tell the librarian too.",
     }),
   };
 }
@@ -243,7 +271,7 @@ export function borrowApprovedEmail(name: string | null | undefined, book: Email
       title: "Your book is ready",
       body: hello(name) + p("The librarian approved your borrow request. Pick up the book at the library and show your receipt in the AklatOne app.")
         + bookCard(book, fact("Receipt no.", esc(receiptNo)) + fact("Return by", esc(phDay(dueAt))))
-        + p("Please return it on or before the due date so other students can borrow it too."),
+        + p("Please return it on or before the due date so others can borrow it too."),
       security: "This email was sent by AklatOne because of your borrow request. It will never ask for payment details or your password.",
     }),
   };
@@ -260,7 +288,7 @@ export function borrowedAtDeskEmail(name: string | null | undefined, book: Email
       title: "You borrowed a book",
       body: hello(name) + p("The librarian lent you this book at the library. Your receipt is also in the AklatOne app.")
         + bookCard(book, fact("Receipt no.", esc(receiptNo)) + fact("Return by", esc(phDay(dueAt))))
-        + p("Please return it on or before the due date so other students can borrow it too."),
+        + p("Please return it on or before the due date so others can borrow it too."),
       security: "This email was sent by AklatOne because a book was lent to your library account. If you did not borrow it, tell the librarian.",
     }),
   };
