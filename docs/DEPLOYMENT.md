@@ -120,7 +120,7 @@ files. Test a restore at least once each school year (Settings > Backup and Rest
 | `CORS_ORIGINS` | Public HTTPS address of the Staff Web; mobile and desktop apps are always allowed |
 | `SITE_ADDRESS` | Domain for HTTPS (e.g. `library.example.com`); `:80` = plain HTTP LAN test |
 | `OFFSITE_TARGET` | rsync target for `scripts/offsite-backup.sh` (e.g. `backup@nas:/backups/aklatone`) |
-| `GLOBAL_RATE_LIMIT_MAX`, `STAFF_RATE_LIMIT_MAX`, `ANON_RATE_LIMIT_MAX` | Requests per 15 minutes per member account (300), per librarian account (3000), and per IP without sign-in (3000; a school Wi-Fi is one IP) |
+| `GLOBAL_RATE_LIMIT_MAX`, `STAFF_RATE_LIMIT_MAX`, `ANON_RATE_LIMIT_MAX` | Requests per 15 minutes per member account (1000), per librarian account (3000), and per IP without sign-in (3000; a school Wi-Fi is one IP) |
 | `DB_APP_PASSWORD` | Password of the rows-only API user `aklatone_app` (letters and numbers only) |
 | `BACKUP_ENCRYPTION_KEY`, `BACKUP_KEEP` | Encrypts the daily automatic backups; how many to keep (default 14) |
 | `REMINDER_AUTO`, `REMINDER_HOUR`, `REMINDER_DAYS_BEFORE` | Automatic due-soon reminder (default on, 7 AM PH, loans due by the end of tomorrow) |

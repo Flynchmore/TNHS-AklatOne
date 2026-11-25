@@ -13,6 +13,7 @@ import { TitleBar, ResizeEdges } from "./components/staff/TitleBar";
 import { isDesktop } from "./lib/offline";
 import { MobileLogin } from "./features/mobile/MobileLogin";
 import { ToastProvider } from "./components/Toast";
+import { BackButton } from "./components/mobile/BackButton";
 
 // Every screen is loaded when it is first opened (code splitting), so the first download stays small.
 const MobileSettings = lazy(() => import("./features/mobile/MobileSettings").then(m => ({ default: m.MobileSettings })));
@@ -85,6 +86,7 @@ function AppRoutes() {
   if (!ready) return <LoadingScreen />;
   return (
     <BrowserRouter>
+      {isNative && <BackButton />}
       <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {isNative && !consented ? (

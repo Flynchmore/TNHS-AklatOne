@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Library, Lightbulb, Newspaper, MonitorSmartphone } from "lucide-react";
+import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
@@ -224,8 +224,8 @@ function About() {
   return (
     <ScreenShell title="About AklatOne" subtitle="App information" back="/m/settings">
       <section className="bg-surface rounded-3xl shadow-sm border border-line p-6 text-center">
-        <img src="/tnhs-logo.png" alt="" className="w-20 h-20 mx-auto object-contain" />
-        <h2 className="mt-3 text-xl font-bold text-primary-strong flex items-center justify-center gap-2"><Library size={22} aria-hidden="true" />AklatOne</h2>
+        <img src="/aklatone-icon.png" alt="AklatOne" className="w-20 h-20 mx-auto rounded-3xl bg-white p-1.5 shadow-md" />
+        <h2 className="mt-3 text-xl font-bold text-primary-strong">AklatOne</h2>
         <p className="text-sm text-ink-muted">Library Management System</p>
         <p className="text-sm text-ink-muted">Tagumpay National High School</p>
         <dl className="mt-5 grid grid-cols-2 gap-2 text-left">

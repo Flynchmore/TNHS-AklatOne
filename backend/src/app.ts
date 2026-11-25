@@ -11,6 +11,7 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 import { requestIdMiddleware } from "./middleware/requestId.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { sessionsRouter } from "./modules/auth/sessions.routes.js";
+import { coversRouter } from "./modules/covers/covers.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { catalogRouter } from "./modules/catalog/catalog.routes.js";
 import { categoriesRouter } from "./modules/categories/categories.routes.js";
@@ -79,7 +80,8 @@ export function createApp() {
     standardHeaders: true,
     legacyHeaders: false,
     // Credential endpoints use the limiters below; signed-in session calls (/me, /profile) use this one.
-    skip: (req) => req.path.startsWith("/api/v1/auth") && !SESSION_PATHS.test(req.path),
+    // Covers are cheap files from disk, and a catalog page shows 20 of them: never counted (school Wi-Fi shares one IP).
+    skip: (req) => (req.path.startsWith("/api/v1/auth") && !SESSION_PATHS.test(req.path)) || req.path.startsWith("/api/v1/covers/"),
     ...store("rl:global:"),
   });
   app.use(globalLimiter);
@@ -142,6 +144,7 @@ export function createApp() {
   api.use("/auth", authLimiter, loginLimiter, resetCodeLimiter, authRouter);
   api.use("/users", usersRouter);
   api.use("/catalog", catalogRouter);
+  api.use("/covers", coversRouter);
   api.use("/categories", categoriesRouter);
   api.use("/book-copies", bookCopiesRouter);
   api.use("/circulation", circulationRouter);

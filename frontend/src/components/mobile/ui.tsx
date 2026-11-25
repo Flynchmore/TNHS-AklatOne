@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type InputHTMLAttributes, type Reac
 import { useNavigate } from "react-router-dom";
 import { BookOpen, ChevronLeft, GraduationCap, Briefcase, Search, type LucideIcon } from "lucide-react";
 import { cacheGet, cacheSet, isPhone, setReachable } from "../../lib/offline";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, apiUrl } from "../../lib/api";
 
 // Shared Member Mobile building blocks. Colors come from the @theme tokens in src/index.css.
 
@@ -104,7 +104,7 @@ export function SchoolHeader({ title, subtitle, small }: { title: string; subtit
 export function AuthWatermark() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none flex items-center justify-center pt-[38vh]" aria-hidden="true">
-      <img src="/tnhs-logo.png" alt="" className="ak-watermark w-[min(110vw,30rem)] aspect-square object-contain opacity-[0.16] [transform:translateZ(0)]" />
+      <img src="/tnhs-logo.png" alt="" className="ak-watermark w-[min(110vw,30rem)] aspect-square object-contain opacity-[0.24] [transform:translateZ(0)]" />
     </div>
   );
 }
@@ -151,9 +151,20 @@ const NEW_DAYS = 7;
 export const isNewBook = (createdAt?: string | null, now = Date.now()) => !!createdAt && now - new Date(createdAt).getTime() < NEW_DAYS * 86400000;
 
 /** Book cover: the book's own cover picture, else Open Library by ISBN, else an icon; optional "New" tag for recent books. */
+/**
+ * Covers come from the school server (it downloads each Open Library cover once), so they show on the school Wi-Fi
+ * without internet and stay in the phone's cache. Other cover links are used as they are.
+ */
+export function coverSrc(coverUrl?: string | null, isbn?: string | null): string | null {
+  const m = coverUrl ? /^https:\/\/covers\.openlibrary\.org\/b\/(id|isbn)\/([0-9X]+)-([SML])\.jpg/i.exec(coverUrl) : null;
+  if (m) return apiUrl(`/api/v1/covers/${m[1]!.toLowerCase()}/${m[2]}-${m[3]!.toUpperCase()}.jpg`);
+  if (coverUrl) return coverUrl;
+  return isbn ? apiUrl(`/api/v1/covers/isbn/${isbn.replace(/[^0-9X]/gi, "")}-M.jpg`) : null;
+}
+
 export function BookCover({ isbn, coverUrl, title, className = "", isNew = false }: { isbn?: string | null; coverUrl?: string | null; title: string; className?: string; isNew?: boolean }) {
   const [failed, setFailed] = useState(false);
-  const src = coverUrl || (isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false` : null);
+  const src = coverSrc(coverUrl, isbn);
   return (
     <span className={`relative block overflow-hidden ${className}`}>
       {!src || failed ? (
@@ -219,7 +230,7 @@ export function CurvedPanel({ label, children }: { label: string; children: Reac
       {/* School logo as a faint watermark (low opacity, no blur) that stays in view while the panel scrolls. */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="sticky top-[28vh] flex justify-center">
-          <img src="/tnhs-logo.png" alt="" className="ak-watermark w-72 h-72 object-contain opacity-[0.12] [transform:translateZ(0)]" />
+          <img src="/tnhs-logo.png" alt="" className="ak-watermark w-72 h-72 object-contain opacity-[0.2] [transform:translateZ(0)]" />
         </div>
       </div>
       <div className="relative px-5 space-y-6 pb-6">{children}</div>

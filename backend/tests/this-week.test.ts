@@ -40,5 +40,14 @@ describe("school week (Monday-Friday, PH time)", () => {
       expect(listed).toMatchObject({ activeLoans: 2, totalLoans: 2 });
       expect(mine).toHaveLength(listed.activeLoans);
     });
+
+    it("members see this week's most borrowed titles, never who borrowed them", async () => {
+      const m = await newMember(app, `week_m_${stamp}`);
+      const r = await request(app).get("/api/v1/catalog/this-week").set(as(m.token));
+      expect(r.status).toBe(200);
+      expect(r.body.data.items.length).toBeLessThanOrEqual(10);
+      for (const b of r.body.data.items) expect(Object.keys(b).sort()).toEqual(["authors", "coverUrl", "id", "isbn", "times", "title"]);
+      expect((await request(app).get("/api/v1/catalog/this-week")).status).toBe(401);
+    });
   });
 });

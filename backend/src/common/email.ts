@@ -212,7 +212,7 @@ export type WelcomeKind = "librarian" | "created";
 export function welcomeEmail(kind: WelcomeKind, name: string | null | undefined, username: string) {
   const intro: Record<WelcomeKind, string> = {
     librarian: "The librarian account for AklatOne Web and Desktop is ready. You can now manage the catalog, borrowing and members.",
-    created: "The school librarian created an AklatOne library account for you. You can now browse the catalog, request books and track your loans from the AklatOne app.",
+    created: "The school librarian created an AklatOne library account for you. You can now browse the catalog, request books and track the books you borrowed from the AklatOne app.",
   };
   const signIn = p(`Sign in with: <strong style="font-family:Consolas,'Courier New',monospace;">${esc(username)}</strong>`);
   const firstTime = kind === "created" ? p("Ask the librarian for your first password, then change it in <strong>Settings &gt; Change password</strong> after you sign in.") : "";
@@ -313,7 +313,7 @@ export function bookReturnedEmail(name: string | null | undefined, book: EmailBo
       tone: o.tone,
       title: o.title,
       body: hello(name) + bookCard(book, (receiptNo ? fact("Receipt no.", esc(receiptNo)) : "") + fact("Recorded", esc(when()))) + p(o.text),
-      security: "This email was sent by AklatOne after the librarian updated your loan. It will never ask for payment details or your password.",
+      security: "This email was sent by AklatOne after the librarian updated a book you borrowed. It will never ask for payment details or your password.",
     }),
   };
 }

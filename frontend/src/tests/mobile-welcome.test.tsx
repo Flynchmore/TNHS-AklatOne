@@ -7,19 +7,19 @@ import { MobileWelcome, hasConsented, CONSENT_VERSION } from "../features/mobile
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 describe("member app first launch", () => {
-  it("shows five swipeable slides, then Terms/Privacy consent that needs both boxes", () => {
+  it("shows six swipeable slides, then Terms/Privacy consent that needs both boxes", () => {
     const done = vi.fn();
     render(<MemoryRouter><MobileWelcome onDone={done} /></MemoryRouter>);
-    expect(screen.getByText("1 / 5")).toBeInTheDocument();
-    expect(screen.getAllByRole("tab", { name: /^Slide \d/ })).toHaveLength(5);
+    expect(screen.getByText("1 / 6")).toBeInTheDocument();
+    expect(screen.getAllByRole("tab", { name: /^Slide \d/ })).toHaveLength(6);
 
     // Swipe left to the next slide, then use Next for the rest.
     const carousel = screen.getByLabelText("Welcome to AklatOne");
     fireEvent.pointerDown(carousel, { clientX: 300 });
     fireEvent.pointerUp(carousel, { clientX: 100 });
-    expect(screen.getByText("2 / 5")).toBeInTheDocument();
-    for (let n = 0; n < 3; n++) fireEvent.click(screen.getByRole("button", { name: /Next/ }));
-    expect(screen.getByText("5 / 5")).toBeInTheDocument();
+    expect(screen.getByText("2 / 6")).toBeInTheDocument();
+    for (let n = 0; n < 4; n++) fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByText("6 / 6")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Get started/ }));
 
     expect(screen.getByRole("heading", { name: "Terms, privacy and security" })).toBeInTheDocument();

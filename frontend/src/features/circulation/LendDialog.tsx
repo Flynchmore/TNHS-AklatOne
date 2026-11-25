@@ -90,7 +90,7 @@ export function LendDialog({ open, onClose, onLent }: { open: boolean; onClose: 
         <button type="button" onClick={close} className={btn.secondary}>Close</button>
         <button type="submit" disabled={busy || !memberCode || !pick} className={btn.primary}><BookUp size={16} aria-hidden="true" />{busy ? "Lending…" : online ? "Lend book" : "Save for upload"}</button>
       </>}>
-      {!online && <p role="status" className="flex gap-2 text-sm font-semibold text-warning bg-warning-soft rounded-2xl p-3"><WifiOff size={18} className="shrink-0" aria-hidden="true" />No connection: scan the card and the book's QR label. The loan is saved on this computer and checked by the server when you upload (the copy may already be lent by then).</p>}
+      {!online && <p role="status" className="flex gap-2 text-sm font-semibold text-warning bg-warning-soft rounded-2xl p-3"><WifiOff size={18} className="shrink-0" aria-hidden="true" />No connection: scan the card and the book's QR label. The borrowing is saved on this computer and checked by the server when you upload (the copy may already be lent by then).</p>}
 
       <FormSection title="1. Member" icon={UserRound}>
         {memberCode ? (

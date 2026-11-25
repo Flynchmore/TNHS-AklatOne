@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Eye, EyeOff, User, Lock, KeyRound } from "lucide-react";
 import { useAuth } from "../../features/auth/auth";
-import { Alert, Field, FieldIconButton, AuthWatermark, SchoolHeader, Spinner, btnPrimary, focusRing, linkText, mobileApi, serverReachable, friendlyError } from "../../components/mobile/ui";
+import { Alert, Field, FieldIconButton, Spinner, btnPrimary, focusRing, linkText, serverReachable, friendlyError } from "../../components/mobile/ui";
+import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
 
 export function MobileLogin() {
   const nav = useNavigate();
@@ -65,26 +66,20 @@ export function MobileLogin() {
     setError(await failureMessage("Invalid or expired code."));
   };
 
+  // A new sign-in code comes from signing in again (same as the Staff Web).
   const resendOtp = async () => {
     if (resendCooldown > 0) return;
     setLoading(true);
-    const r = await mobileApi("/api/v1/auth/forgot-password", { method: "POST", body: JSON.stringify({ email: otpEmail, method: "email" }) });
+    setError("");
+    const result = await auth.login(username, password);
     setLoading(false);
-    if (r.ok) setResendCooldown(60); else setError(r.message ?? "Could not resend the code.");
+    if (result && typeof result === "object" && result.requiresOtp) setResendCooldown(60);
+    else setError(await failureMessage("Could not send a new code. Please sign in again."));
   };
 
   if (step === "otp") {
     return (
-      <main className="relative isolate min-h-screen bg-page flex flex-col items-center justify-center px-5 py-8">
-      <AuthWatermark />
-        <div className="bg-surface/70 rounded-[2rem] shadow-xl border border-line p-6 space-y-4 max-w-sm w-full ak-slide">
-          <div className="text-center mb-2">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-soft mb-3" aria-hidden="true">
-              <KeyRound className="text-primary" size={24} />
-            </div>
-            <h1 className="text-xl font-bold text-primary-strong">Two-Factor Authentication</h1>
-            <p className="text-sm text-ink-muted mt-1">Enter the code sent to {otpEmail}</p>
-          </div>
+      <MobileAuthShell title="Two-step sign-in" subtitle={`Enter the 6-digit code sent to ${otpEmail}`}>
           {error && <Alert>{error}</Alert>}
           <form onSubmit={verifyOtp} className="space-y-4" noValidate>
             <Field
@@ -108,21 +103,12 @@ export function MobileLogin() {
           <button type="button" onClick={() => { setStep("login"); setOtp(""); setError(""); }} className={`w-full min-h-11 text-sm text-ink-muted hover:text-primary rounded-lg ${focusRing}`}>
             Back to sign in
           </button>
-        </div>
-      </main>
+      </MobileAuthShell>
     );
   }
 
   return (
-    <main className="relative isolate min-h-screen bg-page flex flex-col">
-      <AuthWatermark />
-      <SchoolHeader title="AklatOne" subtitle="Library Management System" />
-      <div className="flex-1 px-5 mt-5 pb-8 landscape:mt-4">
-        <div className="bg-surface/70 rounded-[2rem] shadow-xl border border-line p-6 space-y-4 max-w-sm mx-auto ak-slide">
-          <div className="text-center mb-1">
-            <h2 className="text-xl font-bold text-primary-strong">Welcome Back</h2>
-            <p className="text-sm text-ink-muted mt-1">Sign in to your account</p>
-          </div>
+    <MobileAuthShell title="Welcome back" subtitle="Sign in to your AklatOne account">
           {error && <Alert>{error}</Alert>}
           <form onSubmit={submit} className="space-y-4" noValidate>
             <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />
@@ -147,8 +133,6 @@ export function MobileLogin() {
           <p className="text-center text-sm text-ink-muted pt-2">
             No account yet? Your account and Library ID are made by the school librarian.
           </p>
-        </div>
-      </div>
-    </main>
+    </MobileAuthShell>
   );
 }

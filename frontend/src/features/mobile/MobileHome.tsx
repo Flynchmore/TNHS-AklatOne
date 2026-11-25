@@ -8,14 +8,14 @@ import { useToast } from "../../components/Toast";
 interface Book { id: string; title: string; authors?: string; isbn?: string | null; coverUrl?: string | null; createdAt?: string; availability?: { total: number; available: number } }
 interface Tx { id: string; status: string; dueAt?: string; bookCopy?: { book?: { title: string } } }
 
-// Shortcuts to screens that exist in Member Mobile. Text keeps >= 4.5:1 across each gradient.
+// Shortcuts to screens of the member app: calm white tiles, each with its own soft-tinted icon (tokens keep >= 4.5:1).
 const quickMenu = [
-  { label: "Catalog", icon: BookOpen, path: "/m/catalog", tile: "from-primary to-primary-strong text-on-primary" },
-  { label: "History", icon: History, path: "/m/history", tile: "from-success to-success-strong text-on-primary" },
-  { label: "My Account", icon: UserCircle, path: "/m/profile", tile: "from-accent-soft to-accent-strong text-on-accent" },
-  { label: "Newspaper", icon: Newspaper, path: "/m/newspaper", tile: "from-primary-strong to-primary text-on-primary" },
-  { label: "Suggest", icon: Lightbulb, path: "/m/suggestions", tile: "from-danger to-danger-strong text-on-primary" },
-  { label: "Visit Log", icon: DoorOpen, path: "/m/visit", tile: "from-success to-success-strong text-on-primary" },
+  { label: "Catalog", hint: "Find books", icon: BookOpen, path: "/m/catalog", chip: "bg-primary-soft text-primary" },
+  { label: "History", hint: "Past books", icon: History, path: "/m/history", chip: "bg-info-soft text-info" },
+  { label: "My Account", hint: "Profile", icon: UserCircle, path: "/m/profile", chip: "bg-warning-soft text-warning" },
+  { label: "Newspaper", hint: "School news", icon: Newspaper, path: "/m/newspaper", chip: "bg-success-soft text-success" },
+  { label: "Suggest", hint: "Ask for a book", icon: Lightbulb, path: "/m/suggestions", chip: "bg-accent-soft/50 text-on-accent" },
+  { label: "Visit Log", hint: "Time in / out", icon: DoorOpen, path: "/m/visit", chip: "bg-danger-soft text-danger" },
 ];
 
 export function MobileHome() {
@@ -51,6 +51,18 @@ export function MobileHome() {
   }, []);
 
   useEffect(() => { loadFeatured(); }, [loadFeatured]);
+
+  // Most borrowed this school week (titles only; never who borrowed them).
+  const [week, setWeek] = useState<{ items: (Book & { times: number })[]; total: number } | null>(null);
+  const [weekError, setWeekError] = useState("");
+  const loadWeek = useCallback(() => {
+    if (!auth.token) return;
+    setWeekError("");
+    mobileApi("/api/v1/catalog/this-week", { token: auth.token }).then(r => {
+      if (r.ok) setWeek(r.data as { items: (Book & { times: number })[]; total: number }); else setWeekError(r.message ?? "Could not load this week's books.");
+    });
+  }, [auth.token]);
+  useEffect(() => { loadWeek(); }, [loadWeek]);
 
   useEffect(() => {
     if (!auth.token || !auth.user) return;
@@ -96,14 +108,12 @@ export function MobileHome() {
               {quickMenu.map(q => {
                 const Icon = q.icon;
                 return (
-                  <Link key={q.label} to={q.path} className={`relative aspect-square rounded-3xl bg-gradient-to-br ${q.tile} shadow-md flex flex-col items-center justify-center gap-2 p-1 min-[360px]:p-2 hover:shadow-lg active:scale-95 transition landscape:aspect-auto landscape:h-24 landscape:flex-row landscape:gap-3 ${focusRing}`}>
-                    {/* Decorative circles are clipped separately so the tile itself can grow to fit its label on very small phones. */}
-                    <span className="absolute inset-0 overflow-hidden rounded-3xl" aria-hidden="true">
-                      <span className="absolute -right-5 -top-5 w-16 h-16 rounded-full bg-white/15" />
-                      <span className="absolute -left-4 -bottom-6 w-14 h-14 rounded-full bg-white/10" />
+                  <Link key={q.label} to={q.path} className={`group flex flex-col items-center justify-center gap-2 rounded-3xl bg-surface border border-line shadow-sm px-1 py-4 min-h-28 hover:border-primary/40 hover:shadow-md active:scale-95 transition landscape:min-h-0 landscape:flex-row landscape:py-3 ${focusRing}`}>
+                    <span className={`w-12 h-12 rounded-2xl flex items-center justify-center ${q.chip} group-hover:scale-105 transition`} aria-hidden="true"><Icon size={24} strokeWidth={2.2} /></span>
+                    <span className="text-center leading-tight">
+                      <span className="block text-sm font-bold text-ink whitespace-nowrap">{q.label}</span>
+                      <span className="block text-[11px] text-ink-muted whitespace-nowrap">{q.hint}</span>
                     </span>
-                    <span className="relative w-11 h-11 min-[360px]:w-14 min-[360px]:h-14 rounded-2xl bg-white/25 flex items-center justify-center" aria-hidden="true"><Icon size={26} strokeWidth={2.2} /></span>
-                    <span className="relative text-xs min-[360px]:text-sm font-bold text-center leading-tight whitespace-nowrap">{q.label}</span>
                   </Link>
                 );
               })}
@@ -145,6 +155,28 @@ export function MobileHome() {
               </ul>
             </section>
           )}
+
+          <section aria-labelledby="this-week">
+            <div className="flex items-center justify-between mb-3">
+              <h2 id="this-week" className="font-semibold text-primary-strong">Popular this week</h2>
+              {week && week.total > 0 && <span className="text-xs text-ink-muted">{week.total} borrowed Mon–Fri</span>}
+            </div>
+            <ListState loading={!week && !weekError && "Loading this week's books…"} skeleton="row" error={weekError} onRetry={loadWeek} empty={week?.items.length === 0 && "No books borrowed yet this week. Be the first!"}>
+              <ul aria-label="Books borrowed this week, swipe for more" className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5 pb-3 -mx-5 px-5 [scrollbar-width:none]">
+                {week?.items.map((b, i) => (
+                  <li key={b.id} className="w-36 shrink-0 snap-start">
+                    <Link to={`/m/catalog?q=${encodeURIComponent(b.title)}`} className={`relative block h-full bg-surface rounded-2xl border border-line shadow-sm p-2.5 hover:border-primary transition ${focusRing}`}>
+                      <span className="absolute z-10 top-1 left-1 w-7 h-7 rounded-full bg-primary-strong text-on-primary text-xs font-extrabold flex items-center justify-center shadow" aria-label={`Number ${i + 1}`}>{i + 1}</span>
+                      <BookCover isbn={b.isbn} coverUrl={b.coverUrl} title={b.title} className="w-full aspect-[2/3] rounded-xl mb-2 shadow-sm" />
+                      <div className="text-sm font-semibold text-ink line-clamp-2">{b.title}</div>
+                      <div className="text-sm text-ink-muted line-clamp-1 mt-0.5">{b.authors || "Unknown author"}</div>
+                      <span className="inline-block mt-2 text-xs font-medium px-2 py-0.5 rounded-full bg-primary-soft text-primary">Borrowed {b.times}×</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </ListState>
+          </section>
 
           <section aria-labelledby="featured">
             <div className="flex items-center justify-between mb-3">

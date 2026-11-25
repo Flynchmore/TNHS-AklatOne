@@ -23,4 +23,4 @@ export const returnSchema = z.object({
   notes: z.string().optional(),
   // Omitted: on time or late, decided from dueAt.
   outcome: z.enum(["RETURNED_ON_TIME", "RETURNED_LATE", "DAMAGED", "MISSING"]).optional(),
-}).refine((d) => Number(!!d.transactionId) + Number(!!d.copyCode) === 1, { message: "Give the loan or scan the book", path: ["copyCode"] });
+}).refine((d) => Number(!!d.transactionId) + Number(!!d.copyCode) === 1, { message: "Choose the borrowed book or scan its QR label", path: ["copyCode"] });

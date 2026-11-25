@@ -66,7 +66,7 @@ export function Reports() {
   const exportExcel = async () => {
     try {
       await downloadXlsx(token, `/api/v1/reports/export.xlsx?${range}`, "aklatone-reports.xlsx");
-      toast({ tone: "success", title: "Reports exported", message: "Summary, loans, popular books, copies and overdue books are in the Excel file." });
+      toast({ tone: "success", title: "Reports exported", message: "Summary, borrowed books, popular books, copies and overdue books are in the Excel file." });
     } catch (e) { toast({ tone: "error", title: "Export failed", message: (e as Error).message }); }
   };
   const preset = (days: number) => apply(phISODate(Date.now() - days * 86400000), phISODate());

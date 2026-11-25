@@ -13,7 +13,7 @@ const pause = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 const loginHighlights = [
   { icon: ClipboardCheck, text: "Review and approve borrow requests" },
-  { icon: BookCopy, text: "Track loans, returns, and book condition" },
+  { icon: BookCopy, text: "Track borrowed books, returns, and book condition" },
   { icon: BellRing, text: "Send overdue notices to members" },
 ];
 const otpHighlights = [

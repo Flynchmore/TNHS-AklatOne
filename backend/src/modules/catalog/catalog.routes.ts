@@ -11,6 +11,7 @@ import { editConflict } from "../../common/conflict.js";
 import { authenticate, requirePermission } from "../../middleware/auth.js";
 import { verifyToken } from "../auth/auth.service.js";
 import type { Prisma } from "@prisma/client";
+import { schoolWeek } from "../reports/reports.routes.js";
 import { applyPlan, exportWorkbook, parseWorkbook, planImport, savePreview, takePreview, templateWorkbook } from "./catalog.import.js";
 
 /** Drops undefined fields (the schema allows "not sent"; Prisma, with exactOptionalPropertyTypes, wants them absent). */
@@ -151,6 +152,23 @@ catalogRouter.post("/import/apply", authenticate, requirePermission("catalog:wri
       return r;
     }, { timeout: 120_000 });
     ok(res, result, "Import applied");
+  } catch (err) { next(err); }
+});
+
+/**
+ * Books borrowed this school week (Monday-Friday, PH time; on weekends the week just ended), most borrowed first.
+ * For the member app: titles and how many times only, never who borrowed them. Hidden books are left out.
+ */
+catalogRouter.get("/this-week", authenticate, async (_req, res, next) => {
+  try {
+    const days = schoolWeek(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Manila" }));
+    const lent = await prisma.borrowingTransaction.findMany({
+      where: { borrowedAt: { gte: new Date(`${days[0]}T00:00:00+08:00`), lte: new Date(`${days[4]}T23:59:59.999+08:00`) }, status: { not: "CANCELLED" }, bookCopy: { book: { isHidden: false } } },
+      select: { bookCopy: { select: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } } },
+    });
+    const titles = new Map<string, { id: string; title: string; authors: string | null; isbn: string | null; coverUrl: string | null; times: number }>();
+    for (const l of lent) { const b = l.bookCopy.book; const t = titles.get(b.id) ?? { ...b, times: 0 }; t.times++; titles.set(b.id, t); }
+    ok(res, { from: days[0], to: days[4], total: lent.length, items: [...titles.values()].sort((a, b) => b.times - a.times || a.title.localeCompare(b.title)).slice(0, 10) });
   } catch (err) { next(err); }
 });
 

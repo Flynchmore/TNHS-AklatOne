@@ -36,12 +36,12 @@ function ToastItem({ t, onDone }: { t: Toast; onDone: () => void }) {
     <div
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)} onTouchEnd={() => setPaused(false)}
-      className={`pointer-events-auto relative overflow-hidden bg-surface rounded-2xl border ${l.ring} shadow-xl p-4 pr-11 flex gap-3 ${leaving ? "ak-toast-out" : "ak-toast-in"}`}
+      className={`pointer-events-auto relative overflow-hidden bg-surface rounded-2xl border ${l.ring} shadow-xl p-3 pr-10 gap-2.5 sm:p-4 sm:pr-11 sm:gap-3 flex ${leaving ? "ak-toast-out" : "ak-toast-in"}`}
     >
-      <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${l.icon}`} aria-hidden="true"><l.Icon size={20} /></span>
+      <span className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${l.icon}`} aria-hidden="true"><l.Icon size={18} /></span>
       <div className="min-w-0">
-        <p className="font-semibold text-ink">{t.title}</p>
-        {t.message && <p className="text-sm text-ink-muted mt-0.5">{t.message}</p>}
+        <p className="text-sm sm:text-base font-semibold text-ink">{t.title}</p>
+        {t.message && <p className="text-xs sm:text-sm text-ink-muted mt-0.5">{t.message}</p>}
       </div>
       <button type="button" onClick={() => setLeaving(true)} aria-label="Dismiss notification" className="absolute top-2 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><X size={16} aria-hidden="true" /></button>
       <span className={`absolute bottom-0 left-0 h-1 w-full origin-left ${l.bar} ak-toast-bar`} style={{ animationDuration: `${DURATION}ms`, animationPlayState: paused ? "paused" : "running" }} aria-hidden="true" />
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={show}>
       {children}
-      <div aria-live="polite" role="status" className="ak-no-print fixed z-[100] top-[max(1rem,env(safe-area-inset-top))] inset-x-4 sm:top-auto sm:bottom-6 sm:inset-x-auto sm:right-6 sm:w-96 flex flex-col gap-2 pointer-events-none">
+      <div aria-live="polite" role="status" className="ak-no-print fixed z-[100] top-[max(0.75rem,env(safe-area-inset-top))] inset-x-6 max-w-sm mx-auto sm:mx-0 sm:max-w-none sm:top-auto sm:bottom-6 sm:inset-x-auto sm:right-6 sm:w-96 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => <ToastItem key={t.id} t={t} onDone={() => remove(t.id)} />)}
       </div>
     </ToastCtx.Provider>

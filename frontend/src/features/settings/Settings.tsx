@@ -167,7 +167,6 @@ function AboutPanel() {
           <p className="text-xl font-bold text-primary-strong">AklatOne</p>
           <p className="text-sm text-ink-muted">Library Management System</p>
         </div>
-        <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className="w-14 h-14 ml-auto object-contain" />
       </div>
       <dl className="grid grid-cols-2 gap-3 text-sm">
         {[["Version", __APP_VERSION__], ["Build date", __BUILD_DATE__], ["School", "Tagumpay National High School"], ["Apps", "Web, Desktop, Android and iOS"]].map(([k, v]) => (

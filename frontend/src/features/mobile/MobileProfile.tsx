@@ -83,9 +83,9 @@ export function MobileProfile() {
 
   const active = history.txs.filter(t => t.status === "ACTIVE");
   const tiles = [
-    { label: "Borrowed now", value: active.length, Icon: BookOpenCheck, tile: "from-primary to-primary-strong text-on-primary" },
-    { label: "Returned", value: history.txs.length - active.length, Icon: BookCheck, tile: "from-success to-success-strong text-on-primary" },
-    { label: "Overdue", value: active.filter(t => t.dueAt && new Date(t.dueAt).getTime() < now).length, Icon: AlertTriangle, tile: "from-danger to-danger-strong text-on-primary" },
+    { label: "Borrowed now", value: active.length, Icon: BookOpenCheck, chip: "bg-primary-soft text-primary", to: "/m/loans" },
+    { label: "Returned", value: history.txs.length - active.length, Icon: BookCheck, chip: "bg-success-soft text-success", to: "/m/history" },
+    { label: "Overdue", value: active.filter(t => t.dueAt && new Date(t.dueAt).getTime() < now).length, Icon: AlertTriangle, chip: "bg-danger-soft text-danger", to: "/m/loans" },
   ];
   const tabs: TabDef<Tab>[] = [
     { key: "activity", label: "Activity", icon: HistoryIcon },
@@ -118,18 +118,21 @@ export function MobileProfile() {
           <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-soft text-primary"><TypeIcon size={12} aria-hidden="true" />{memberType}</span>
         </div>
       </div>
-      {/* Same look as Home's Quick Menu tiles, a little smaller. */}
-      <dl className="grid grid-cols-3 gap-2.5 mt-4">
-        {tiles.map(t => (
-          <div key={t.label} className={`relative rounded-2xl bg-gradient-to-br ${t.tile} shadow-md px-1 py-3 flex flex-col items-center gap-1 overflow-hidden`}>
-            <span className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-white/15" aria-hidden="true" />
-            <span className="absolute -left-3 -bottom-5 w-11 h-11 rounded-full bg-white/10" aria-hidden="true" />
-            <span className="relative w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center" aria-hidden="true"><t.Icon size={18} strokeWidth={2.2} /></span>
-            <dd className="relative text-xl font-extrabold leading-none mt-1">{history.loading ? "–" : t.value}</dd>
-            <dt className="relative text-[11px] font-bold text-center leading-tight">{t.label}</dt>
-          </div>
-        ))}
-      </dl>
+      {/* Same look as Home's Quick Menu: white tiles with a soft icon; each opens the matching list. Overdue turns red when there is one. */}
+      <ul className="grid grid-cols-3 gap-2.5 mt-4">
+        {tiles.map(t => {
+          const alert = t.label === "Overdue" && t.value > 0 && !history.loading;
+          return (
+            <li key={t.label}>
+              <Link to={t.to} aria-label={`${history.loading ? "" : t.value} ${t.label}`} className={`flex flex-col items-center gap-1 rounded-2xl border px-1 py-3 shadow-sm active:scale-95 transition ${alert ? "bg-danger-soft border-danger/50" : "bg-surface border-line hover:border-primary/40"}`}>
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${t.chip}`} aria-hidden="true"><t.Icon size={18} strokeWidth={2.2} /></span>
+                <span className={`text-xl font-extrabold leading-none mt-1 ${alert ? "text-danger" : "text-ink"}`}>{history.loading ? "–" : t.value}</span>
+                <span className="text-[11px] font-bold text-center leading-tight text-ink-muted">{t.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 
@@ -274,7 +277,12 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       {error && <Alert>{error}</Alert>}
       <Field label="Full name" icon={<IdCard size={18} />} autoComplete="name" value={form.displayName ?? ""} onChange={set("displayName")} maxLength={100} />
       <Field label="Username" icon={<UserIcon size={18} />} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")} />
-      <MemberTypePicker value={type} onChange={v => setForm(f => ({ ...f, memberType: v }))} />
+      {/* Student or Teacher is chosen once; after that only the librarian can change it. */}
+      {me.memberType ? (
+        <p className="rounded-2xl bg-page border border-line px-4 py-3 text-sm text-ink"><b>Role:</b> {me.memberType} <span className="block text-xs text-ink-muted">Set once. Ask the librarian if it is wrong.</span></p>
+      ) : (
+        <MemberTypePicker value={type} onChange={v => setForm(f => ({ ...f, memberType: v }))} />
+      )}
       <fieldset>
         <legend className="block text-sm font-medium text-ink mb-1.5">Gender</legend>
         <div className="grid grid-cols-3 gap-2">

@@ -47,7 +47,7 @@ export async function reportsWorkbook(from?: Date, to?: Date): Promise<Buffer> {
     ["Different titles borrowed", popular.size],
   ].forEach(([k, v]) => sum.addRow({ k, v }));
 
-  const L = sheet(wb, "Loans", [
+  const L = sheet(wb, "Borrowed books", [
     { header: "Receipt no.", key: "receipt", width: 22 }, { header: "Title", key: "title", width: 40 }, { header: "ISBN", key: "isbn", width: 16 },
     { header: "Copy", key: "copy", width: 18 }, { header: "Borrower", key: "borrower", width: 28 }, { header: "Role", key: "role", width: 10 },
     { header: "Grade / Section", key: "grade", width: 16 }, { header: "Borrowed", key: "borrowed", width: 20 }, { header: "Due", key: "due", width: 14 },

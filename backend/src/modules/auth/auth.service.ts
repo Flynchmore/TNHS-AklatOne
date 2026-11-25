@@ -170,7 +170,14 @@ export async function updateProfile(userId: string, input: {
     data.sessionsRevokedAt = new Date();
   }
   if (input.displayName !== undefined) data.displayName = input.displayName;
-  if (input.memberType !== undefined) data.memberType = input.memberType;
+  if (input.memberType !== undefined) {
+    // Student or Teacher is declared once (the librarian sets it when adding the member); only the librarian changes it later.
+    const current = await prisma.user.findUnique({ where: { id: userId }, select: { memberType: true } });
+    if (current?.memberType && current.memberType !== input.memberType) {
+      throw Object.assign(new Error(`Your role (${current.memberType}) can only be set once. Ask the librarian if it is wrong.`), { status: 409 });
+    }
+    data.memberType = input.memberType;
+  }
   if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl;
   if (input.phoneNumber !== undefined) data.phoneNumber = input.phoneNumber;
   // Empty string clears the field.

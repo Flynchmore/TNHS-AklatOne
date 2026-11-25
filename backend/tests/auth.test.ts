@@ -149,4 +149,15 @@ describe("auth", () => {
     const ok = await request(app).post("/api/v1/auth/login").send({ username: `hint_${stamp}`, password: MEMBER_PASSWORD });
     expect(ok.body.data).toMatchObject({ requiresOtp: true, email: "h***@example.com" });
   });
+
+  it("Student or Teacher is set once: a member cannot change it afterwards", async () => {
+    const app = createApp();
+    const m = await newMember(app, `role_${Date.now()}`);
+    const same = await request(app).patch("/api/v1/auth/profile").set("Authorization", `Bearer ${m.token}`).send({ memberType: "Student" });
+    expect(same.status).toBe(200);
+    const change = await request(app).patch("/api/v1/auth/profile").set("Authorization", `Bearer ${m.token}`).send({ memberType: "Teacher" });
+    expect(change.status).toBe(409);
+    expect(change.body.message).toMatch(/can only be set once/);
+    expect((await prisma.user.findUnique({ where: { id: m.id } }))!.memberType).toBe("Student");
+  });
 });

@@ -17,7 +17,8 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   // Per signed-in member account per window (15 min).
-  GLOBAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  // Per member account per 15 min. 300 was too low for a normal session (badges, screens, screen time), so 1000.
+  GLOBAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1000),
   // Per signed-in librarian/admin account per window.
   STAFF_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(3000),
   // Per IP for requests without a token; one school Wi-Fi IP may carry hundreds of students.
@@ -29,6 +30,8 @@ const envSchema = z.object({
   TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
   // Database backups (Settings > Backup and Restore, and a daily automatic copy).
   BACKUP_DIR: z.string().default("backups"),
+  // Book covers downloaded once from Open Library and kept here (modules/covers).
+  COVER_DIR: z.string().default("covers"),
   // Optional full-rights database user for backups, restores and migrations; DATABASE_URL can then be a rows-only user.
   DATABASE_ADMIN_URL: z.string().optional(),
   BACKUP_AUTO: z.string().optional().transform((v) => v !== "false"),

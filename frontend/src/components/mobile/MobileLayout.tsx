@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Home, BookOpen, Library, Bell, User, WifiOff } from "lucide-react";
 import { useOnline } from "../../lib/offline";
@@ -64,8 +64,12 @@ export function MobileLayout() {
   }, []);
   useScreenTimeTracker(user?.id, token, "mobile");
   const current = nav.find(n => location.pathname === n.to || n.also?.some(p => location.pathname.startsWith(p)))?.badge;
-  const loadUnread = useCallback(async () => {
+  const lastBadges = useRef(0);
+  const loadUnread = useCallback(async (force = false) => {
     if (!token || !user) return;
+    // Badges are not worth more than one check every 15 s (screen changes often come in quick bursts).
+    if (!force && Date.now() - lastBadges.current < 15_000) return;
+    lastBadges.current = Date.now();
     const [n, r, b] = await Promise.all([
       mobileApi("/api/v1/notifications/mine", { token }),
       mobileApi("/api/v1/borrow-requests/mine", { token }),
@@ -85,14 +89,15 @@ export function MobileLayout() {
     }, seen));
   }, [token, user, current]);
   // Refresh the badges whenever the member changes screen.
-  useEffect(() => { loadUnread(); }, [loadUnread, location.pathname]);
-  // ...and every 30 s while the app is open, so a new librarian notice shows up without navigating.
+  // (Opening a tab that has a badge always checks, so its number clears at once.)
+  useEffect(() => { loadUnread(!!current); }, [loadUnread, location.pathname, current]);
+  // ...and every 60 s while the app is open, so a new librarian notice shows up without navigating.
   useEffect(() => {
-    const t = setInterval(() => { if (document.visibilityState === "visible") loadUnread(); }, 30000);
+    const t = setInterval(() => { if (document.visibilityState === "visible") loadUnread(); }, 60_000);
     return () => clearInterval(t);
   }, [loadUnread]);
   // Pull-to-refresh remounts the current screen, so it reloads all of its data.
-  const refresh = useCallback(async () => { setRefreshKey(k => k + 1); await loadUnread(); }, [loadUnread]);
+  const refresh = useCallback(async () => { setRefreshKey(k => k + 1); await loadUnread(true); }, [loadUnread]);
   const online = useOnline();
   return (
     <div className="min-h-screen bg-page flex flex-col">

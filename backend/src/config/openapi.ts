@@ -66,11 +66,13 @@ export const openApiSpec = {
       get: pub("/catalog", "List/search books: q, categoryId, available=1, sortBy, sortOrder, limit, offset (hidden books only for staff; hidden=1 lists hidden ones)"),
       post: auth("/catalog", "Add a book (optionally with copies)", "catalog:write", { "201": "Created", "409": "Duplicate ISBN or serial number" }),
     },
+    "/catalog/this-week": { get: auth("/catalog", "Books borrowed this school week (Mon-Fri, PH time), top 10 titles with how many times; no borrower details") },
     "/catalog/{id}": {
       get: pub("/catalog", "Book details with availability and rating", { "404": "Not found (or hidden)" }),
       patch: auth("/catalog", "Edit a book, including isHidden", "catalog:write", { "404": "Not found", "409": "Duplicate ISBN or serial number" }),
       delete: auth("/catalog", "Delete a book", "catalog:write", { "404": "Not found", "409": "Has borrowing history" }),
     },
+    "/covers/{kind}/{file}": { get: pub("/covers", "Book cover image kept by the school server (kind id|isbn, file <key>-S|M|L.jpg); downloaded once from Open Library, only for books in the catalog", { "404": "No cover" }) },
     "/catalog/{id}/rating": { put: auth("/catalog", "Rate a book 1-5 (member)", undefined, { "404": "Not found" }) },
     "/catalog/{id}/view": { post: auth("/catalog", "Count a member's view of a book") },
     "/catalog/export.xlsx": { get: auth("/catalog", "Download the catalog as Excel", "catalog:write") },
@@ -91,8 +93,8 @@ export const openApiSpec = {
 
     "/circulation/borrow": { post: auth("/circulation", "Lend at the desk: member by borrowerId or memberCode (Member ID), book by bookCopyId, copyCode (QR label) or bookId (first copy on the shelf); 7-day due date, receipt, alert; limit 3", "circulation:write", { "201": "Created", "404": "Copy or borrower not found", "409": "Copy not available" }) },
     "/circulation/return": { post: auth("/circulation", "Record a return (on time, late, damaged, missing) by transactionId or by the scanned copyCode", "circulation:write", { "404": "Not found", "409": "Not active" }) },
-    "/circulation/transactions": { get: auth("/circulation", "Loans (members only see their own)") },
-    "/circulation/transactions/{id}": { get: auth("/circulation", "Loan details (members only their own)", undefined, { "404": "Not found" }) },
+    "/circulation/transactions": { get: auth("/circulation", "Borrowing records (members only see their own)") },
+    "/circulation/transactions/{id}": { get: auth("/circulation", "Borrowing record details (members only their own)", undefined, { "404": "Not found" }) },
 
     "/borrow-requests": {
       get: auth("/borrow-requests", "List requests (status filter)", "circulation:read"),
@@ -125,9 +127,9 @@ export const openApiSpec = {
     "/reports/recent-activity": { get: auth("/reports", "Recent audit log entries", "reports:read") },
     "/reports/copies-by-status": { get: auth("/reports", "Copies by status", "reports:read") },
     "/reports/inventory": { get: auth("/reports", "Inventory list", "reports:read") },
-    "/reports/circulation": { get: auth("/reports", "Loans in a date range", "reports:read") },
+    "/reports/circulation": { get: auth("/reports", "Borrowing records in a date range", "reports:read") },
     "/reports/popular-books": { get: auth("/reports", "Most borrowed books", "reports:read") },
-    "/reports/overdue": { get: auth("/reports", "Overdue loans", "reports:read") },
+    "/reports/overdue": { get: auth("/reports", "Overdue borrowed books", "reports:read") },
     "/reports/this-week": { get: auth("/reports", "Books used this school week (Monday-Friday, PH time; ?day= any day of the week): borrowed/returned/visits per day, titles", "reports:read") },
     "/reports/export.xlsx": { get: auth("/reports", "All report lists as one Excel file (from, to)", "reports:read") },
 

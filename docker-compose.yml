@@ -53,6 +53,7 @@ services:
       REMINDER_DAYS_BEFORE: ${REMINDER_DAYS_BEFORE:-1}
     volumes:
       - backups:/app/backups
+      - covers:/app/covers   # book covers downloaded once from Open Library
     # Not published: only the web container talks to it. Uncomment to reach the API directly (e.g. for the mobile app).
     # ports: ["3000:3000"]
 
@@ -86,5 +87,6 @@ services:
 volumes:
   db-data:
   backups:
+  covers:
   caddy-data:   # HTTPS certificates; keep it, or Let's Encrypt limits may block new ones
   caddy-config:

@@ -110,7 +110,7 @@ export function Receipt({ data, className = "" }: { data: ReceiptData; className
         </ol>
       </section>
 
-      <p className="mx-5 my-5 pt-3 border-t border-line text-xs text-ink-muted text-center">Loans are for 7 days; a member may have up to 8 books at a time.</p>
+      <p className="mx-5 my-5 pt-3 border-t border-line text-xs text-ink-muted text-center">Books are borrowed for 7 days; a member may have up to 8 books at a time.</p>
     </article>
   );
 }

@@ -91,7 +91,7 @@ describe("Excel catalog import", () => {
     expect(r.status).toBe(200);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(r.body as unknown as ArrayBuffer);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(["Summary", "Loans", "Popular books", "Copies by status", "Overdue", "Library visits"]);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Summary", "Borrowed books", "Popular books", "Copies by status", "Overdue", "Library visits"]);
     expect(String(wb.getWorksheet("Summary")!.getCell("B2").value)).toContain("308114");
   });
 
