@@ -214,6 +214,13 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Server: docker-compose proxy service (caddy:2.10-alpine, Caddyfile, SITE_ADDRESS, caddy-data volume), web container no longer published, TRUST_PROXY 2. scripts/offsite-backup.sh (rsync to OFFSITE_TARGET). Uptime via /health. docs/DEPLOYMENT.md sections 3-5 rewritten.
 - CI: .github/workflows/release.yml (tag v*: check HTTPS API_BASE_URL, signed Android APK/AAB, Windows/Linux installers with optional Windows cert, GitHub Release). ci.yml + release.yml pass actionlint. Needs a GitHub repo to run.
 
+## Security pass 2, manuscript text, GitHub (2026-11-25)
+- Sign-in / reset codes: crypto.randomInt, stored as SHA-256 (otpCode holds the hash; compared with timingSafeEqual). Forgot-password gives the same answer whether or not the email has an account. [DEV OTP] log only outside production. Login always runs bcrypt (dummy hash for unknown usernames) so timing does not reveal usernames; the code screen gets only an email hint (c***@gmail.com). jwt.verify pinned to HS256. Tests in tests/auth.test.ts.
+- Favourites: creating a folder is guarded against double taps.
+- Tests no longer use the developer's real name (fictional "Carla Aquino").
+- docs/manuscript/AklatOne-System-Manuscript-Text.md: paste-ready system text (description, general/core features, scope and limitations, technologies, security, platforms). Hand it over when the developer asks for the manuscript text.
+- GitHub: https://github.com/Flynchmore/TNHS-AklatOne (branch main, first commit 2026-11-25). .gitignore updated for the android/ and ios/ build folders and generated web copies.
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

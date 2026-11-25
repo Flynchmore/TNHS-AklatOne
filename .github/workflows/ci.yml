@@ -26,8 +26,8 @@ jobs:
       JWT_SECRET: ci-only-secret-not-used-anywhere-else
       REDIS_URL: ""
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm, cache-dependency-path: backend/package-lock.json }
       - run: npm ci
       - run: npx prisma generate
@@ -43,8 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci
       - run: npm run lint
@@ -60,8 +60,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - uses: dtolnay/rust-toolchain@stable
       - name: Linux libraries for the WebView
@@ -77,23 +77,26 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: 21 }
       - run: npm ci
       - run: npm run build && npx cap sync android
-      - run: ./gradlew assembleDebug
+      - name: Debug APK (on failure the last Gradle lines are shown as annotations)
         working-directory: frontend/mobile-capacitor/android
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --console=plain 2>&1 | tee gradle.log || { grep -E "What went wrong|error:|Exception|> " gradle.log | tail -n 15 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
 
   # Member app on iOS: compiles the Xcode project for the simulator (no signing; a real install needs an Apple account).
   ios:
     runs-on: macos-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci
       - run: npm run build && npx cap sync ios
