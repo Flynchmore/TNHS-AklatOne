@@ -251,10 +251,15 @@ Staff Web Portal and HTTPS) with Docker; the phone and desktop apps connect to i
 
 1. **Buy a Hostinger *VPS* plan** (not "Web Hosting": shared hosting cannot run Docker, Node.js or MariaDB).
    **KVM 2** (2 vCPU, 8 GB RAM, 100 GB NVMe) fits the server requirements above for about 2,600 students;
-   KVM 1 (1 vCPU) is below the minimum.
-2. In hPanel choose the operating system template **Ubuntu 24.04 with Docker** (or plain Ubuntu 24.04 and install
-   Docker: <https://docs.docker.com/engine/install/ubuntu/>). Note the VPS IP address and root password.
-3. **Domain:** add an **A record** for your domain (e.g. `library.example.com`) pointing to the VPS IP.
+   KVM 1 (1 vCPU) is below the minimum. Choose the **12-month** billing period for a one-year deployment
+   (24 months is cheaper per month). The renewal price is higher than the first-term promo: check the cart.
+2. **Operating system:** in hPanel, *VPS > OS & Panel > Operating System*, pick the template
+   **Ubuntu 24.04 with Docker**. It is Ubuntu with Docker and Docker Compose already installed, so the setup script
+   can run at once. (Changing the template later erases the VPS; do it before putting data on it.)
+3. **Domain:** Hostinger's VPS plans advertise a **free domain for the first year** (selected extensions;
+   claim it in hPanel > Domains). Otherwise buy one separately (e.g. `.com`, `.ph`, or ask the Division / school for
+   a subdomain). Add an **A record** for the domain (e.g. `library.example.com`) pointing to the VPS IP. Renew the
+   domain each year, or the address and HTTPS stop working.
 4. Connect and run the setup (replace the domain):
 
 ```bash

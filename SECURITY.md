@@ -45,6 +45,38 @@ Write down the time of each step; the school may need it for the report.
    about it (NPC Circular 16-03).
 8. **Bring the site back:** `docker compose up -d`, then check sign-in, borrowing and the Visitor's Log.
 
+## GitHub account and repository
+The source code and the release builds live on GitHub, so the account that owns the repository protects the whole
+system.
+
+- **Owner account:** long unique password, **two-factor authentication** on (Settings > Password and
+  authentication), recovery codes saved offline. Never write a password in a chat, an issue, a document or a commit;
+  if one was shared, change it at once. `git push` uses a personal access token or SSH key, never the password.
+- **Turn on once** in the repository's *Settings*:
+  - *Code security*: **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** with **push
+    protection** (blocks a commit that contains a password or key), **Private vulnerability reporting**.
+  - *Rules > Rulesets > New branch ruleset* for `main`: **Restrict deletions** and **Block force pushes**. Add
+    "Require a pull request" and "Require status checks" only when every change goes through pull requests.
+- **Dependabot pull requests:** merge them when the CI checks are green. Do not merge Node.js updates to an
+  odd-numbered version (e.g. 25): only even versions get long-term support.
+- **Code scanning (CodeQL):** review new alerts under *Security > Code scanning*. Two kinds are expected and can be
+  dismissed: the password change that asks for the current password only when a new password is set
+  (*false positive*), and the `[DEV OTP]` line that prints sign-in codes only on a development computer
+  (*used in tests*).
+- **Collaborators:** give access only to the people who maintain the system, and remove it when they leave.
+
+## The server (Hostinger VPS)
+- Sign in with an **SSH key** instead of the root password, then switch off password logins
+  (`PasswordAuthentication no` in `/etc/ssh/sshd_config`, `systemctl restart ssh`).
+- Firewall: allow only SSH, HTTP and HTTPS:
+  `ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw enable` (Hostinger's panel firewall can do the same).
+  The database, Redis and the API are never published outside Docker.
+- Security updates: `apt install unattended-upgrades` and keep Docker images current with
+  `git pull && bash scripts/docker-setup.sh <domain>`.
+- Turn on Hostinger's **VPS backups / snapshots** in addition to AklatOne's encrypted daily backups and the off-site
+  copy (`scripts/offsite-backup.sh`).
+- Keep the hPanel account itself protected with two-factor authentication.
+
 ## Keeping it safe day to day
 - Never share or commit `.env`, `~/aklatone-keys/` (Android signing key) or backup files.
 - Give the librarian account a long unique password; do not share it with student assistants.
