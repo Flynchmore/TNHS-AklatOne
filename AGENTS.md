@@ -11,8 +11,9 @@ Library Management System for Tagumpay National High School (provisional backend
   - frontend/mobile-capacitor/: Capacitor phone app (member + librarian mode): android/ and ios/ native projects
 
 ## Backend
-Modules under src/modules: auth, users, catalog (incl. Excel import/export), categories, book-copies, circulation,
-reports, borrow-requests, notifications (incl. automatic reminders), favourites, setup, backup, system, inventory.
+Modules under src/modules: auth (incl. sign-in sessions / devices), users (incl. Member ID, ID cards), catalog (incl.
+Excel import/export), categories, book-copies, circulation, reports, borrow-requests, notifications (incl. automatic
+reminders), favourites, setup, backup, system, inventory, visits (Visitor's Log), time (time spent), suggestions.
 Note: tests/auth.test.ts uses a real database (other suites mock Prisma). Run the suite against
 aklatone_e2e with REDIS_URL blank (the shared Redis rate-limit counts otherwise cause 429s):
   DATABASE_URL=<.env URL with db aklatone_e2e> REDIS_URL= npm test

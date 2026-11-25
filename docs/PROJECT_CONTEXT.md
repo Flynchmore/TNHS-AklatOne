@@ -4,26 +4,27 @@
 AklatOne: Library Management System for Tagumpay National High School.
 
 ## Architecture
-- Backend: Express + TypeScript + Prisma + MariaDB (modular monolith)
-- Frontend: React + TypeScript + Vite + Tailwind
-- Desktop: Tauri (Rust + WebView) - configured, not packaged
-- Mobile: Capacitor (Android) - configured, build verified (JDK 21)
+- Backend: Express 5 + TypeScript + Prisma 7 + MariaDB 10.11 (modular monolith), Redis optional
+- Frontend: React 19 + TypeScript + Vite 8 + Tailwind 4, one code base for every app (pages lazy-loaded)
+- Desktop: Tauri 2 (Windows + Linux; CI builds both)
+- Mobile: Capacitor 8, frontend/mobile-capacitor/android (Android 8.0+) and ios (iOS 16.4+)
+- Deploy: Docker Compose (MariaDB, Redis, API, nginx Staff Web, Caddy HTTPS) on a Hostinger VPS; scripts/docker-setup.sh
+- Repo: https://github.com/Flynchmore/TNHS-AklatOne (CI, CodeQL, Dependabot, release workflow)
 
 ## Platforms
-- Web: implemented
-- Desktop: Tauri shell implemented
-- Mobile: Capacitor configured, debug APK builds. Member screens (/m/*) call the backend (auth, catalog, circulation history, profile). UI-04.1 aligned Member Mobile to design tokens and WCAG 2.2 AA (see docs/aklatone-ui-04.1-member-mobile-design-system.md). Install on phone: bash frontend/scripts/run-android.sh. Physical-device test pending.
+- Staff Web (PWA) and Staff Desktop: librarian / admin only (members get a notice). Desktop adds offline mode, Upload and the Visitor's Log kiosk chooser.
+- Mobile app: members (/m/*) and librarian mode (/m/staff). Install: npm run android (one USB phone), android:install-all (USB hub), android:share (QR over Wi-Fi). Physical-device test pending.
 
 ## Roles
-- ADMIN, LIBRARIAN, MEMBER (Students/Teachers are member categories)
+- ADMIN, LIBRARIAN, MEMBER (Students/Teachers are member categories); KIOSK = Visitor's Log token only
 
 ## Backend modules
-- auth, users, catalog, categories, book-copies, circulation, reports, borrow-requests, notifications, favourites, setup, backup, system, inventory
+- auth (sessions), users, catalog, categories, book-copies, circulation, reports, borrow-requests, notifications, favourites, setup, backup, system, inventory, visits, time, suggestions
 
-## Tests (baseline run 2026-11-19)
-- Backend: 56 tests in 10 files pass (run against aklatone_e2e with REDIS_URL blank; see AGENTS.md).
-- Backend typecheck, build, prisma validate: pass. Backend lint: FAILS (7 errors in src/app.ts and src/modules/auth/auth.service.ts: no-explicit-any, fetch no-undef).
-- Frontend (2026-11-19, after UI-04.1): 36 tests (5 files) pass, incl. 30 Member Mobile tests (token contrast, labels, network errors, overdue). Build passes (chunk >500 kB warning). Lint: 0 errors, 13 warnings.
+## Tests (current, 2026-11-25)
+- Backend: 148 passed + 1 opt-in skipped (34 files), on aklatone_e2e with REDIS_URL blank (see AGENTS.md). Typecheck, lint (0), build, prisma validate: pass. Tests never send real email (sendEmail is off under VITEST).
+- Frontend: 119 passed (21 files). Lint: 0 errors (warnings only: react fast-refresh / compiler hints). Build passes.
+- Rust (desktop-tauri): 3 tests. CI also builds Windows/Linux desktop, Android, iOS and runs the Docker setup.
 - Playwright: not installed.
 
 ## Database
@@ -245,6 +246,10 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Performance: every page is lazy-loaded (App.tsx React.lazy + Suspense; Layout/MobileLayout keep the nav and show skeletons). Main JS 913 KB -> 359 KB (gzip 271 -> 109 KB). Lighthouse on this laptop is unreliable (CPU benchmark 154, load ~8); before: perf 56 / a11y 100 / best practices 100 / SEO 92. public/robots.txt added (SEO error). Lighthouse 12 has no PWA category any more.
 - Emails: code emails keep the code out of the subject and preview line, say it expires in 10 minutes and that staff never ask for it; new "Confirm signing out a device" code email; new "New sign-in to your AklatOne account" email (device, network, time) sent only for a device the account never used (Gmail ~500/day). "other students" -> "others". Tests never send real email (sendEmail returns false under VITEST) - before, the dev .env Gmail sent real emails during backend tests.
 - Sign-in sessions: model Session (migration 20261125010000_sign_in_sessions; dev backup ~/aklatone-backups/aklatone-2026-11-25-before-sessions.sql; applied to dev + e2e). Every sign-in (login, login+code, reset, kiosk exit; password change keeps the device) creates a row; tokens carry sid; middleware/session.ts rejects revoked sessions and updates lastSeenAt every 5 min; tokens without sid (kiosk, older tokens) keep the old checks. modules/auth/sessions.routes.ts: GET /auth/sessions, POST /auth/sessions/code, POST /auth/sessions/revoke (password + emailed code; others=true also sets sessionsRevokedAt and returns a fresh token for this device; 10 wrong attempts per account / 15 min; KIOSK 403). Device name from User-Agent + X-AklatOne-App header (lib/api.ts appHeader). Location = IP only (private IP = school/local network); no outside geolocation service (member IPs are not sent to third parties). UI: components/SignInSessions.tsx in staff Settings and /m/settings/devices.
+
+## ERD/DFD and session fixes (2026-11-25)
+- ERD: Session table (Sign-in devices) with its own route from User (docs/diagrams/AklatOne-ERD.drawio + png/ERD.png; previous file in ~/aklatone-backups/diagrams-2026-11-24/AklatOne-ERD-before-session.drawio). DFD: store D16 Sign-in Sessions in Level 1 (process 1.0) and Level 2 step 1.6.
+- Sessions list shows only sessions whose token can still be valid (createdAt within JWT_EXPIRES_IN, tokenLifetimeMs) plus this device; rows older than 90 days are deleted now and then (about 1 sign-in in 100).
 
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.

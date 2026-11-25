@@ -32,6 +32,14 @@ export function networkLabel(ip: string | null | undefined): string {
   return PRIVATE_IP.test(ip) ? `School / local network (${ip})` : `Internet (IP address ${ip})`;
 }
 
+/** How long a sign-in token lives (JWT_EXPIRES_IN: "1d", "12h", "30m" or seconds). Older sessions cannot be in use. */
+export function tokenLifetimeMs(v: string | number = env.JWT_EXPIRES_IN): number {
+  const m = /^(\d+)\s*([smhd]?)$/.exec(String(v).trim());
+  const unit: Record<string, number> = { "": 1000, s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return m ? Number(m[1]) * unit[m[2]!]! : 86_400_000;
+}
+const KEEP_SESSIONS_MS = 90 * 86_400_000; // session rows are kept 90 days (for "new device" alerts), then deleted
+
 const clientIp = (req: Request) => (req.ip ?? "").replace(/^::ffff:/, "").slice(0, 64) || null;
 
 /**
@@ -46,6 +54,8 @@ export async function openSession(user: AuthUser, req: Request): Promise<string>
     prisma.session.count({ where: { userId: user.id } }),
   ]);
   const session = await prisma.session.create({ data: { userId: user.id, device, ip } });
+  // Now and then (about 1 sign-in in 100) remove rows older than 90 days, so the table does not grow forever.
+  if (Math.random() < 0.01) void prisma.session.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - KEEP_SESSIONS_MS) } } }).catch(() => {});
   if (earlier > 0 && sameDevice === 0) void alertNewDevice(user.id, device, ip).catch(() => {});
   return signToken(user, session.id);
 }
@@ -69,7 +79,15 @@ sessionsRouter.get("/", async (req, res, next) => {
     const items = await prisma.session.findMany({
       // A password change or reset ends every older session, even if its row was never marked.
       // (This device stays listed after "sign out all other devices", which gives it a fresh token.)
-      where: { userId: req.user!.id, revokedAt: null, ...(u?.sessionsRevokedAt ? { OR: [{ createdAt: { gte: u.sessionsRevokedAt } }, ...(req.user!.sid ? [{ id: req.user!.sid }] : [])] } : {}) },
+      // Only sessions whose token can still be valid (or that a password change ended), plus this device always.
+      where: {
+        userId: req.user!.id,
+        revokedAt: null,
+        OR: [
+          { createdAt: { gte: new Date(Math.max(Date.now() - tokenLifetimeMs(), u?.sessionsRevokedAt?.getTime() ?? 0)) } },
+          ...(req.user!.sid ? [{ id: req.user!.sid }] : []),
+        ],
+      },
       orderBy: { lastSeenAt: "desc" },
       take: 50,
       select: { id: true, device: true, ip: true, createdAt: true, lastSeenAt: true },

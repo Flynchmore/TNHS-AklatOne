@@ -237,7 +237,7 @@ and the phones to the same Wi-Fi, open port 3000 in the laptop's firewall once
 | Database tables | `backend/prisma/schema.prisma`, then `npx prisma migrate dev --name <change>` (back up first) |
 | Library rules (what is allowed) | `docs/aklatone-library-business-rules.md` and the matching module in `backend/src/modules/` |
 
-**Backend modules** (`backend/src/modules/`): `auth` (sign-in, codes), `users` (members, Member ID, cards),
+**Backend modules** (`backend/src/modules/`): `auth` (sign-in, codes, sign-in devices), `users` (members, Member ID, cards),
 `catalog` (books, Excel import/export), `book-copies`, `circulation` (lend, return), `borrow-requests`,
 `notifications` (alerts, daily reminders), `visits` (Visitor's Log), `time` (time spent), `suggestions`,
 `inventory`, `reports`, `backup`, `system`, `setup`, `favourites`, `categories`.

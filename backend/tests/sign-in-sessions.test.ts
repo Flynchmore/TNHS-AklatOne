@@ -4,7 +4,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/config/prisma.js";
 import { otpHash } from "../src/modules/auth/auth.service.js";
-import { deviceLabel, networkLabel } from "../src/modules/auth/sessions.routes.js";
+import { deviceLabel, networkLabel, tokenLifetimeMs } from "../src/modules/auth/sessions.routes.js";
 import { adminToken, MEMBER_PASSWORD, newMember } from "./helpers.js";
 
 const app = createApp();
@@ -78,5 +78,17 @@ describe("sign-in sessions", () => {
   it("is not available on the Visitor's Log kiosk", async () => {
     const kiosk = (await request(app).post("/api/v1/visits/kiosk/start").set(as(admin))).body.data.token as string;
     expect((await request(app).get("/api/v1/auth/sessions").set(as(kiosk))).status).toBe(403);
+  });
+
+  it("does not list sessions whose token has already expired", async () => {
+    const m = await newMember(app, `sess_c_${stamp}`);
+    const token = await signIn(`sess_c_${stamp}`, LAPTOP);
+    await prisma.session.create({ data: { userId: m.id, device: "Old phone", ip: null, createdAt: new Date(Date.now() - tokenLifetimeMs() - 60_000) } });
+    const devices = ((await request(app).get("/api/v1/auth/sessions").set(as(token))).body.data.items as { device: string }[]).map((s) => s.device);
+    expect(devices).not.toContain("Old phone");
+    expect(devices).toContain("Edge on Windows");
+    expect(tokenLifetimeMs("1d")).toBe(86_400_000);
+    expect(tokenLifetimeMs("12h")).toBe(43_200_000);
+    expect(tokenLifetimeMs("3600")).toBe(3_600_000);
   });
 });
