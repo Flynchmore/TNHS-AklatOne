@@ -51,7 +51,7 @@ Library ID cards and book QR labels for lending and returns.
 **Mobile Application for students and teachers (Android and iOS)**
 1. Account access with username or email and password, a 6-digit email verification code as the second factor, and password reset by email code. Accounts are created by the librarian.
 2. First-launch walkthrough and acceptance of the Terms and Conditions, Privacy Policy and essential on-device storage.
-3. Catalog search with subject, genre and Wattpad categories, filters (available now, sort), book covers (kept on the school server, so they also show on the school Wi-Fi without internet), details, ratings and available copies, and the most borrowed books of the week.
+3. Catalog search with subject, genre and Wattpad categories, filters (available now, sort), book covers (kept on the school server, so they also show on the school Wi-Fi without internet), details, ratings and available copies, and the most borrowed books of the week. Members can scan a book's QR label on the shelf, ask to be notified when a borrowed book is back, write reviews that the librarian approves first, and set a monthly reading goal.
 4. Borrow requests within the borrowing limit, request status, digital receipts and due dates.
 5. My Books: borrowed books, pending requests, favourites in folders and borrowing history.
 6. Alerts for approved or declined requests, books lent at the desk, recorded returns, due-soon reminders, overdue notices and answered suggestions.

@@ -4,6 +4,7 @@ import { signToken } from "../src/modules/auth/auth.service.js";
 
 const mockPrisma = {
   suggestion: { count: vi.fn(async () => 0) },
+  bookRating: { count: vi.fn(async () => 0) },
   book: { count: vi.fn() },
   bookCopy: { count: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },
   borrowingTransaction: { count: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },

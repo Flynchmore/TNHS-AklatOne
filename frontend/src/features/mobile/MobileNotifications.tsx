@@ -20,6 +20,7 @@ const look: Record<string, { Icon: typeof CheckCircle2; cls: string }> = {
   RETURN_RECORDED: { Icon: BookCheck, cls: "bg-primary-soft text-primary" },
   BOOK_BORROWED: { Icon: CheckCircle2, cls: "bg-success-soft text-success" },
   SUGGESTION_UPDATE: { Icon: Lightbulb, cls: "bg-accent-soft text-on-accent" },
+  BOOK_AVAILABLE: { Icon: BookCheck, cls: "bg-success-soft text-success" },
 };
 
 /** "Just now", "5 min ago", "3 h ago", "Yesterday", or a date. */

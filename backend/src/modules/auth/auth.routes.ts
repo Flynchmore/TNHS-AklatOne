@@ -33,7 +33,7 @@ const failedSignIn = (req: Request, method: string) => (err: unknown) => {
 async function sessionUser(id: string) {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, username: true, displayName: true, email: true, phoneNumber: true, avatarUrl: true, memberType: true, position: true, department: true, gradeSection: true, hobbies: true, gender: true, studentRowNo: true, maskedId: true, role: true },
+    select: { id: true, username: true, displayName: true, email: true, phoneNumber: true, avatarUrl: true, memberType: true, position: true, department: true, gradeSection: true, hobbies: true, gender: true, studentRowNo: true, readingGoal: true, maskedId: true, role: true },
   });
   if (!user) return null;
   const { role, ...rest } = user;

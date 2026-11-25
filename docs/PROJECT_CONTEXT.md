@@ -260,6 +260,16 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - GET /api/v1/catalog/this-week (signed in): top 10 titles borrowed this school week with how many times, no borrower details; Home section "Popular this week".
 - UI: mobile sign-in screens use MobileAuthShell (school banner + card with navy AklatOne branding, like StaffAuthShell); "Resend code" now signs in again (it used to request a reset code with the masked email, so no code arrived). Quick Menu and Profile stats are white tiles with soft icon chips (stats open My Books / History; Overdue turns red). Watermark opacity 0.2 (screens) / 0.24 (auth). Compact toast on phones. About shows the AklatOne logo. Welcome: 6 tutorial slides with a picture frame; pictures go in src/assets/welcome/1-6.webp (ideas in docs/reference/WELCOME-IMAGES.md), else drawn illustrations.
 
+## Values Education, offline banner, member extras (2026-11-25)
+- Subject category "ESP" renamed "Values Education" (dev + e2e rows, 14 dev books kept; seeds updated). Dev backup ~/aklatone-backups/aklatone-2026-11-25-before-esp-rename.sql.
+- Offline banner: bigger Wi-Fi icon, "Offline: Showing ...".
+- Migration 20261125020000_watch_goal_reviews (dev + e2e; same dev backup): BookWatch, BookRating.review / reviewStatus / reviewedAt, User.readingGoal. ERD + DFD D8 updated.
+- Notify me when available: PUT/DELETE /catalog/:id/watch (members, only while no copy is on the shelf); catalog/watchers.ts notifyWatchers() on return (not MISSING), new copy, copy set to Available: BOOK_AVAILABLE alert + email, then the wait is removed (no reservation: first to request gets it).
+- Written reviews (500 chars) with the rating; PENDING until a librarian approves (GET /catalog/reviews, PATCH /catalog/reviews/:id APPROVED|HIDDEN, catalog:write, audited); editing sends it back to PENDING; GET /catalog/:id/reviews shows approved ones with first name only. Staff: Suggestions page > Book reviews; nav badge = new suggestions + waiting reviews (reports/summary pendingReviews).
+- Reading goal: member sets books per month (1-30) in Profile > Activity; progress = books borrowed this PH month (PATCH /auth/profile readingGoal).
+- Scan book QR: member Catalog > "Scan book QR" reads a copy label (GET /catalog/by-copy/:code) and opens the book.
+- Tests: backend 156 passed + 1 opt-in skipped (36 files), frontend 123 (24 files).
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

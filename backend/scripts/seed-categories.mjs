@@ -11,7 +11,7 @@ if (process.env.ALLOW_CATEGORY_SEED !== "1") {
 
 export const CATEGORIES = {
   // Subjects named by the developer (2026-11-20).
-  SUBJECT: ["Science", "Mathematics", "MAPEH", "Filipino", "Araling Panlipunan (AP)", "TLE", "ESP", "English"],
+  SUBJECT: ["Science", "Mathematics", "MAPEH", "Filipino", "Araling Panlipunan (AP)", "TLE", "Values Education", "English"],
   // Starting lists; librarians can add or rename through the categories API.
   WATTPAD: ["Teen Fiction", "Romance", "Fantasy", "Mystery/Thriller", "Humor", "Short Story", "Poetry"],
   GENRE: ["Horror", "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Mystery", "Romance", "Science Fiction"],

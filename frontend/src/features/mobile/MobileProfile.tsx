@@ -5,14 +5,15 @@ import { HistoryCard, HistoryEmpty, useHistory, type Tx } from "./MobileHistory"
 import { useToast } from "../../components/Toast";
 import {
   User as UserIcon, Camera, Save, LogOut, Phone, CircleUser, History as HistoryIcon, UserCog, BookCheck, BookOpenCheck, AlertTriangle, Mail,
-  GraduationCap, Briefcase, Settings, BarChart3, ChevronRight, Pencil, Hash, Users, X, IdCard, Building2, Award, Heart, Smartphone, Clock, CheckCircle2, BookX, SearchX, CalendarDays, QrCode, Library, LogIn,
+  GraduationCap, Briefcase, Settings, BarChart3, ChevronRight, Pencil, Hash, Users, X, IdCard, Building2, Award, Heart, Smartphone, Clock, CheckCircle2, BookX, SearchX, CalendarDays, QrCode, Library, LogIn, Target,
 } from "lucide-react";
 import { Alert, Field, ListState, MemberTypePicker, ScreenShell, SlidingTabs, Spinner, btnPrimary, btnSecondary, focusRing, mobileApi, useSlideDirection, type MemberType, type TabDef } from "../../components/mobile/ui";
 import { PhotoCropper } from "../../components/mobile/PhotoCropper";
 import { SplineArea } from "../../components/SplineArea";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
+import { phISODate } from "../../lib/dates";
 
-interface Details { displayName?: string | null; username: string; email?: string | null; phoneNumber?: string | null; avatarUrl?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null; hobbies?: string | null; gender?: string | null; studentRowNo?: number | null; role?: string; maskedId?: string | null }
+interface Details { displayName?: string | null; username: string; email?: string | null; phoneNumber?: string | null; avatarUrl?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null; hobbies?: string | null; gender?: string | null; studentRowNo?: number | null; role?: string; maskedId?: string | null; readingGoal?: number | null }
 type Tab = "activity" | "account" | "stats";
 
 /** Books borrowed per calendar month, oldest first (last `n` months). */
@@ -148,6 +149,8 @@ export function MobileProfile() {
 
       <div key={tab} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className={direction}>
         {tab === "activity" && (
+          <>
+          <ReadingGoal goal={me?.readingGoal ?? null} txs={history.txs} onSave={patch} />
           <section aria-labelledby="profile-history" className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h2 id="profile-history" className="font-semibold text-primary-strong">Recent borrowing</h2>
@@ -157,6 +160,7 @@ export function MobileProfile() {
               {history.txs.length === 0 ? <HistoryEmpty /> : <ul className="space-y-3">{history.txs.slice(0, 5).map((t, i) => <HistoryCard key={t.id} t={t} idx={i} now={now} />)}</ul>}
             </ListState>
           </section>
+          </>
         )}
         {tab === "account" && me && <AccountPanel me={me} onSave={patch} />}
         {tab === "stats" && <StatsPanel txs={history.txs} loading={history.loading} userId={auth.user?.id} now={now} />}
@@ -440,5 +444,54 @@ function StatsPanel({ txs, loading, userId, now }: { txs: Tx[]; loading: boolean
         )}
       </section>
     </div>
+  );
+}
+
+/** Books borrowed in this PH month (cancelled requests never left the shelf). */
+export function borrowedThisMonth(txs: Tx[], today = phISODate()) {
+  return txs.filter(t => t.status !== "CANCELLED" && t.borrowedAt && phISODate(t.borrowedAt).slice(0, 7) === today.slice(0, 7)).length;
+}
+
+/** Monthly reading goal the member sets for themself, with this month's progress. */
+function ReadingGoal({ goal, txs, onSave }: { goal: number | null; txs: Tx[]; onSave: (p: Record<string, unknown>) => Promise<{ ok: boolean; message?: string }> }) {
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(goal ?? 3);
+  const done = borrowedThisMonth(txs);
+  const save = async (g: number | null) => {
+    const r = await onSave({ readingGoal: g });
+    if (r.ok) { setEditing(false); toast({ tone: "success", title: g ? "Goal saved" : "Goal removed", message: g ? `${g} books this month. You can do it!` : "" }); }
+    else toast({ tone: "error", title: "Not saved", message: r.message ?? "Please try again." });
+  };
+  const pct = goal ? Math.min(100, Math.round((done / goal) * 100)) : 0;
+  return (
+    <section aria-labelledby="goal-title" className="bg-surface border border-line rounded-3xl p-4 mb-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <span className="w-10 h-10 rounded-xl bg-accent-soft text-on-accent flex items-center justify-center shrink-0" aria-hidden="true"><Target size={20} /></span>
+        <div className="flex-1 min-w-0">
+          <h2 id="goal-title" className="font-semibold text-primary-strong">Reading goal</h2>
+          <p className="text-sm text-ink-muted">{goal ? (done >= goal ? `Goal reached: ${done} books this month!` : `${done} of ${goal} books this month`) : "Set how many books you want to borrow this month."}</p>
+        </div>
+        {!editing && <button type="button" onClick={() => { setValue(goal ?? 3); setEditing(true); }} className={`min-h-10 px-3 rounded-xl bg-primary-soft text-primary text-sm font-semibold ${focusRing}`}>{goal ? "Change" : "Set goal"}</button>}
+      </div>
+      {goal && !editing ? (
+        <div className="mt-3 h-3 rounded-full bg-line overflow-hidden" role="progressbar" aria-label="Reading goal progress" aria-valuemin={0} aria-valuemax={goal} aria-valuenow={Math.min(done, goal)}>
+          <div className={`h-full rounded-full motion-safe:transition-all ${done >= goal ? "bg-success" : "bg-primary"}`} style={{ width: `${pct}%` }} />
+        </div>
+      ) : null}
+      {editing && (
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <button type="button" aria-label="Fewer books" onClick={() => setValue(v => Math.max(1, v - 1))} className={`w-11 h-11 rounded-xl bg-page border border-line text-lg font-bold ${focusRing}`}>−</button>
+          <span className="w-14 text-center text-xl font-extrabold text-ink" aria-live="polite">{value}</span>
+          <button type="button" aria-label="More books" onClick={() => setValue(v => Math.min(30, v + 1))} className={`w-11 h-11 rounded-xl bg-page border border-line text-lg font-bold ${focusRing}`}>+</button>
+          <span className="text-sm text-ink-muted">books a month</span>
+          <div className="flex gap-2 w-full mt-1">
+            <button type="button" onClick={() => save(value)} className={`flex-1 min-h-11 rounded-xl bg-primary text-on-primary font-semibold ${focusRing}`}>Save</button>
+            {goal && <button type="button" onClick={() => save(null)} className={`min-h-11 px-4 rounded-xl border border-line text-ink-muted font-semibold ${focusRing}`}>Remove</button>}
+            <button type="button" onClick={() => setEditing(false)} className={`min-h-11 px-4 rounded-xl text-ink-muted font-semibold ${focusRing}`}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

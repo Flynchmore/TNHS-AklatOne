@@ -16,15 +16,16 @@ reportsRouter.get("/summary", authenticate, requirePermission("reports:read"), a
     ]);
     const now = new Date();
     const weekEnd = new Date(now.getTime() + 7 * 86400000);
-    const [overdueLoans, members, dueThisWeek, pendingRequests, newSuggestions] = await Promise.all([
+    const [overdueLoans, members, dueThisWeek, pendingRequests, newSuggestions, pendingReviews] = await Promise.all([
       prisma.borrowingTransaction.count({ where: { status: "ACTIVE", dueAt: { lt: now } } }),
       prisma.user.count({ where: { isActive: true, role: { name: "MEMBER" } } }),
       // Due in the next 7 days (not yet overdue).
       prisma.borrowingTransaction.count({ where: { status: "ACTIVE", dueAt: { gte: now, lte: weekEnd } } }),
       prisma.borrowRequest.count({ where: { status: "PENDING" } }),
       prisma.suggestion.count({ where: { status: "NEW" } }),
+      prisma.bookRating.count({ where: { reviewStatus: "PENDING" } }),
     ]);
-    ok(res, { titles, copies, activeLoans, returnedLoans, overdueLoans, members, dueThisWeek, pendingRequests, newSuggestions });
+    ok(res, { titles, copies, activeLoans, returnedLoans, overdueLoans, members, dueThisWeek, pendingRequests, newSuggestions, pendingReviews });
   } catch (err) { next(err); }
 });
 

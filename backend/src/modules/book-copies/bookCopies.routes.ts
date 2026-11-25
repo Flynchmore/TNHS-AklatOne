@@ -7,6 +7,7 @@ import { bookCopyCreateSchema, bookCopyStatusSchema } from "./bookCopy.schemas.j
 import { ok, created, fail } from "../../common/response.js";
 import { writeAuditTx } from "../../common/audit.js";
 import { authenticate, requirePermission } from "../../middleware/auth.js";
+import { notifyWatchers } from "../catalog/watchers.js";
 
 export const bookCopiesRouter = Router();
 
@@ -61,6 +62,7 @@ bookCopiesRouter.post("/", authenticate, requirePermission("copies:write"), vali
       await writeAuditTx(tx, { actorId: req.user?.id ?? null, action: "bookCopy.create", entityType: "BookCopy", entityId: createdCopy.id, metadata: { barcode: createdCopy.barcode, status: createdCopy.status } });
       return createdCopy;
     });
+    if (copy.status === "AVAILABLE") void notifyWatchers(copy.bookId);
     created(res, copy);
   } catch (err) { next(err); }
 });
@@ -76,6 +78,7 @@ bookCopiesRouter.patch("/:id/status", authenticate, requirePermission("copies:wr
       await writeAuditTx(tx, { actorId: req.user?.id ?? null, action: "bookCopy.statusChange", entityType: "BookCopy", entityId: updated.id, metadata: { status: updated.status } });
       return updated;
     });
+    if (copy.status === "AVAILABLE") void notifyWatchers(copy.bookId);
     ok(res, copy);
   } catch (err) { next(err); }
 });

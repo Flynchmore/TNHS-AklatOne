@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-export type NotificationType = "REQUEST_APPROVED" | "REQUEST_REJECTED" | "OVERDUE" | "DUE_SOON" | "RETURN_RECORDED" | "BOOK_BORROWED" | "SUGGESTION_UPDATE";
+export type NotificationType = "REQUEST_APPROVED" | "REQUEST_REJECTED" | "OVERDUE" | "DUE_SOON" | "RETURN_RECORDED" | "BOOK_BORROWED" | "SUGGESTION_UPDATE" | "BOOK_AVAILABLE";
 
 /** Creates an in-app notification inside the caller's transaction. */
 export async function notifyTx(

@@ -102,9 +102,9 @@ export function MobileLayout() {
   return (
     <div className="min-h-screen bg-page flex flex-col">
       {!online && (
-        <div role="status" className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2 bg-warning-soft text-warning text-sm font-semibold border-b border-warning/30" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
-          <WifiOff size={16} aria-hidden="true" />
-          <span>Offline: showing what was saved on this phone. Borrowing and changes need the internet.</span>
+        <div role="status" className="sticky top-0 z-50 flex items-center gap-3 px-4 py-2 bg-warning-soft text-warning text-sm font-semibold border-b border-warning/30" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
+          <span className="w-9 h-9 shrink-0 rounded-xl bg-warning/15 flex items-center justify-center" aria-hidden="true"><WifiOff size={22} strokeWidth={2.4} /></span>
+          <span>Offline: Showing what was saved on this phone. Borrowing and changes need the internet.</span>
         </div>
       )}
       <PullToRefresh onRefresh={refresh}>

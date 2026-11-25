@@ -277,6 +277,22 @@ export function borrowApprovedEmail(name: string | null | undefined, book: Email
   };
 }
 
+/** "Notify me when available": a copy of a book the member was waiting for is back on the shelf. */
+export function bookAvailableEmail(name: string | null | undefined, book: EmailBook) {
+  return {
+    subject: `AklatOne: "${book.title}" is available`,
+    html: emailLayout({
+      preheader: "A copy of the book you were waiting for is back on the shelf.",
+      badge: "Book available",
+      tone: "success",
+      title: "Your book is available",
+      body: hello(name) + p("A copy of the book you asked to be notified about is back on the shelf.") + bookCard(book)
+        + p("Open AklatOne and tap <strong>Request to borrow</strong> soon: copies go to whoever requests first."),
+      security: "You got this email because you tapped Notify me on this book. It will never ask for payment details or your password.",
+    }),
+  };
+}
+
 /** Sent when the librarian lends a book at the library desk. */
 export function borrowedAtDeskEmail(name: string | null | undefined, book: EmailBook, receiptNo: string, dueAt: Date) {
   return {

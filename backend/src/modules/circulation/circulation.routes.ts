@@ -13,6 +13,7 @@ import type { z } from "zod";
 
 const phDay = (d: Date) => d.toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
 import { authenticate, requirePermission } from "../../middleware/auth.js";
+import { notifyWatchers } from "../catalog/watchers.js";
 
 export const circulationRouter = Router();
 
@@ -93,6 +94,7 @@ circulationRouter.post("/return", authenticate, requirePermission("circulation:w
       return result;
     });
     void emailMember(tx.borrowerId, (m) => bookReturnedEmail(m.displayName, tx.bookCopy.book, outcome, tx.receiptNo));
+    if (outcome !== "MISSING") void notifyWatchers(tx.bookCopy.bookId);
     ok(res, updated!, "Returned");
   } catch (err) { next(err); }
 });

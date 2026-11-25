@@ -29,4 +29,9 @@ export const bookCreateSchema = z.object({
 // isHidden: staff can show a hidden book again (or hide one) from the Catalog.
 export const bookUpdateSchema = z.object({ ...bookFields, isHidden: z.boolean() }).partial();
 
-export const ratingSchema = z.object({ stars: z.coerce.number().int().min(1).max(5) });
+export const ratingSchema = z.object({
+  stars: z.coerce.number().int().min(1).max(5),
+  // Optional written review; empty string removes it. Shown to others only after the librarian approves it.
+  review: z.string().trim().max(500).optional(),
+});
+export const reviewStatusSchema = z.object({ status: z.enum(["APPROVED", "HIDDEN"]) });

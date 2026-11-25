@@ -18,7 +18,7 @@ export const QUERIES = [
   ["english language", "SUBJECT", "English"], ["english literature", "SUBJECT", "English"],
   ["philippines", "SUBJECT", "Araling Panlipunan (AP)"], ["world history", "SUBJECT", "Araling Panlipunan (AP)"], ["economics", "SUBJECT", "Araling Panlipunan (AP)"],
   ["music", "SUBJECT", "MAPEH"], ["art", "SUBJECT", "MAPEH"], ["physical fitness", "SUBJECT", "MAPEH"], ["health", "SUBJECT", "MAPEH"],
-  ["cooking", "SUBJECT", "TLE"], ["computers", "SUBJECT", "TLE"], ["ethics", "SUBJECT", "ESP"], ["tagalog literature", "SUBJECT", "Filipino"],
+  ["cooking", "SUBJECT", "TLE"], ["computers", "SUBJECT", "TLE"], ["ethics", "SUBJECT", "Values Education"], ["tagalog literature", "SUBJECT", "Filipino"],
   ["horror", "GENRE", "Horror"], ["adventure", "GENRE", "Adventure"], ["fantasy", "GENRE", "Fantasy"], ["mystery", "GENRE", "Mystery"],
   ["romance", "GENRE", "Romance"], ["science fiction", "GENRE", "Science Fiction"], ["humor", "GENRE", "Comedy"], ["drama", "GENRE", "Drama"],
   ["young adult fiction", "WATTPAD", "Teen Fiction"], ["short stories", "WATTPAD", "Short Story"], ["poetry", "WATTPAD", "Poetry"],

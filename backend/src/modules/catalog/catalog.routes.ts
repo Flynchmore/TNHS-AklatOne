@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { idParamSchema } from "../../common/schemas.js";
-import { bookCreateSchema, bookUpdateSchema, ratingSchema } from "./book.schemas.js";
+import { bookCreateSchema, bookUpdateSchema, ratingSchema, reviewStatusSchema } from "./book.schemas.js";
 import { ok, created, fail } from "../../common/response.js";
 import { writeAuditTx } from "../../common/audit.js";
 import { editConflict } from "../../common/conflict.js";
@@ -55,16 +55,19 @@ async function checkCategories(ids: string[] | undefined): Promise<string | null
 
 async function present(books: BookWithCopies[], userId: string | null) {
   const ids = books.map(b => b.id);
-  const [agg, mine, copyLoans, borrowedByMe, favs] = await Promise.all([
+  const [agg, mine, copyLoans, borrowedByMe, favs, watches] = await Promise.all([
     prisma.bookRating.groupBy({ by: ["bookId"], where: { bookId: { in: ids } }, _avg: { stars: true }, _count: { _all: true } }),
-    userId ? prisma.bookRating.findMany({ where: { bookId: { in: ids }, memberId: userId }, select: { bookId: true, stars: true } }) : Promise.resolve([]),
+    userId ? prisma.bookRating.findMany({ where: { bookId: { in: ids }, memberId: userId }, select: { bookId: true, stars: true, review: true, reviewStatus: true } }) : Promise.resolve([]),
     prisma.bookCopy.findMany({ where: { bookId: { in: ids } }, select: { bookId: true, _count: { select: { transactions: { where: COUNTED_LOAN } } } } }),
     userId ? prisma.borrowingTransaction.findMany({ where: { borrowerId: userId, ...COUNTED_LOAN, bookCopy: { bookId: { in: ids } } }, select: { bookCopy: { select: { bookId: true } } } }) : Promise.resolve([]),
     userId ? prisma.favourite.findMany({ where: { memberId: userId, bookId: { in: ids } }, select: { bookId: true } }) : Promise.resolve([]),
+    userId ? prisma.bookWatch.findMany({ where: { userId, bookId: { in: ids } }, select: { bookId: true } }) : Promise.resolve([]),
   ]);
+  const watchSet = new Set(watches.map(w => w.bookId));
   const favSet = new Set(favs.map(f => f.bookId));
   const byBook = new Map(agg.map(a => [a.bookId, { average: Math.round((a._avg.stars ?? 0) * 10) / 10, count: a._count._all }]));
   const myByBook = new Map(mine.map(m => [m.bookId, m.stars]));
+  const myReview = new Map(mine.map(m => [m.bookId, m.review ? { text: m.review, status: m.reviewStatus } : null]));
   const borrowCount = new Map<string, number>();
   for (const c of copyLoans) borrowCount.set(c.bookId, (borrowCount.get(c.bookId) ?? 0) + c._count.transactions);
   const iBorrowed = new Set(borrowedByMe.map(t => t.bookCopy.bookId));
@@ -74,8 +77,10 @@ async function present(books: BookWithCopies[], userId: string | null) {
     borrowCount: borrowCount.get(rest.id) ?? 0,
     rating: byBook.get(rest.id) ?? { average: 0, count: 0 },
     myRating: myByBook.get(rest.id) ?? null,
+    myReview: myReview.get(rest.id) ?? null,
     canRate: iBorrowed.has(rest.id),
     favourite: favSet.has(rest.id),
+    watching: watchSet.has(rest.id),
   }));
 }
 
@@ -172,6 +177,75 @@ catalogRouter.get("/this-week", authenticate, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/** Staff: written reviews waiting for approval (or all of one status). */
+catalogRouter.get("/reviews", authenticate, requirePermission("catalog:write"), async (req, res, next) => {
+  try {
+    const status = ["PENDING", "APPROVED", "HIDDEN"].includes(String(req.query.status)) ? String(req.query.status) : "PENDING";
+    const [items, pending] = await Promise.all([
+      prisma.bookRating.findMany({
+        where: { reviewStatus: status }, orderBy: { updatedAt: "desc" }, take: 100,
+        select: { id: true, stars: true, review: true, reviewStatus: true, updatedAt: true, book: { select: { id: true, title: true } }, member: { select: { displayName: true, maskedId: true } } },
+      }),
+      prisma.bookRating.count({ where: { reviewStatus: "PENDING" } }),
+    ]);
+    ok(res, { items, pending });
+  } catch (err) { next(err); }
+});
+
+catalogRouter.patch("/reviews/:id", authenticate, requirePermission("catalog:write"), validate({ params: idParamSchema, body: reviewStatusSchema }), async (req, res, next) => {
+  try {
+    const found = await prisma.bookRating.findUnique({ where: { id: req.params.id as string }, select: { id: true, review: true } });
+    if (!found?.review) return fail(res, 404, "Review not found");
+    const status = (req.body as { status: string }).status;
+    await prisma.$transaction(async (db) => {
+      await db.bookRating.update({ where: { id: found.id }, data: { reviewStatus: status, reviewedAt: new Date() } });
+      await writeAuditTx(db, { actorId: req.user?.id ?? null, action: "review.moderate", entityType: "BookRating", entityId: found.id, metadata: { status } });
+    });
+    ok(res, { id: found.id, reviewStatus: status }, status === "APPROVED" ? "Review shown" : "Review hidden");
+  } catch (err) { next(err); }
+});
+
+/** A copy's QR label holds only its copy code: find the book so a member can scan a book on the shelf. */
+catalogRouter.get("/by-copy/:code", authenticate, async (req, res, next) => {
+  try {
+    const code = String(req.params.code).trim().slice(0, 64);
+    const copy = await prisma.bookCopy.findFirst({ where: { OR: [{ barcode: code }, { barcode: code.toUpperCase() }] }, select: { bookId: true, book: { select: { isHidden: true } } } });
+    if (!copy || (copy.book.isHidden && !viewerIsStaff(req))) return fail(res, 404, "No book has this QR code");
+    ok(res, { bookId: copy.bookId });
+  } catch (err) { next(err); }
+});
+
+/** Approved written reviews of a book (first name only, never the Member ID). */
+catalogRouter.get("/:id/reviews", authenticate, validate({ params: idParamSchema }), async (req, res, next) => {
+  try {
+    const rows = await prisma.bookRating.findMany({
+      where: { bookId: req.params.id as string, reviewStatus: "APPROVED", book: { isHidden: false } }, orderBy: { updatedAt: "desc" }, take: 50,
+      select: { id: true, stars: true, review: true, updatedAt: true, member: { select: { displayName: true } } },
+    });
+    ok(res, rows.map(r => ({ id: r.id, stars: r.stars, review: r.review, updatedAt: r.updatedAt, name: (r.member.displayName ?? "Member").split(/\s+/)[0] })));
+  } catch (err) { next(err); }
+});
+
+/** "Notify me when available": only members, only while no copy is on the shelf. */
+catalogRouter.put("/:id/watch", authenticate, validate({ params: idParamSchema }), async (req, res, next) => {
+  try {
+    if (req.user?.role !== "MEMBER") return fail(res, 403, "Only members can be notified");
+    const bookId = req.params.id as string;
+    const book = await prisma.book.findUnique({ where: { id: bookId }, select: { isHidden: true, copies: { where: { status: "AVAILABLE" }, select: { id: true }, take: 1 } } });
+    if (!book || book.isHidden) return fail(res, 404, "Book not found");
+    if (book.copies.length) return fail(res, 409, "A copy is on the shelf now. You can request it.");
+    await prisma.bookWatch.upsert({ where: { userId_bookId: { userId: req.user.id, bookId } }, create: { userId: req.user.id, bookId }, update: {} });
+    ok(res, { watching: true }, "We will notify you");
+  } catch (err) { next(err); }
+});
+
+catalogRouter.delete("/:id/watch", authenticate, validate({ params: idParamSchema }), async (req, res, next) => {
+  try {
+    await prisma.bookWatch.deleteMany({ where: { userId: req.user!.id, bookId: req.params.id as string } });
+    ok(res, { watching: false }, "Notification cancelled");
+  } catch (err) { next(err); }
+});
+
 catalogRouter.get("/:id", validate({ params: idParamSchema }), async (req, res, next) => {
   try {
     const book = await prisma.book.findUnique({ where: { id: req.params.id as string }, include: { categories: true, copies: { select: { status: true } } } });
@@ -237,14 +311,20 @@ catalogRouter.put("/:id/rating", authenticate, validate({ params: idParamSchema,
   try {
     if (req.user?.role !== "MEMBER") return fail(res, 403, "Only members can rate books");
     const bookId = req.params.id as string;
-    const { stars } = req.body as { stars: number };
+    const { stars, review } = req.body as { stars: number; review?: string };
     if (!(await prisma.book.findUnique({ where: { id: bookId }, select: { id: true } }))) return fail(res, 404, "Book not found");
     if (!(await hasBorrowed(req.user.id, bookId))) return fail(res, 403, "You can rate a book after you have borrowed it.");
-    await prisma.bookRating.upsert({ where: { bookId_memberId: { bookId, memberId: req.user.id } }, create: { bookId, memberId: req.user.id, stars }, update: { stars } });
+    await prisma.bookRating.upsert({ where: { bookId_memberId: { bookId, memberId: req.user.id } }, create: { bookId, memberId: req.user.id, stars, ...reviewData(review) }, update: { stars, ...reviewData(review) } });
     const agg = await prisma.bookRating.aggregate({ where: { bookId }, _avg: { stars: true }, _count: { _all: true } });
     ok(res, { myRating: stars, rating: { average: Math.round((agg._avg.stars ?? 0) * 10) / 10, count: agg._count._all } }, "Rated");
   } catch (err) { next(err); }
 });
+
+/** A new or changed review waits for the librarian again; an empty one is removed; undefined leaves it as it is. */
+function reviewData(review: string | undefined) {
+  if (review === undefined) return {};
+  return review ? { review, reviewStatus: "PENDING", reviewedAt: null } : { review: null, reviewStatus: null, reviewedAt: null };
+}
 
 const VIEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 

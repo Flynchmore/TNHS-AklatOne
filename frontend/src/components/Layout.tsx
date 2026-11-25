@@ -45,7 +45,7 @@ export function Layout() {
   const pending = summary?.pendingRequests ?? 0;
   const online = useOnline();
   const waiting = useOutbox().length;
-  const badge = (to: string) => (to === "/borrowing" || to === "/transactions" ? pending : to === "/upload" ? waiting : to === "/suggestions" ? summary?.newSuggestions ?? 0 : 0);
+  const badge = (to: string) => (to === "/borrowing" || to === "/transactions" ? pending : to === "/upload" ? waiting : to === "/suggestions" ? (summary?.newSuggestions ?? 0) + (summary?.pendingReviews ?? 0) : 0);
 
   const signOut = () => {
     logout();

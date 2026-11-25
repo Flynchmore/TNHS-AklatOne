@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, BookPlus, MessageSquareText, Reply, Plus } from "lucide-react";
+import { Lightbulb, BookPlus, MessageSquareText, Reply, Plus, Star, Check, EyeOff } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { phDateTime } from "../../lib/dates";
 import { useAuth } from "../auth/auth";
@@ -69,8 +69,61 @@ export function Suggestions() {
           ))}
         </ul>
       )}
+      {hasPerm("catalog:write") && <ReviewsPanel />}
       <AnswerDialog s={answering} onClose={() => setAnswering(null)} />
     </div>
+  );
+}
+
+interface Review { id: string; stars: number; review: string; reviewStatus: string; updatedAt: string; book: { id: string; title: string }; member: { displayName: string | null; maskedId: string | null } }
+
+/** Written book reviews from members: shown to others only after a librarian approves them. */
+function ReviewsPanel() {
+  const { token } = useAuth();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"PENDING" | "APPROVED" | "HIDDEN">("PENDING");
+  const q = useQuery({
+    queryKey: ["reviews", status],
+    queryFn: async () => { const r = await apiFetch(`/api/v1/catalog/reviews?status=${status}`, { token }); if (!r.ok) throw new Error(r.message); return r.data as { items: Review[]; pending: number }; },
+    enabled: !!token,
+    refetchInterval: 60_000,
+  });
+  const decide = async (r: Review, next: "APPROVED" | "HIDDEN") => {
+    const res = await apiFetch(`/api/v1/catalog/reviews/${r.id}`, { method: "PATCH", token, body: JSON.stringify({ status: next }) });
+    if (!res.ok) return toast({ tone: "error", title: "Not saved", message: res.message ?? "Please try again." });
+    toast({ tone: "success", title: next === "APPROVED" ? "Review shown" : "Review hidden", message: `"${r.book.title}"` });
+    void qc.invalidateQueries({ queryKey: ["reviews"] });
+    void qc.invalidateQueries({ queryKey: ["summary"] });
+  };
+  return (
+    <section aria-labelledby="reviews-title" className="space-y-4 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="reviews-title" className="text-lg font-bold text-primary-strong flex items-center gap-2"><Star size={18} aria-hidden="true" />Book reviews</h2>
+          <p className="text-sm text-ink-muted">Members see a review only after you approve it. Hide anything rude, personal or off-topic.</p>
+        </div>
+        <Segmented<typeof status> label="Review status" value={status} onChange={setStatus} options={[{ key: "PENDING", label: "Waiting", count: q.data?.pending }, { key: "APPROVED", label: "Shown" }, { key: "HIDDEN", label: "Hidden" }]} />
+      </div>
+      {q.isLoading ? <Skeleton rows={2} /> : q.isError ? <p role="alert" className="text-danger">Could not load reviews.</p> : !q.data?.items.length ? <EmptyState icon={Star} text={status === "PENDING" ? "No reviews waiting." : "No reviews here."} /> : (
+        <ul className="grid lg:grid-cols-2 gap-4">
+          {q.data.items.map(r => (
+            <li key={r.id} className={`${card} p-5 space-y-2 ak-slide`}>
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-bold text-ink">{r.book.title}</p>
+                <span className="text-warning font-bold shrink-0" aria-label={`${r.stars} of 5 stars`}>{"★".repeat(r.stars)}</span>
+              </div>
+              <p className="text-sm text-ink whitespace-pre-line break-words">{r.review}</p>
+              <p className="text-xs text-ink-muted">{r.member.displayName ?? "Member"} · <span className="font-mono">{r.member.maskedId}</span> · {phDateTime(r.updatedAt)}</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {r.reviewStatus !== "APPROVED" && <button type="button" onClick={() => decide(r, "APPROVED")} className={`${btn.success} ${btnSm}`}><Check size={14} aria-hidden="true" />Approve</button>}
+                {r.reviewStatus !== "HIDDEN" && <button type="button" onClick={() => decide(r, "HIDDEN")} className={`${btn.secondary} ${btnSm}`}><EyeOff size={14} aria-hidden="true" />Hide</button>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

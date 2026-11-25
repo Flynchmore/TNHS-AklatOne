@@ -14,6 +14,7 @@ const mockPrisma = {
 vi.doMock("../src/config/prisma.js", () => ({ prisma: mockPrisma, disconnectPrisma: vi.fn() }));
 // The session check is covered by tests/session.test.ts (real database); here the token is trusted as signed.
 vi.doMock("../src/middleware/session.js", () => ({ loadSession: async (c: any) => ({ id: c.id, username: c.username, role: c.role, permissions: c.permissions }) }));
+vi.doMock("../src/modules/catalog/watchers.js", () => ({ notifyWatchers: vi.fn(async () => 0) }));
 
 describe("circulation (mocked)", () => {
   let app: any;
@@ -26,7 +27,7 @@ describe("circulation (mocked)", () => {
   });
 
   it("return success", async () => {
-    mockPrisma.borrowingTransaction.findUnique.mockResolvedValueOnce({ id: "t1", status: "ACTIVE", bookCopyId: "c1", notes: null });
+    mockPrisma.borrowingTransaction.findUnique.mockResolvedValueOnce({ id: "t1", status: "ACTIVE", bookCopyId: "c1", notes: null, bookCopy: { bookId: "b1", book: { title: "Test Book" } } });
     mockPrisma.borrowingTransaction.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.bookCopy.update.mockResolvedValue({});
     mockPrisma.borrowingTransaction.findUnique.mockResolvedValueOnce({ id: "t1", status: "RETURNED" });

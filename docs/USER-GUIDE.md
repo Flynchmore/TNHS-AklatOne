@@ -30,7 +30,7 @@ Short step-by-step guides for the librarian and for members. Setup and installat
 | Remind or warn a member | **Borrowing > Borrowed Books** > Reminder / Overdue notice (app alert + email). A reminder is also sent automatically the day before the due date. |
 | Lend or receive with your phone | Sign in to the AklatOne app with the librarian account: it opens **librarian mode** (scan card + book, or scan the returned book) |
 | Library attendance | **Visitor's Log > Start**: the screen becomes a kiosk. Members scan their card, type their Member ID, or scan the screen with their app. To leave the kiosk, enter your password. |
-| Answer suggestions | **Suggestions** (red number = new) |
+| Answer suggestions; approve or hide book reviews | **Suggestions** (red number = new suggestions + reviews waiting) |
 | Check the shelves | **Catalog > Inventory audit** > Start, scan every copy on the shelves, then read *Not found* and *Records to check* |
 | Reports and printouts | **Reports** (date range, time spent, Excel export) and **Printing** (inventory, borrowed, overdue, member lists with signatories) |
 
@@ -64,6 +64,11 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 8. **Is someone else using my account?** **Profile > Settings > Sign-in devices** shows every device signed in;
    sign out one you do not know and change your password. You get an email when a new device signs in.
 9. **No connection?** The app still shows your saved catalog, loans and receipts; borrowing needs the internet.
+10. **All copies borrowed?** Tap **Notify me when available** on the book; you get an alert (and an email) when a
+    copy is back. It is not a reservation: whoever requests first gets it.
+11. **Reviews:** after borrowing a book, rate it and write a short review. Others see it after the librarian approves it.
+12. **Reading goal:** **Profile > Activity > Reading goal** sets how many books you want to borrow this month.
+13. **Scan book QR:** in the library, **Catalog > Scan book QR** and scan the label on a book to see its details.
 
 ### Without a phone
 Your **Library ID card** is enough: show it at the desk to borrow and return books, and scan it at the Visitor's

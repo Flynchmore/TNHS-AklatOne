@@ -88,6 +88,9 @@ model User {
   appUsage          AppUsage[]
   suggestions       Suggestion[]           @relation("MemberSuggestions")
   signInSessions    Session[]
+  bookWatches       BookWatch[]            @relation("MemberBookWatches")
+  /// Books the member wants to borrow each month (null = no goal).
+  readingGoal       Int?
   auditLogs         AuditLog[]             @relation("ActorAuditLogs")
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
@@ -130,6 +133,7 @@ model Book {
   copies         BookCopy[]
   borrowRequests BorrowRequest[]
   ratings        BookRating[]
+  watches        BookWatch[]
   views          BookView[]
   favourites     Favourite[]
   viewCount      Int             @default(0)
@@ -254,11 +258,16 @@ model BookRating {
   memberId  String
   member    User     @relation("MemberBookRatings", fields: [memberId], references: [id], onDelete: Cascade)
   stars     Int
+  /// Optional written review; shown to other members only after the librarian approves it.
+  review       String?   @db.VarChar(500)
+  reviewStatus String?   @db.VarChar(12) // PENDING | APPROVED | HIDDEN
+  reviewedAt   DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([bookId, memberId])
   @@index([bookId])
+  @@index([reviewStatus])
 }
 
 // One row per member and book; a view counts at most once per member per book per 24 hours.
@@ -404,4 +413,17 @@ model Session {
   revokedAt  DateTime?
 
   @@index([userId, revokedAt])
+}
+
+/// "Notify me when available": a member waits for a copy of a book; removed once the alert is sent.
+model BookWatch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("MemberBookWatches", fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, bookId])
+  @@index([bookId])
 }

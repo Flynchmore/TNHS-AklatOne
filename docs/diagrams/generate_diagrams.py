@@ -375,7 +375,7 @@ def flowchart_kiosk():
 FLOW_H = 30
 STORES = {
     "D1": "Users and Roles", "D2": "Books and Categories", "D3": "Book Copies", "D4": "Borrow Requests",
-    "D5": "Borrowing Transactions", "D6": "Notifications", "D7": "Audit Log", "D8": "Favourites, Ratings and Views",
+    "D5": "Borrowing Transactions", "D6": "Notifications", "D7": "Audit Log", "D8": "Favourites, Ratings, Reviews, Book Watches and Views",
     "D9": "Library Visits", "D10": "App Usage", "D11": "Suggestions", "D12": "Inventory Audits",
     "D13": "Device Cache and Outbox (local)", "D14": "Idempotency Keys", "D15": "Backup Files", "D16": "Sign-in Sessions",
 }
@@ -462,7 +462,7 @@ L1 = [
     ("3.0", "Search Catalog and\nTrack Engagement",
      [("Member", ">", "Search, filters, ratings, favourites"), ("Member", "<", "Catalog, covers, availability"),
       ("Open Library (covers)", ">", "Cover images")],
-     [("D2", "<", "Books (not hidden)"), ("D3", "<", "Copy counts"), ("D8", ">", "Views, ratings, favourites"), ("D8", "<", "Favourites")]),
+     [("D2", "<", "Books (not hidden)"), ("D3", "<", "Copy counts"), ("D8", ">", "Views, ratings, reviews, favourites, notify-me"), ("D8", "<", "Favourites, approved reviews")]),
     ("4.0", "Process Borrow\nRequests",
      [("Member", ">", "Borrow request / cancel"), ("Member", "<", "Request status"), ("Librarian / Admin", ">", "Approve / decline")],
      [("D4", ">", "Request records"), ("D4", "<", "Requests"), ("D3", "<", "Available copy")]),
@@ -510,7 +510,7 @@ def dfd_level1():
 L2 = [
     ("1.0 Authenticate and\nManage Accounts", [("1.1", "Check username /\nemail and password", "D1"), ("1.2", "Send and check the\n6-digit email code", "Email Service"), ("1.3", "Issue session token;\nwrite sign-in audit", "D7"), ("1.4", "Add / edit members;\nmake Member ID", "D1"), ("1.5", "Print Library ID\ncards, mark printed", "D1"), ("1.6", "Record devices; sign\none out (password + code)", "D16")]),
     ("2.0 Manage Catalog,\nCopies and Inventory", [("2.1", "Add / edit / hide\nbooks", "D2"), ("2.2", "Add copies; make\ncopy codes", "D3"), ("2.3", "Excel import:\npreview, then apply", "D2"), ("2.4", "Print copy\nQR labels", "D3"), ("2.5", "Inventory audit:\nscan copies, report", "D12")]),
-    ("3.0 Search Catalog and\nTrack Engagement", [("3.1", "Search, filter\nand sort", "D2"), ("3.2", "Show availability\nand cover", "D3"), ("3.3", "Favourite, rate,\ncount views", "D8")]),
+    ("3.0 Search Catalog and\nTrack Engagement", [("3.1", "Search, filter\nand sort", "D2"), ("3.2", "Show availability\nand cover", "D3"), ("3.3", "Favourite, rate, review,\nnotify me, count views", "D8")]),
     ("4.0 Process Borrow\nRequests", [("4.1", "Check limit (8*)\nand free copy", "D5"), ("4.2", "Save pending\nrequest", "D4"), ("4.3", "Approve or decline;\nalert member", "D4"), ("4.4", "Approved: lend\n(goes to 5.3)", None)]),
     ("5.0 Record\nCirculation", [("5.1", "Find member by\nMember ID card", "D1"), ("5.2", "Find copy by\nQR label code", "D3"), ("5.3", "Lend: loan, receipt,\ndue date (7 days*)", "D5"), ("5.4", "Return: outcome,\ncopy status", "D5")]),
     ("6.0 Send Notifications\nand Reminders", [("6.1", "Librarian notice\n(overdue / reminder)", None), ("6.2", "Daily job: loans\ndue tomorrow", "D5"), ("6.3", "Save in-app\nalert", "D6"), ("6.4", "Send email\n(if member has one)", "Email Service")]),

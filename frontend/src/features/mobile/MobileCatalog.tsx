@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../features/auth/auth";
-import { X, Send, Library, ChevronLeft, ChevronRight, ArrowUp, Star, BookCheck, Eye, SlidersHorizontal } from "lucide-react";
+import { X, Send, Library, ChevronLeft, ChevronRight, ArrowUp, Star, BookCheck, Eye, SlidersHorizontal, BellRing, BellOff, MessageSquareText, QrCode } from "lucide-react";
+import { Scanner } from "../../components/staff/Scanner";
 import { Alert, BookCover, CategoryChips, CurvedPanel, FloatingSearch, ListState, PhotoHeader, Spinner, btnPrimary, focusRing, isNewBook, mobileApi, type CategoryLike } from "../../components/mobile/ui";
 import { FavouriteButton } from "../../components/mobile/FavouriteButton";
 import { useToast } from "../../components/Toast";
@@ -13,8 +14,10 @@ interface Book {
   availability?: { total: number; available: number };
   rating?: { average: number; count: number }; myRating?: number | null;
   borrowCount?: number; viewCount?: number; canRate?: boolean; createdAt?: string;
-  categories?: CategoryLike[]; favourite?: boolean;
+  categories?: CategoryLike[]; favourite?: boolean; watching?: boolean;
+  myReview?: { text: string; status: string | null } | null;
 }
+interface Review { id: string; stars: number; review: string; name: string; updatedAt: string }
 
 /** Seconds a member must stay on a book before it counts as a view (the request asked for 10-15 s). */
 export const VIEW_AFTER_MS = 12000;
@@ -59,6 +62,8 @@ export function MobileCatalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Book | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
   const [showTop, setShowTop] = useState(false);
   const listTop = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -112,6 +117,16 @@ export function MobileCatalog() {
     listTop.current?.scrollIntoView?.({ behavior: smooth(), block: "start" });
   };
   // Stable so the book sheet's 12-second view timer isn't restarted by unrelated re-renders (e.g. scrolling).
+  // Scan the QR label of a book on the shelf: show its details and availability right away.
+  const openScanned = async (code: string) => {
+    setScanError("");
+    const found = await mobileApi(`/api/v1/catalog/by-copy/${encodeURIComponent(code.trim())}`, { token: auth.token });
+    if (!found.ok) return setScanError(found.status === 404 ? "No book has this QR code. Scan the AklatOne label on the book." : found.message ?? "Please try again.");
+    const book = await mobileApi(`/api/v1/catalog/${(found.data as { bookId: string }).bookId}`, { token: auth.token });
+    if (!book.ok) return setScanError(book.message ?? "Please try again.");
+    setScanning(false);
+    setSelected(book.data as Book);
+  };
   const updateBook = useCallback((b: Book) => { setBooks(bs => bs.map(x => (x.id === b.id ? b : x))); setSelected(b); }, []);
 
   return (
@@ -130,12 +145,22 @@ export function MobileCatalog() {
       <CurvedPanel label="Catalog">
         <FloatingSearch id="catalog-search" label="Search the catalog by title or author" placeholder="Find a book or author" value={query} onChange={setQuery} onSubmit={() => { setDebounced(query.trim()); setPage(1); }} buttonLabel="Search now" />
 
-        <div className="flex items-center gap-2 -mt-1">
+        <div className="flex flex-wrap items-center gap-2 -mt-1">
           <button type="button" onClick={() => setShowFilters(v => !v)} aria-expanded={showFilters} aria-controls="catalog-filters" className={`inline-flex items-center gap-2 min-h-11 px-4 rounded-full bg-surface border text-sm font-semibold ${activeFilters ? "border-primary text-primary" : "border-line-strong text-ink"} ${focusRing}`}>
             <SlidersHorizontal size={16} aria-hidden="true" />Filters{activeFilters > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-primary text-on-primary text-xs flex items-center justify-center">{activeFilters}</span>}
           </button>
+          <button type="button" onClick={() => { setScanning(v => !v); setScanError(""); }} aria-expanded={scanning} className={`inline-flex items-center gap-2 min-h-11 px-4 rounded-full bg-surface border border-line text-sm font-semibold text-primary-strong shadow-sm ${focusRing}`}>
+            <QrCode size={16} aria-hidden="true" />Scan book QR
+          </button>
           {activeFilters > 0 && <button type="button" onClick={() => changeFilters(NO_FILTERS)} className={`min-h-11 px-3 rounded-full text-sm font-semibold text-ink-muted underline ${focusRing}`}>Clear</button>}
         </div>
+        {scanning && (
+          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4 space-y-3 ak-fade">
+            <p className="text-sm text-ink-muted">Scan the AklatOne QR label on a book in the library to see its details and how many copies are on the shelf.</p>
+            <Scanner id="m-shelf-scan" label="Book QR code" autoFocus={false} onCode={openScanned} />
+            {scanError && <Alert>{scanError}</Alert>}
+          </div>
+        )}
         {showFilters && (
           <div id="catalog-filters" className="bg-surface rounded-2xl border border-line shadow-sm p-4 space-y-4 ak-fade">
             <div>
@@ -239,6 +264,10 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
   const [sending, setSending] = useState(false);
   const [rating, setRating] = useState(false);
   const [error, setError] = useState("");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [draft, setDraft] = useState("");
+  const [watchBusy, setWatchBusy] = useState(false);
+  const isMember = auth.user?.role === "MEMBER";
 
   useEffect(() => {
     const d = ref.current;
@@ -246,6 +275,18 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
     if (book && !d.open) { setError(""); d.showModal?.(); }
     if (!book && d.open) d.close();
   }, [book]);
+
+  // Approved reviews of this book, and the member's own review in the box.
+  const reviewKey = book?.id;
+  const myText = book?.myReview?.text ?? "";
+  useEffect(() => { setDraft(myText); }, [reviewKey, myText]);
+  useEffect(() => {
+    if (!reviewKey || !auth.token) return;
+    let live = true;
+    setReviews([]);
+    void mobileApi(`/api/v1/catalog/${reviewKey}/reviews`, { token: auth.token }).then(r => { if (live && r.ok) setReviews(r.data as Review[]); });
+    return () => { live = false; };
+  }, [reviewKey, auth.token]);
 
   // Count a view once the member has stayed on this book for VIEW_AFTER_MS (cancelled if they leave sooner).
   const bookId = book?.id;
@@ -271,14 +312,27 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
     else setError(r.message ?? "Could not send the request.");
   };
 
-  const rate = async (stars: number) => {
+  const rate = async (stars: number, review?: string) => {
     if (!book) return;
     setRating(true);
     setError("");
-    const r = await mobileApi(`/api/v1/catalog/${book.id}/rating`, { method: "PUT", body: JSON.stringify({ stars }), token: auth.token });
+    const r = await mobileApi(`/api/v1/catalog/${book.id}/rating`, { method: "PUT", body: JSON.stringify(review === undefined ? { stars } : { stars, review }), token: auth.token });
     setRating(false);
-    if (r.ok) onUpdated({ ...book, ...(r.data as { myRating: number; rating: { average: number; count: number } }) });
-    else setError(r.message ?? "Could not save your rating.");
+    if (!r.ok) return setError(r.message ?? "Could not save your rating.");
+    const myReview = review === undefined ? book.myReview : review.trim() ? { text: review.trim(), status: "PENDING" } : null;
+    onUpdated({ ...book, ...(r.data as { myRating: number; rating: { average: number; count: number } }), myReview });
+    if (review !== undefined) toast({ tone: "success", title: review.trim() ? "Review sent" : "Review removed", message: review.trim() ? "Others will see it after the librarian approves it." : "" });
+  };
+
+  const toggleWatch = async () => {
+    if (!book) return;
+    setWatchBusy(true);
+    const r = await mobileApi(`/api/v1/catalog/${book.id}/watch`, { method: book.watching ? "DELETE" : "PUT", body: "{}", token: auth.token });
+    setWatchBusy(false);
+    if (r.ok) {
+      onUpdated({ ...book, watching: !book.watching });
+      toast({ tone: "success", title: book.watching ? "Notification cancelled" : "We will notify you", message: book.watching ? "" : "You get an alert (and an email) when a copy is back on the shelf." });
+    } else setError(r.message ?? "Please try again.");
   };
 
   const av = availabilityText(book?.availability);
@@ -338,21 +392,52 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
                 {book.canRate ? (
                   <>
                     <p className="text-xs text-ink-muted mb-2">{book.myRating ? "Tap a star to change it." : "Tap 1 to 5 stars."}</p>
-                    <StarPicker value={book.myRating ?? null} onChange={rate} disabled={rating} />
+                    <StarPicker value={book.myRating ?? null} onChange={s => rate(s)} disabled={rating} />
+                    {book.myRating ? (
+                      <div className="w-full mt-3 text-left">
+                        <label htmlFor="my-review" className="text-xs font-semibold text-ink">Your review (optional)</label>
+                        <textarea id="my-review" value={draft} onChange={e => setDraft(e.target.value)} maxLength={500} rows={3} placeholder="What did you like about this book?" className={`mt-1 w-full rounded-xl border border-line-strong bg-surface p-3 text-sm text-ink ${focusRing}`} />
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <span className="text-xs text-ink-muted">{book.myReview?.status === "APPROVED" ? "Shown to others" : book.myReview?.status === "PENDING" ? "Waiting for librarian approval" : book.myReview?.status === "HIDDEN" ? "Hidden by the librarian" : `${draft.length}/500`}</span>
+                          <button type="button" disabled={rating || draft.trim() === myText} onClick={() => rate(book.myRating!, draft)} className={`min-h-10 px-4 rounded-xl bg-primary text-on-primary text-sm font-semibold disabled:opacity-50 ${focusRing}`}>Save review</button>
+                        </div>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <p className="text-sm text-ink-muted mt-1">Borrow this book first to rate it.</p>
                 )}
               </section>
             )}
+            {reviews.length > 0 && (
+              <section aria-labelledby="book-reviews" className="space-y-2">
+                <h3 id="book-reviews" className="text-sm font-semibold text-primary-strong flex items-center gap-1.5"><MessageSquareText size={16} aria-hidden="true" />What readers say</h3>
+                <ul className="space-y-2">
+                  {reviews.map(r => (
+                    <li key={r.id} className="bg-page rounded-2xl p-3">
+                      <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold text-ink">{r.name}</span><span className="text-xs text-warning font-bold" aria-label={`${r.stars} of 5 stars`}>{"★".repeat(r.stars)}</span></div>
+                      <p className="text-sm text-ink mt-1 whitespace-pre-line break-words">{r.review}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {error && <Alert>{error}</Alert>}
           </div>
 
           <div className="px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-line bg-surface">
-            <button type="button" onClick={request} disabled={sending || !av.ok} className={btnPrimary}>
-              {sending ? <Spinner /> : <Send size={18} aria-hidden="true" />}
-              {!av.ok ? av.text : sending ? "Sending…" : "Request to borrow"}
-            </button>
+            {!av.ok && isMember ? (
+              <button type="button" onClick={toggleWatch} disabled={watchBusy} aria-pressed={!!book.watching} className={book.watching ? `w-full min-h-12 rounded-2xl border-2 border-primary text-primary font-semibold flex items-center justify-center gap-2 ${focusRing}` : btnPrimary}>
+                {watchBusy ? <Spinner /> : book.watching ? <BellOff size={18} aria-hidden="true" /> : <BellRing size={18} aria-hidden="true" />}
+                {book.watching ? "Cancel notification" : "Notify me when available"}
+              </button>
+            ) : (
+              <button type="button" onClick={request} disabled={sending || !av.ok} className={btnPrimary}>
+                {sending ? <Spinner /> : <Send size={18} aria-hidden="true" />}
+                {!av.ok ? av.text : sending ? "Sending…" : "Request to borrow"}
+              </button>
+            )}
+            {!av.ok && isMember && <p className="text-xs text-danger text-center mt-2">{av.text}</p>}
             <p className="text-xs text-ink-muted text-center mt-2">A librarian reviews every request. Borrow up to 8 books, 7 days each.</p>
           </div>
         </div>

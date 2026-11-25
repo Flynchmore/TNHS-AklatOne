@@ -156,6 +156,7 @@ export async function updateProfile(userId: string, input: {
   hobbies?: string;
   gender?: string;
   studentRowNo?: number | null;
+  readingGoal?: number | null;
 }): Promise<AuthUser> {
   const data: Record<string, unknown> = {};
   if (input.username) data.username = input.username;
@@ -183,6 +184,7 @@ export async function updateProfile(userId: string, input: {
   // Empty string clears the field.
   for (const k of ["gradeSection", "department", "position", "hobbies", "gender"] as const) if (input[k] !== undefined) data[k] = input[k] || null;
   if (input.studentRowNo !== undefined) data.studentRowNo = input.studentRowNo;
+  if (input.readingGoal !== undefined) data.readingGoal = input.readingGoal;
 
   const user = await prisma.user.update({
     where: { id: userId },

@@ -45,6 +45,8 @@ export const profileUpdateSchema = z.object({
   gender: z.enum(["Male", "Female", "Prefer not to say", ""]).optional(),
   // null clears it
   studentRowNo: z.number().int().min(1).max(999).nullable().optional(),
+  // Books to borrow each month; null clears the goal.
+  readingGoal: z.number().int().min(1).max(30).nullable().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

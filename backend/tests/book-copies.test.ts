@@ -12,6 +12,7 @@ const mockPrisma = {
 vi.doMock("../src/config/prisma.js", () => ({ prisma: mockPrisma, disconnectPrisma: vi.fn() }));
 // The session check is covered by tests/session.test.ts (real database); here the token is trusted as signed.
 vi.doMock("../src/middleware/session.js", () => ({ loadSession: async (c: any) => ({ id: c.id, username: c.username, role: c.role, permissions: c.permissions }) }));
+vi.doMock("../src/modules/catalog/watchers.js", () => ({ notifyWatchers: vi.fn(async () => 0) }));
 
 describe("book copies (mocked)", () => {
   let app: any;
