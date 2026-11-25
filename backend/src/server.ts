@@ -25,6 +25,9 @@ async function startupSummary() {
     prisma.$queryRaw`SELECT 1`.then(() => true, () => false),
     waitForRedis(),
   ]);
+  // Whether the Staff Web / Desktop still needs its first librarian account, and whether a recovery key exists.
+  const librarians = db ? await prisma.user.count({ where: { role: { name: "LIBRARIAN" }, isActive: true } }).catch(() => -1) : -1;
+  const recoveryKey = db ? await prisma.libraryRecovery.count().catch(() => 0) : 0;
   if (env.NODE_ENV === "production") {
     logger.info({ database: db, redis: redisUp, email: !!env.EMAIL_USER }, "AklatOne startup checks");
     return;
@@ -34,7 +37,7 @@ async function startupSummary() {
   const ok = c("32", "✔"), warn = c("33", "⚠"), bad = c("31", "✖"), arrow = c("36", "➜");
   const base = `http://localhost:${env.PORT}`;
   const lines = [
-    "",
+    " ",
     c("1;34", "  ┌──────────────────────────────────────────────┐"),
     c("1;34", "  │  ") + c("1", "AklatOne API is running") + c("1;34", "                     │"),
     c("1;34", "  └──────────────────────────────────────────────┘"),
@@ -42,18 +45,21 @@ async function startupSummary() {
     !redis ? `  ${warn} Redis      not configured; sign-in limits are kept in memory`
       : redisUp ? `  ${ok} Redis      connected (shared sign-in limits)`
       : `  ${warn} Redis      not running; sign-in limits are kept in memory. Start it: docker start aklatone-redis`,
-    env.EMAIL_USER ? `  ${ok} Email      configured` : `  ${warn} Email      not set; sign-in codes are printed here as [DEV OTP]`,
+    env.EMAIL_USER ? `  ${ok} Email      configured (codes go to each account's email)` : `  ${warn} Email      not set; every emailed code is printed here as [DEV OTP]`,
+    librarians === 0 ? `  ${warn} Librarian  none yet: open the Staff Web ${c("1", "/setup")} page to create it (print the recovery key it shows)`
+      : librarians > 0 ? `  ${ok} Librarian  set up${recoveryKey ? "" : c("33", "  (no recovery key yet: Staff Web > Settings > Emergency recovery key)")}` : "",
     `  ${arrow} API        ${base}/api/v1`,
     `  ${arrow} Health     ${base}/health`,
     `  ${arrow} API docs   ${base}/api-docs`,
-    "",
-    db ? c("1", "  Ready. You can now start the apps:") : c("1;31", "  The apps will not work until the database is running."),
-    "    Staff Web       cd frontend && npm run dev",
-    "    Staff Desktop   cd frontend && npm run dev:desktop",
-    "    Member Mobile   bash frontend/scripts/run-android.sh",
-    "    Everything      npm run dev   (from the project root: Redis + API + Staff Web)",
-    "",
-  ];
+    " ",
+    db ? c("1", "  Ready. Start an app from the project root (another terminal):") : c("1;31", "  The apps will not work until the database is running."),
+    `    ${c("36", "npm run dev")}              Staff Web portal (librarian / admin) in the browser`,
+    `    ${c("36", "npm run dev:desktop")}      Staff Desktop app (window; offline mode, Visitor's Log kiosk)`,
+    `    ${c("36", "npm run android")}          Phone app on a USB-connected Android phone (Member or Librarian)`,
+    `    ${c("36", "npm run android:share")}    Phone app for phones on the same Wi-Fi (QR code to download)`,
+    c("2", "  npm run dev already starts this API; running it twice reuses the API that is running."),
+    " ",
+  ].filter((l) => l !== "");
   console.log(lines.join("\n"));
 }
 

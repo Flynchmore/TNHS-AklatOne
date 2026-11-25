@@ -4,7 +4,7 @@ import { btnPrimary, focusRing } from "../../components/mobile/ui";
 import { PrivacyText, TermsText } from "./MobileSettings";
 
 /** Bump when the Terms, Privacy Policy or storage use change, so members are asked again. */
-export const CONSENT_VERSION = "2026-11-20";
+export const CONSENT_VERSION = "2026-11-25";
 const KEY = "aklatone_consent";
 
 export function hasConsented(): boolean {

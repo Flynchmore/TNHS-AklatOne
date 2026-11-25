@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AklatOne phone app for a LAN setup (before the school has a domain with HTTPS): the backend runs on this laptop
+# AklatOne phone app (members + librarian mode) for a LAN setup (before the school has a domain with HTTPS): the backend runs on this laptop
 # and the phones reach it over the same Wi-Fi.
 #
 #   bash scripts/lan-apk.sh build         build the APK that talks to http://<this laptop's Wi-Fi IP>:3000

@@ -305,6 +305,11 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Grade levels are Grade 7-10 only (Junior High School) + All grade levels (developer decision 2026-11-25; no Grade 11/12 rows existed). Catalog > Copies checked in the browser: open, edit location + date received, save, reload, clear; the edit row fits without horizontal scrolling.
 - ERD Book rows + BookCopy labels; DFD 2.1/2.2. Tests: backend 165 passed + 1 opt-in skipped (39 files), frontend 135.
 
+## Fresh librarian on dev, terminal messages (2026-11-25)
+- Developer request: fresh Staff Web / Desktop credentials. Dev librarian turned off with `node scripts/reopen-librarian-setup.mjs --yes` (dev backup ~/aklatone-backups/aklatone-2026-11-25-before-fresh-librarian.sql); its email is freed. Next Staff Web / Desktop start shows /setup, which makes the new librarian and the first recovery key. e2e_admin (dev-only test admin, never in production) left as is.
+- Terminal messages: scripts/dev.mjs prints a start line and one final summary (API, Staff Web with /setup when needed, Desktop, phone commands, [DEV OTP] note); the API startup box adds Librarian status (none -> /setup; no recovery key -> Settings) and the run commands from the project root; the Vite banner lists /login, /setup, /recover and the phone commands; run-android.sh shows [1/5]..[5/5] steps and tips (Member/Librarian choice, sign in each time, activation code, Google scanner download).
+- Privacy draft no longer lists phone number; CONSENT_VERSION 2026-11-25 (members accept the updated text once).
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

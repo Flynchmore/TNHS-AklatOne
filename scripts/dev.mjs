@@ -3,7 +3,7 @@
 //   npm run dev           Redis + MariaDB check + API + Staff Web
 //   npm run dev:desktop   Redis + MariaDB check + API + Staff Desktop (Tauri window)
 //   npm run dev:all       Redis + MariaDB check + API + Staff Web + Staff Desktop
-// The Member Mobile app is installed on a phone separately: npm run android
+// The phone app (members + librarian mode) is installed on a phone separately: npm run android / android:share
 import { spawn, execFileSync } from "node:child_process";
 import { createConnection } from "node:net";
 import { fileURLToPath } from "node:url";
@@ -15,6 +15,9 @@ const tty = process.stdout.isTTY;
 const c = (code, s) => (tty ? `\x1b[${code}m${s}\x1b[0m` : s);
 const say = (s) => console.log(`${c("1;34", "[aklatone]")} ${s}`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const WHAT = { web: "Staff Web portal", desktop: "Staff Desktop app", all: "Staff Web portal + Staff Desktop app" };
+if (!WHAT[target]) { console.error(`Unknown target "${target}". Use: npm run dev | npm run dev:desktop | npm run dev:all`); process.exit(1); }
+console.log(`\n${c("1;34", "AklatOne")} ${c("1", `· starting the ${WHAT[target]} for development`)}\n${c("2", "Checks the database and Redis, starts the API, then the app. Press Ctrl+C to stop everything.")}\n`);
 
 const portOpen = (port) => new Promise((resolve) => {
   const s = createConnection({ host: "127.0.0.1", port });
@@ -73,4 +76,19 @@ if (target === "web" || target === "all") start("web", "36", "frontend", "npm", 
 if (target === "desktop") start("desktop", "33", "frontend", "npm", ["run", "dev:desktop"]);
 // dev:all: the desktop window reuses the Staff Web dev server instead of starting a second one on the same port.
 if (target === "all") { await sleep(3000); start("desktop", "33", "frontend", "npx", ["tauri", "dev", "--config", '{"build":{"beforeDevCommand":""}}']); }
-say(c("2", "Press Ctrl+C to stop everything. Member Mobile (phone): npm run android"));
+// One clear summary of where everything is, once the app has had a moment to start.
+await sleep(4000);
+const setup = await fetch("http://localhost:3000/api/v1/setup/status").then((r) => r.json(), () => null);
+const needsSetup = setup?.data?.needsLibrarianSetup === true;
+const rows = [
+  "",
+  c("1;34", "  AklatOne is running"),
+  `  ${c("36", "API")}            http://localhost:3000   ${c("2", "(docs: /api-docs)")}`,
+  ...(target !== "desktop" ? [`  ${c("36", "Staff Web")}      http://localhost:5173${needsSetup ? c("33", "/setup   ← create the librarian account first; print the recovery key") : ""}`] : []),
+  ...(target !== "web" ? [`  ${c("36", "Staff Desktop")}  the AklatOne window opens by itself${needsSetup ? c("33", " (it shows the librarian setup first)") : ""}`] : []),
+  `  ${c("36", "Phone app")}      ${c("2", "another terminal:")} npm run android ${c("2", "(USB)")}  ·  npm run android:share ${c("2", "(Wi-Fi QR)")}`,
+  c("2", "  Sign-in codes are emailed; without email settings they are printed in the [api] lines as [DEV OTP]."),
+  c("2", "  Press Ctrl+C to stop everything."),
+  "",
+];
+console.log(rows.join("\n"));

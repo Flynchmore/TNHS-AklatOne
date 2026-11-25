@@ -25,8 +25,9 @@ function aklatoneBanner(mode: string, api: string): Plugin {
           "",
           c("1;34", desktop ? "  AklatOne · Staff Desktop app (Tauri)" : "  AklatOne · Staff Web portal (librarian and admin)"),
           desktop ? "  The desktop window opens by itself; this server feeds it with live reload." : "  Open the Local address above in a browser.",
-          `  API: ${api}  ${c("2", "(start it with: cd backend && npm run dev)")}`,
-          c("2", `  Other apps: ${desktop ? "Staff Web  npm run dev" : "Staff Desktop  npm run dev:desktop"}  ·  Member Mobile  npm run android`),
+          "  Pages: /login (sign in, Forgot password) · /setup (first librarian) · /recover (emergency recovery key)",
+          `  API: ${api}  ${c("2", "(from the project root, npm run dev starts it for you)")}`,
+          c("2", `  Other apps: ${desktop ? "Staff Web  npm run dev" : "Staff Desktop  npm run dev:desktop"}  ·  Phone app  npm run android (USB) / npm run android:share (Wi-Fi)`),
           "",
         ].join("\n")), 50);
       });

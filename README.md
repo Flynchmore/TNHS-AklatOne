@@ -187,8 +187,12 @@ cd ..
 npm run dev
 ```
 
-Open **http://localhost:5173**. The first time, the system asks you to create the **librarian account**
-(`/setup`). In development the seed also makes a test admin `e2e_admin` / `TestPass123!` (never in production).
+The terminal checks the database and Redis, starts the API and the Staff Web, then prints one summary with every
+address (and `/setup` while no librarian exists). Open **http://localhost:5173**. The first time, the system asks
+you to create the **librarian account** (`/setup`) and then shows the **emergency recovery key once**: print it and
+keep it with the principal or the ICT coordinator. Sign-in codes are emailed; without email settings they appear in
+the `[api]` lines as `[DEV OTP]`. In development the seed also makes a test admin `e2e_admin` / `TestPass123!`
+(never in production).
 
 **Email (sign-in codes).** Accounts with an email get a 6-digit code at every sign-in. Set `EMAIL_USER` to a Gmail
 address and `EMAIL_PASS` to a Gmail **App Password** (Google Account > Security > 2-Step Verification > App

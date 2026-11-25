@@ -186,7 +186,7 @@ export function PrivacyText() {
       <p>AklatOne is the library system of Tagumpay National High School. This notice explains what the app keeps about you, in line with the Data Privacy Act of 2012 (Republic Act No. 10173).</p>
       <h2>What we keep</h2>
       <ul>
-        <li>Your account: name, username, email, phone number, profile photo, member type, grade and section or department and designation, and the hobbies you choose to share.</li>
+        <li>Your account: name, username, email, profile photo, member type, grade and section or department and designation, and the hobbies you choose to share.</li>
         <li>Your library activity: borrow requests, borrowed and returned books, receipts, book ratings, books you viewed, and alerts sent to you.</li>
         <li>Screen time in the Statistics tab is counted and stored only on your phone. It is never sent to the school.</li>
       </ul>
