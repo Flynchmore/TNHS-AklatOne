@@ -56,14 +56,17 @@ describe("staff portal pages", () => {
     expect(allowedTransitions("RETIRED")).toEqual([]);
   });
 
-  it("Members deactivates an account after confirming", async () => {
+  it("Members lists members by Member ID and section (never the name) and deactivates after confirming", async () => {
     const patches: { url: string; body: string }[] = [];
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
       if (init?.method === "PATCH") { patches.push({ url: String(input), body: String(init.body) }); return json({}); }
-      return json({ items: [{ id: "m1", username: "juana", displayName: "Juana Testcase", memberType: "Student", gradeSection: "10 - Rizal", isActive: true, createdAt: new Date().toISOString(), activeLoans: 1 }], total: 1 });
+      return json({ items: [{ id: "m1", username: "juana", displayName: "Juana Testcase", maskedId: "JT123456", memberType: "Student", gradeSection: "10 - Rizal", isActive: true, createdAt: new Date().toISOString(), activeLoans: 1 }], total: 1 });
     });
     wrap(<Members />);
-    fireEvent.click(await screen.findByRole("button", { name: "Deactivate Juana Testcase" }));
+    expect(await screen.findByText("JT123456")).toBeInTheDocument();
+    expect(screen.getByText("10 - Rizal")).toBeInTheDocument();
+    expect(screen.queryByText(/Juana Testcase/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate JT123456" }));
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(await screen.findByText("Member deactivated")).toBeInTheDocument();
     expect(patches[0]!.url).toContain("/api/v1/users/m1/status");

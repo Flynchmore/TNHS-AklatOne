@@ -310,6 +310,11 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Terminal messages: scripts/dev.mjs prints a start line and one final summary (API, Staff Web with /setup when needed, Desktop, phone commands, [DEV OTP] note); the API startup box adds Librarian status (none -> /setup; no recovery key -> Settings) and the run commands from the project root; the Vite banner lists /login, /setup, /recover and the phone commands; run-android.sh shows [1/5]..[5/5] steps and tips (Member/Librarian choice, sign in each time, activation code, Google scanner download).
 - Privacy draft no longer lists phone number; CONSENT_VERSION 2026-11-25 (members accept the updated text once).
 
+## Recovery key print, members by Member ID, username tip (2026-11-26)
+- Recovery key Print fixed (web + desktop): RecoveryKeyCard no longer opens a popup window (blocked in the Tauri app and some browsers); it renders a print-only sheet (portal to body, .ak-key-sheet) and calls window.print() with html.ak-print-key so only that sheet goes to paper. Checked with Chrome's PDF output.
+- Members (developer decision, privacy): the list's Member column = photo + Member ID + grade & section (students) or department · designation (teachers); no full name or username there; the Role column shows only the badge. View dialog: title Member ID, subtitle section / department; below, photo + Member ID. Toasts, aria-labels and offline outbox labels use the Member ID. Avatar initial = first letter of the Member ID. The edit form still has Full name; search still finds names.
+- Username tip (lib/username.ts): register, phone profile edit and staff Add member show "do not use your real name"; a stronger warning when the username contains part of the full name (looksLikeRealName, accents/case ignored). Warning only, not blocked.
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

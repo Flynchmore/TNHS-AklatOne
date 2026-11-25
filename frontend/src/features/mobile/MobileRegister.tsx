@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, User, Lock, Mail, IdCard, GraduationCap, Building2, Award } from "lucide-react";
 import { Alert, Field, FieldIconButton, MemberTypePicker, Spinner, StrengthMeter, btnPrimary, focusRing, friendlyError, mobileApi, passwordStrength, type MemberType } from "../../components/mobile/ui";
@@ -58,7 +59,8 @@ export function MobileRegister() {
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="Full name" icon={<IdCard size={18} />} autoComplete="name" placeholder="e.g. Juan Dela Cruz" value={f.displayName} onChange={set("displayName")} maxLength={100} />
-        <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="e.g. juan.delacruz" value={f.username} onChange={set("username")} maxLength={50} />
+        <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="e.g. reader2026" value={f.username} onChange={set("username")} maxLength={50}
+          hint={looksLikeRealName(f.username, f.displayName) ? `⚠ ${USERNAME_WARNING}` : USERNAME_TIP} />
         <Field label="Email" type="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={f.email} onChange={set("email")} maxLength={191} hint="Your activation and sign-in codes are sent here." />
         <div>
           <MemberTypePicker value={memberType} onChange={setMemberType} />

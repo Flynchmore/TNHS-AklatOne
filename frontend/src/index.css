@@ -152,6 +152,13 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
 @keyframes akBlink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 .ak-blink { animation: akBlink 1.2s ease-in-out infinite; }
 
+/* Recovery key: a sheet that exists only on paper (RecoveryKeyCard). */
+.ak-key-sheet { display: none; }
+@media print {
+  html.ak-print-key body > *:not(.ak-key-sheet) { display: none !important; }
+  html.ak-print-key .ak-key-sheet { display: block !important; padding: 20mm; color: #000; background: #fff; font-family: Arial, sans-serif; }
+}
+
 /* Staff Printing: only the sheet goes to paper. */
 @media print {
   .ak-no-print { display: none !important; }

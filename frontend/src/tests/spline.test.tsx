@@ -22,10 +22,10 @@ describe("spline area chart", () => {
 });
 
 describe("member photo", () => {
-  it("shows the member's own photo, or their initial when there is none", () => {
-    const { container, rerender } = render(<MemberAvatar m={{ username: "juana", displayName: "Juana Testcase", avatarUrl: "data:image/jpeg;base64,AAA" }} />);
+  it("shows the member's own photo, or the first letter of the Member ID (never the name) when there is none", () => {
+    const { container, rerender } = render(<MemberAvatar m={{ username: "reader01", maskedId: "JT123456", avatarUrl: "data:image/jpeg;base64,AAA" }} />);
     expect(container.querySelector("img")).toHaveAttribute("src", "data:image/jpeg;base64,AAA");
-    rerender(<MemberAvatar m={{ username: "juana", displayName: "Juana Testcase", avatarUrl: null }} />);
+    rerender(<MemberAvatar m={{ username: "reader01", maskedId: "JT123456", avatarUrl: null }} />);
     expect(screen.getByText("J")).toBeInTheDocument();
   });
 });

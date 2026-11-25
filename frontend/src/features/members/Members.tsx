@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, UserPlus, Search, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
@@ -19,11 +20,19 @@ export interface Member {
   maskedId?: string | null; cardPrintedAt?: string | null;
 }
 
+/**
+ * For privacy the Members list and View show a member by Member ID, not by name (developer decision 2026-11-25):
+ * students with their grade and section, teachers with their department / designation.
+ */
+const memberId = (m: { maskedId?: string | null }) => m.maskedId || "No Member ID yet";
+const memberGroup = (m: { memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null }) =>
+  (m.memberType === "Teacher" ? [m.department, m.position].filter(Boolean).join(" · ") : m.gradeSection) || (m.memberType === "Teacher" ? "Department not set" : "Section not set");
+
 /** Member photo from the mobile app, or their initial when they have not set one. */
-export function MemberAvatar({ m, size = "w-10 h-10 text-base" }: { m: Pick<Member, "displayName" | "username" | "avatarUrl">; size?: string }) {
+export function MemberAvatar({ m, size = "w-10 h-10 text-base" }: { m: Pick<Member, "username" | "avatarUrl" | "maskedId">; size?: string }) {
   return m.avatarUrl
     ? <img src={m.avatarUrl} alt="" className={`${size} rounded-full object-cover shrink-0 ring-2 ring-surface shadow-sm`} />
-    : <span className={`${size} rounded-full bg-gradient-to-br from-primary to-primary-strong text-on-primary font-bold flex items-center justify-center shrink-0`} aria-hidden="true">{(m.displayName || m.username).charAt(0).toUpperCase()}</span>;
+    : <span className={`${size} rounded-full bg-gradient-to-br from-primary to-primary-strong text-on-primary font-bold flex items-center justify-center shrink-0`} aria-hidden="true">{(m.maskedId || m.username).charAt(0).toUpperCase()}</span>;
 }
 type TypeFilter = "all" | "Student" | "Teacher";
 type StatusFilter = "active" | "inactive" | "all";
@@ -64,14 +73,14 @@ export function Members() {
 
   const toggle = useMutation({
     mutationFn: async (m: Member) => {
-      const r = await apiFetch(`/api/v1/users/${m.id}/status`, { method: "PATCH", body: JSON.stringify({ isActive: !m.isActive }), token, ...(m.updatedAt ? { headers: { "X-Expected-Updated-At": m.updatedAt } } : {}), offline: { kind: "member", label: `${m.isActive ? "Deactivate" : "Activate"} ${m.displayName || m.username}` } });
+      const r = await apiFetch(`/api/v1/users/${m.id}/status`, { method: "PATCH", body: JSON.stringify({ isActive: !m.isActive }), token, ...(m.updatedAt ? { headers: { "X-Expected-Updated-At": m.updatedAt } } : {}), offline: { kind: "member", label: `${m.isActive ? "Deactivate" : "Activate"} ${memberId(m)}` } });
       if (!r.ok) throw new Error(r.message ?? "Could not change the status");
       return { ...m, queued: r.queued };
     },
     onSuccess: (m) => {
       toast(m.queued ? queuedToast : m.isActive
-        ? { tone: "info", title: "Member deactivated", message: `${m.displayName || m.username} can no longer sign in.` }
-        : { tone: "success", title: "Member activated", message: `${m.displayName || m.username} can sign in again.` });
+        ? { tone: "info", title: "Member deactivated", message: `${memberId(m)} can no longer sign in.` }
+        : { tone: "success", title: "Member activated", message: `${memberId(m)} can sign in again.` });
       setConfirm(null);
       ["members", "summary", "recent-activity"].forEach(k => qc.invalidateQueries({ queryKey: [k] }));
     },
@@ -116,12 +125,11 @@ export function Members() {
                   <td className={table.td}>
                     <div className="flex items-center gap-3">
                       <MemberAvatar m={m} />
-                      <div className="min-w-0"><div className="font-semibold text-ink">{m.displayName || m.username}</div><div className="text-xs text-ink-muted">@{m.username}{m.maskedId && <> · <span className="font-mono font-semibold text-primary">{m.maskedId}</span></>}</div></div>
+                      <div className="min-w-0"><div className="font-mono font-bold text-primary">{memberId(m)}</div><div className="text-xs text-ink-muted">{memberGroup(m)}</div></div>
                     </div>
                   </td>
                   <td className={`${table.td} whitespace-nowrap`}>
                     {m.memberType ? <Badge tone={m.memberType === "Teacher" ? "warning" : "primary"}>{m.memberType === "Teacher" ? <Briefcase size={12} aria-hidden="true" /> : <GraduationCap size={12} aria-hidden="true" />}{m.memberType}</Badge> : <span className="text-ink-muted text-xs">Not set</span>}
-                    <div className="text-xs text-ink-muted mt-1">{m.memberType === "Teacher" ? [m.position, m.department].filter(Boolean).join(" · ") : m.gradeSection}</div>
                   </td>
                   <td className={`${table.td} text-xs text-ink-muted`}>{m.email && <div className="flex items-center gap-1"><Mail size={12} aria-hidden="true" />{m.email}</div>}{!m.email && "—"}</td>
                   <td className={`${table.td} tabular-nums`}><span className="text-ink font-semibold">{m.activeLoans ?? 0} now</span><div className="text-xs text-ink-muted">{m.totalLoans ?? 0} in all</div></td>
@@ -135,9 +143,9 @@ export function Members() {
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2">
-                        <button className={`${btn.secondary} ${btnSm}`} onClick={() => setViewing(m)} aria-label={`View ${m.displayName || m.username}`}><Eye size={14} aria-hidden="true" />View</button>
-                        {canWrite && <button className={`${btn.secondary} ${btnSm}`} onClick={() => setEditing(m)} aria-label={`Edit ${m.displayName || m.username}`}><Pencil size={14} aria-hidden="true" />Edit</button>}
-                        {canWrite && <button className={`${btn.secondary} ${btnSm} ${m.isActive ? "!text-danger hover:!border-danger hover:!bg-danger-soft" : "!text-success hover:!border-success hover:!bg-success-soft"}`} onClick={() => setConfirm(m.id)} aria-label={`${m.isActive ? "Deactivate" : "Activate"} ${m.displayName || m.username}`}>{m.isActive ? <UserX size={14} aria-hidden="true" /> : <UserCheck size={14} aria-hidden="true" />}</button>}
+                        <button className={`${btn.secondary} ${btnSm}`} onClick={() => setViewing(m)} aria-label={`View ${memberId(m)}`}><Eye size={14} aria-hidden="true" />View</button>
+                        {canWrite && <button className={`${btn.secondary} ${btnSm}`} onClick={() => setEditing(m)} aria-label={`Edit ${memberId(m)}`}><Pencil size={14} aria-hidden="true" />Edit</button>}
+                        {canWrite && <button className={`${btn.secondary} ${btnSm} ${m.isActive ? "!text-danger hover:!border-danger hover:!bg-danger-soft" : "!text-success hover:!border-success hover:!bg-success-soft"}`} onClick={() => setConfirm(m.id)} aria-label={`${m.isActive ? "Deactivate" : "Activate"} ${memberId(m)}`}>{m.isActive ? <UserX size={14} aria-hidden="true" /> : <UserCheck size={14} aria-hidden="true" />}</button>}
                       </div>
                     )}
                   </td>
@@ -239,7 +247,12 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
       <FormSection title="Personal information" icon={IdCard}>
         <div className="grid sm:grid-cols-2 gap-4">
           {field("Full name *", "displayName", { maxLength: 100, autoComplete: "off" })}
-          {isNew ? field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. juan.cruz" }) : (
+          {isNew ? (
+            <div>
+              {field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. reader2026", "aria-describedby": "member-username-tip" })}
+              <p id="member-username-tip" className={`text-xs mt-1 ${looksLikeRealName(form.username, form.displayName) ? "text-warning font-semibold" : "text-ink-muted"}`}>{looksLikeRealName(form.username, form.displayName) ? USERNAME_WARNING : USERNAME_TIP}</p>
+            </div>
+          ) : (
             <div><p className={label}>Username</p><p className="min-h-11 flex items-center px-4 rounded-2xl bg-page text-ink-muted text-sm">@{form.username}</p></div>
           )}
           {field("Email (required)", "email", { type: "email", maxLength: 191, autoComplete: "off", required: true })}
@@ -306,12 +319,12 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
     </dl>
   );
   return (
-    <StaffDialog open={!!member} onClose={onClose} title={m ? m.displayName || m.username : "Member"} subtitle={m ? `${m.memberType || "Member"} · @${m.username}` : undefined} icon={teacher ? Briefcase : GraduationCap} wide>
+    <StaffDialog open={!!member} onClose={onClose} title={m ? memberId(m) : "Member"} subtitle={m ? memberGroup(m) : undefined} icon={teacher ? Briefcase : GraduationCap} wide>
       {m && (
         <>
           <div className="flex items-center gap-4">
             <MemberAvatar m={m} size="w-20 h-20 text-2xl" />
-            <div className="space-y-1"><p className="text-xl font-bold text-ink">{m.displayName || m.username}</p><div className="flex gap-2"><Badge tone={teacher ? "warning" : "primary"}>{m.memberType || "Role not set"}</Badge><Badge tone={m.isActive ? "success" : "muted"}>{m.isActive ? "Active" : "Deactivated"}</Badge></div></div>
+            <div className="space-y-1"><p className="text-xl font-mono font-bold text-primary">{memberId(m)}</p><div className="flex gap-2"><Badge tone={teacher ? "warning" : "primary"}>{m.memberType || "Role not set"}</Badge><Badge tone={m.isActive ? "success" : "muted"}>{m.isActive ? "Active" : "Deactivated"}</Badge></div></div>
           </div>
           <FormSection title="Personal information" icon={IdCard}>
             {list(personal)}

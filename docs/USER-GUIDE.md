@@ -59,7 +59,7 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 ### With the AklatOne app
 1. **Install:** scan the *Get the AklatOne library app* poster, or ask the librarian. On Android, allow
    *Install unknown apps* if asked.
-2. **New here?** Tap **Create an account** and fill in your details (full name, username, email, Student or
+2. **New here?** Tap **Create an account** (choose a username that is **not** your real name) and fill in your details (full name, username, email, Student or
    Teacher, gender, grade and section or department, hobbies) and a password. Choose Student or Teacher carefully:
    it is set once; to change it later, ask the librarian. Enter the **activation code** sent to your email; your
    account then works and gets its Member ID. (The librarian can also make the account for you.)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../features/auth/auth";
 import { HistoryCard, HistoryEmpty, useHistory, type Tx } from "./MobileHistory";
@@ -281,7 +282,8 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       <h2 className="font-semibold text-primary-strong">Update information</h2>
       {error && <Alert>{error}</Alert>}
       <Field label="Full name" icon={<IdCard size={18} />} autoComplete="name" value={form.displayName ?? ""} onChange={set("displayName")} maxLength={100} />
-      <Field label="Username" icon={<UserIcon size={18} />} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")} />
+      <Field label="Username" icon={<UserIcon size={18} />} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")}
+        hint={looksLikeRealName(form.username, form.displayName ?? "") ? `⚠ ${USERNAME_WARNING}` : USERNAME_TIP} />
       {/* Student or Teacher is chosen once; after that only the librarian can change it. */}
       {me.memberType ? (
         <p className="rounded-2xl bg-page border border-line px-4 py-3 text-sm text-ink"><b>Role:</b> {me.memberType} <span className="block text-xs text-ink-muted">Set once. Ask the librarian if it is wrong.</span></p>

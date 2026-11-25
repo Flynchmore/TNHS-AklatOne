@@ -53,7 +53,9 @@ describe("Emergency librarian recovery", () => {
     type("Recovery key", "AKLT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA"); type("Name", "Maria Santos"); type("Position", "Librarian"); type("Department", "Library");
     type("Email", "new@example.com"); type("Password", "Strong#Pass2026"); type("Confirm password", "Strong#Pass2026");
     fireEvent.click(screen.getByRole("button", { name: /Replace the librarian account/ }));
-    expect(await screen.findByText("AKLT-ABCDE-FGHJK-MNPQR-STUVW-XYZ23")).toBeInTheDocument();
+    // Shown on screen and in the print-only sheet (the Print button prints just that sheet).
+    expect(await screen.findAllByText("AKLT-ABCDE-FGHJK-MNPQR-STUVW-XYZ23")).toHaveLength(2);
+    expect(document.querySelector(".ak-key-sheet")).toHaveTextContent("AKLT-ABCDE-FGHJK-MNPQR-STUVW-XYZ23");
     expect(String(fetchMock.mock.calls[0]![0])).toContain("/api/v1/setup/recover");
     const go = screen.getByRole("button", { name: "Go to Sign In" });
     expect(go).toBeDisabled();

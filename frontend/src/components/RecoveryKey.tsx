@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Copy, Printer, KeyRound } from "lucide-react";
 import { focusRing } from "./mobile/ui";
 
@@ -9,18 +10,15 @@ import { focusRing } from "./mobile/ui";
 export function RecoveryKeyCard({ recoveryKey, onSaved }: { recoveryKey: string; onSaved: (saved: boolean) => void }) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  // Same-page printing (like Printing): a popup window is blocked in the Desktop app and by some browsers.
+  // Only the key sheet below goes to paper while <html> has the ak-print-key class.
   const print = () => {
-    const w = window.open("", "_blank", "width=640,height=480");
-    if (!w) return;
-    w.document.title = "AklatOne recovery key";
-    const p = (text: string, style = "") => { const el = w.document.createElement("p"); el.textContent = text; el.setAttribute("style", style); w.document.body.appendChild(el); };
-    w.document.body.setAttribute("style", "font-family: Arial, sans-serif; padding: 32px;");
-    p("Tagumpay National High School Library: AklatOne", "font-weight:bold;font-size:18px");
-    p("Emergency recovery key for the librarian account", "font-size:14px");
-    p(recoveryKey, "font-family:monospace;font-size:24px;letter-spacing:2px;border:2px dashed #333;padding:16px;text-align:center");
-    p("Keep this paper in a safe place (principal or ICT coordinator). Use it only when nobody can sign in to the librarian account: Staff Web > Can't access the librarian account?", "font-size:12px");
-    p(`Made on ${new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })}`, "font-size:12px;color:#555");
-    w.print();
+    const html = document.documentElement;
+    const done = () => html.classList.remove("ak-print-key");
+    html.classList.add("ak-print-key");
+    window.addEventListener("afterprint", done, { once: true });
+    window.print();
+    setTimeout(done, 1000); // print() returns after the dialog closes; afterprint is missing in some WebViews
   };
   return (
     <section aria-labelledby="rk-title" className="rounded-2xl border-2 border-warning/60 bg-warning-soft/60 p-4 space-y-3 text-left">
@@ -31,6 +29,16 @@ export function RecoveryKeyCard({ recoveryKey, onSaved }: { recoveryKey: string;
         <button type="button" onClick={() => { void navigator.clipboard?.writeText(recoveryKey).then(() => setCopied(true)); }} className={`inline-flex items-center gap-1.5 px-3.5 min-h-10 rounded-xl border border-line-strong bg-surface text-sm font-semibold text-ink ${focusRing}`}><Copy size={16} aria-hidden="true" />{copied ? "Copied" : "Copy"}</button>
         <button type="button" onClick={print} className={`inline-flex items-center gap-1.5 px-3.5 min-h-10 rounded-xl border border-line-strong bg-surface text-sm font-semibold text-ink ${focusRing}`}><Printer size={16} aria-hidden="true" />Print</button>
       </div>
+      {createPortal(
+        <div className="ak-key-sheet" aria-hidden="true">
+          <p style={{ fontWeight: 700, fontSize: 18 }}>Tagumpay National High School Library: AklatOne</p>
+          <p style={{ fontSize: 14 }}>Emergency recovery key for the librarian account</p>
+          <p style={{ fontFamily: "monospace", fontSize: 24, letterSpacing: 2, border: "2px dashed #333", padding: 16, textAlign: "center", margin: "16px 0" }}>{recoveryKey}</p>
+          <p style={{ fontSize: 12 }}>Keep this paper in a safe place (principal or ICT coordinator). Use it only when nobody can sign in to the librarian account: Staff Web or Desktop sign-in &gt; Can't access the librarian account?</p>
+          <p style={{ fontSize: 12, color: "#555" }}>Made on {new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })}</p>
+        </div>,
+        document.body,
+      )}
       <label className="flex items-start gap-2 text-sm text-ink">
         <input type="checkbox" checked={saved} onChange={e => { setSaved(e.target.checked); onSaved(e.target.checked); }} className="w-5 h-5 mt-0.5 accent-primary" />
         I printed or wrote down the recovery key and will keep it safe.
