@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `User` ADD COLUMN `avatarUrl` VARCHAR(191) NULL,
+    ADD COLUMN `memberType` VARCHAR(191) NULL,
+    ADD COLUMN `otpCode` VARCHAR(191) NULL,
+    ADD COLUMN `otpExpiry` DATETIME(3) NULL,
+    ADD COLUMN `phoneNumber` VARCHAR(191) NULL;

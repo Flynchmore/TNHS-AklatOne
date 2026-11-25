@@ -1,0 +1,9 @@
+# HTTPS in front of AklatOne (docker-compose service "proxy").
+# SITE_ADDRESS in .env:
+#   library.example.com  -> free Let's Encrypt certificate, HTTP redirects to HTTPS (needs ports 80 + 443 open and the domain's A record)
+#   :80                   -> plain HTTP, only for a test on the school LAN (the release phone app refuses plain HTTP)
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy web:80
+}

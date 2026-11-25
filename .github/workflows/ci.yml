@@ -1,0 +1,101 @@
+# Runs on every push and pull request: backend (typecheck, tests on a throwaway MariaDB) and frontend (lint, tests, build).
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: aklatone_e2e
+          MARIADB_USER: aklatone
+          MARIADB_PASSWORD: ci-password
+          MARIADB_ROOT_PASSWORD: ci-root-password
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://aklatone:ci-password@127.0.0.1:3306/aklatone_e2e
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+      REDIS_URL: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: backend/package-lock.json }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npx prisma migrate deploy
+      - run: npx tsx prisma/seed.ts
+      - run: npm run seed:categories
+        env: { ALLOW_CATEGORY_SEED: "1" }
+      - run: npm test
+      - run: npm run build
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  # Desktop app (Tauri) on both school computer systems: compiles the Rust shell, runs its tests
+  # (the OS credential-store test skips itself where no store is running) and builds the app without installers.
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix: { os: [ubuntu-22.04, windows-latest] }
+    runs-on: ${{ matrix.os }}
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux libraries for the WebView
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
+      - run: npm ci
+      - run: cargo test --lib
+        working-directory: frontend/desktop-tauri
+      - run: npx tauri build --no-bundle
+
+  # Member app on Android: debug APK (Capacitor).
+  android:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run build && npx cap sync android
+      - run: ./gradlew assembleDebug
+        working-directory: frontend/mobile-capacitor/android
+
+  # Member app on iOS: compiles the Xcode project for the simulator (no signing; a real install needs an Apple account).
+  ios:
+    runs-on: macos-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run build && npx cap sync ios
+      - run: xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+        working-directory: frontend/mobile-capacitor/ios/App

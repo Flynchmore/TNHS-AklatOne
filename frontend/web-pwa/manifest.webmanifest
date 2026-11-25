@@ -1,0 +1,15 @@
+{
+  "name": "AklatOne Staff Portal",
+  "short_name": "AklatOne",
+  "description": "Library Management System for Tagumpay National High School (librarian and admin).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EEF2FA",
+  "theme_color": "#1E326D",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

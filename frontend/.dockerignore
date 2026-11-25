@@ -1,0 +1,8 @@
+node_modules
+dist
+mobile-capacitor/**
+!mobile-capacitor/android/app/build.gradle
+desktop-tauri
+test-results
+.env
+*.log

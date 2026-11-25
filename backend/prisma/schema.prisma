@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum CopyStatus {
+  AVAILABLE
+  BORROWED
+  LOST
+  DAMAGED
+  RETIRED
+}
+
+enum TransactionStatus {
+  ACTIVE
+  RETURNED
+  CANCELLED
+  LOST
+}
+
+enum BorrowRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// Recorded by the librarian when a loan is closed.
+enum LoanOutcome {
+  RETURNED_ON_TIME
+  RETURNED_LATE
+  DAMAGED
+  MISSING
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  permissions Json     @default("[]")
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+}
+
+model User {
+  id                String                 @id @default(cuid())
+  username          String                 @unique
+  passwordHash      String
+  displayName       String?
+  email             String?                @unique
+  phoneNumber       String?
+  avatarUrl         String?                @db.MediumText // photos are stored as small JPEG data URLs (~30-60 KB)
+  memberType        String?
+  position          String?
+  department        String?
+  gradeSection      String?                @db.VarChar(50)
+  hobbies           String?                @db.VarChar(300)
+  gender            String?                @db.VarChar(20)
+  /// Students only: the student's number in the teacher's class record.
+  studentRowNo      Int?
+  otpCode           String?
+  otpExpiry         DateTime?
+  isActive          Boolean                @default(true)
+  /// Tokens issued before this moment are rejected (deactivation, password change or reset).
+  sessionsRevokedAt DateTime?
+  /// "Member ID" in the apps (e.g. CA123456): initials + 6 random digits, made once for members, never changed.
+  /// Printed on the Library ID card and in its QR code instead of personal data (no LRN, address or birthday).
+  maskedId          String?                @unique @db.VarChar(16)
+  /// When the Library ID card was last marked as printed (null = waiting in Printing).
+  cardPrintedAt     DateTime?
+  roleId            String
+  role              Role                   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  borrowed          BorrowingTransaction[] @relation("BorrowerTransactions")
+  borrowRequests    BorrowRequest[]        @relation("MemberBorrowRequests")
+  reviewedRequests  BorrowRequest[]        @relation("ReviewedBorrowRequests")
+  notifications     Notification[]         @relation("UserNotifications")
+  bookRatings       BookRating[]           @relation("MemberBookRatings")
+  bookViews         BookView[]             @relation("MemberBookViews")
+  favourites        Favourite[]
+  favouriteFolders  FavouriteFolder[]
+  libraryVisits     LibraryVisit[]
+  appUsage          AppUsage[]
+  suggestions       Suggestion[]           @relation("MemberSuggestions")
+  auditLogs         AuditLog[]             @relation("ActorAuditLogs")
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([roleId])
+  @@index([isActive])
+}
+
+/// A book has at most one category of each kind; shown as "Subject - English", "Wattpad - Teen Fiction", "Genre - Horror".
+enum CategoryKind {
+  SUBJECT
+  WATTPAD
+  GENRE
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String
+  kind        CategoryKind @default(SUBJECT)
+  description String?
+  books       Book[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([kind, name])
+  @@index([name])
+}
+
+model Book {
+  id             String          @id @default(cuid())
+  title          String
+  subtitle       String?
+  isbn           String?         @unique
+  serialNumber   String?         @unique
+  authors        String?
+  publisher      String?
+  publishedYear  Int?
+  description    String?         @db.Text
+  categories     Category[]
+  copies         BookCopy[]
+  borrowRequests BorrowRequest[]
+  ratings        BookRating[]
+  views          BookView[]
+  favourites     Favourite[]
+  viewCount      Int             @default(0)
+  /// Hidden from members (e.g. not in the latest Excel import); never deleted, can be shown again.
+  isHidden       Boolean         @default(false)
+  /// Cover picture (Open Library test books now; photos of school books later). Null = ISBN cover or title card.
+  coverUrl       String?         @db.VarChar(500)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([title])
+  @@index([authors])
+  @@index([isHidden])
+}
+
+model BookCopy {
+  id             String                 @id @default(cuid())
+  bookId         String
+  book           Book                   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  barcode        String                 @unique
+  status         CopyStatus             @default(AVAILABLE)
+  location       String?
+  acquiredAt     DateTime?
+  notes          String?
+  transactions   BorrowingTransaction[]
+  /// Last time the copy was scanned on the shelf in an inventory audit (null = never verified).
+  lastVerifiedAt DateTime?
+  inventoryScans InventoryScan[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([bookId])
+  @@index([status])
+  @@index([bookId, status])
+}
+
+model BorrowingTransaction {
+  id         String            @id @default(cuid())
+  bookCopyId String
+  bookCopy   BookCopy          @relation(fields: [bookCopyId], references: [id], onDelete: Restrict)
+  borrowerId String
+  borrower   User              @relation("BorrowerTransactions", fields: [borrowerId], references: [id], onDelete: Restrict)
+  status     TransactionStatus @default(ACTIVE)
+  borrowedAt DateTime          @default(now())
+  dueAt      DateTime?
+  returnedAt DateTime?
+  notes      String?
+  receiptNo  String?           @unique
+  outcome    LoanOutcome?
+  request    BorrowRequest?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([bookCopyId])
+  @@index([borrowerId])
+  @@index([status])
+  @@index([borrowedAt])
+  @@index([status, dueAt])
+  @@index([borrowerId, status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model BorrowRequest {
+  id             String                @id @default(cuid())
+  bookId         String
+  book           Book                  @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  memberId       String
+  member         User                  @relation("MemberBorrowRequests", fields: [memberId], references: [id], onDelete: Restrict)
+  status         BorrowRequestStatus   @default(PENDING)
+  note           String?
+  decisionNote   String?
+  reviewedById   String?
+  reviewedBy     User?                 @relation("ReviewedBorrowRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  transactionId  String?               @unique
+  transaction    BorrowingTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  // Set when the member swipes the item away from their History; the record itself is kept for the library.
+  memberHiddenAt DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([memberId, status])
+  @@index([status, createdAt])
+  @@index([bookId])
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type          String
+  title         String
+  message       String    @db.Text
+  transactionId String?
+  createdById   String?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+model BookRating {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    User     @relation("MemberBookRatings", fields: [memberId], references: [id], onDelete: Cascade)
+  stars     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookId, memberId])
+  @@index([bookId])
+}
+
+// One row per member and book; a view counts at most once per member per book per 24 hours.
+model BookView {
+  id           String   @id @default(cuid())
+  bookId       String
+  book         Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  memberId     String
+  member       User     @relation("MemberBookViews", fields: [memberId], references: [id], onDelete: Cascade)
+  lastViewedAt DateTime
+
+  @@unique([bookId, memberId])
+}
+
+/// A member's own folder for grouping favourite books.
+model FavouriteFolder {
+  id         String      @id @default(cuid())
+  memberId   String
+  member     User        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  name       String      @db.VarChar(40)
+  favourites Favourite[]
+  createdAt  DateTime    @default(now())
+
+  @@unique([memberId, name])
+}
+
+/// A book the member hearted. Optionally filed in one folder; deleting the folder keeps the favourite.
+model Favourite {
+  id        String           @id @default(cuid())
+  memberId  String
+  member    User             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book             @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  folderId  String?
+  folder    FavouriteFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  createdAt DateTime         @default(now())
+
+  @@unique([memberId, bookId])
+  @@index([folderId])
+}
+
+/// Replay record for writes sent with an Idempotency-Key (Desktop offline upload): a retried request gets the first answer instead of running twice.
+model IdempotencyKey {
+  key       String   @id @db.VarChar(100)
+  userId    String
+  method    String   @db.VarChar(10)
+  path      String   @db.VarChar(255)
+  status    Int
+  body      String   @db.MediumText
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Inventory audit (stocktake): the librarian scans every copy on the shelves; unscanned copies are reported, never changed automatically.
+model InventoryAudit {
+  id          String          @id @default(cuid())
+  note        String?         @db.VarChar(255)
+  startedById String
+  startedAt   DateTime        @default(now())
+  closedAt    DateTime?
+  scans       InventoryScan[]
+
+  @@index([closedAt])
+}
+
+model InventoryScan {
+  id          String         @id @default(cuid())
+  auditId     String
+  audit       InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  bookCopyId  String
+  bookCopy    BookCopy       @relation(fields: [bookCopyId], references: [id], onDelete: Cascade)
+  scannedById String
+  scannedAt   DateTime       @default(now())
+
+  @@unique([auditId, bookCopyId])
+  @@index([bookCopyId])
+}
+
+/// Visitor's Log: one row per library visit (Time In, then Time Out on the next scan the same Philippine day).
+model LibraryVisit {
+  id        String    @id @default(cuid())
+  memberId  String
+  member    User      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  /// Philippine date of the visit, YYYY-MM-DD (a visit never spans two days; a missing Time Out stays empty).
+  day       String    @db.VarChar(10)
+  timeIn    DateTime
+  timeOut   DateTime?
+  /// kiosk = Library ID card / typed Member ID at the kiosk; phone = member app scanning the kiosk QR.
+  source    String    @default("kiosk") @db.VarChar(10)
+  createdAt DateTime  @default(now())
+
+  @@index([day])
+  @@index([memberId, day])
+}
+
+/// Time spent using the apps: seconds per user, Philippine day and platform (mobile, web, desktop).
+model AppUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String   @db.VarChar(10)
+  platform  String   @db.VarChar(10)
+  seconds   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, day, platform])
+  @@index([day])
+}
+
+/// Suggestion Box: members suggest books for the library or send feedback; only librarians read them.
+model Suggestion {
+  id          String    @id @default(cuid())
+  memberId    String
+  member      User      @relation("MemberSuggestions", fields: [memberId], references: [id], onDelete: Cascade)
+  /// BOOK = a book to add to the library; FEEDBACK = a comment about the library or the app.
+  kind        String    @db.VarChar(10)
+  /// Book title (BOOK) or subject (FEEDBACK).
+  title       String    @db.VarChar(150)
+  author      String?   @db.VarChar(150)
+  message     String?   @db.Text
+  /// NEW, PLANNED, DONE (book added / feedback acted on), DECLINED.
+  status      String    @default("NEW") @db.VarChar(10)
+  reply       String?   @db.VarChar(500)
+  repliedById String?
+  repliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([memberId, createdAt])
+}

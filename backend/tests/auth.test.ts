@@ -1,0 +1,146 @@
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import { createApp } from "../src/app.js";
+import { prisma } from "../src/config/prisma.js";
+import { adminToken, MEMBER_PASSWORD, newMember } from "./helpers.js";
+
+describe("auth", () => {
+  const app = createApp();
+  const username = `testuser_${Date.now()}`;
+
+  it("has no self-registration or Google sign-in (members are added by the librarian)", async () => {
+    expect((await request(app).post("/api/v1/auth/register").send({ username: "x_self", password: "Test-Pass-2026!" })).status).toBe(404);
+    expect((await request(app).post("/api/v1/auth/google").send({ idToken: "x" })).status).toBe(404);
+    await newMember(app, username);
+  });
+
+  it("logs in", async () => {
+    const res = await request(app).post("/api/v1/auth/login").send({
+      username,
+      password: "Test-Pass-2026!",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.data.token).toBeTruthy();
+  });
+
+  it("returns current user with token", async () => {
+    const login = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
+    const token = login.body.data.token;
+    const res = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.username).toBe(username);
+    expect(res.body.data.role).toBe("MEMBER");
+    expect(Array.isArray(res.body.data.permissions)).toBe(true);
+  });
+
+  it("saves and returns the member's profile details; blank clears a field", async () => {
+    const token = (await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" })).body.data.token;
+    const auth = { Authorization: `Bearer ${token}` };
+    const upd = await request(app).patch("/api/v1/auth/profile").set(auth).send({ displayName: "Juana Testcase", memberType: "Student", gradeSection: "Grade 10 - Sampaguita", hobbies: "Reading, chess" });
+    expect(upd.status).toBe(200);
+    let me = (await request(app).get("/api/v1/auth/me").set(auth)).body.data;
+    expect(me).toMatchObject({ displayName: "Juana Testcase", gradeSection: "Grade 10 - Sampaguita", hobbies: "Reading, chess" });
+    await request(app).patch("/api/v1/auth/profile").set(auth).send({ hobbies: "" });
+    me = (await request(app).get("/api/v1/auth/me").set(auth)).body.data;
+    expect(me.hobbies).toBeNull();
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ hobbies: "x".repeat(301) })).status).toBe(400);
+    await request(app).patch("/api/v1/auth/profile").set(auth).send({ gender: "Female", studentRowNo: 23 });
+    me = (await request(app).get("/api/v1/auth/me").set(auth)).body.data;
+    expect(me).toMatchObject({ gender: "Female", studentRowNo: 23 });
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ gender: "Other text" })).status).toBe(400);
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ studentRowNo: 0 })).status).toBe(400);
+    // A cropped 256x256 JPEG is ~30-60 KB as a data URL; it must fit the avatar column.
+    const photo = `data:image/jpeg;base64,${"A".repeat(60000)}`;
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ avatarUrl: photo })).status).toBe(200);
+    expect((await request(app).get("/api/v1/auth/me").set(auth)).body.data.avatarUrl).toBe(photo);
+    // A fresh sign-in returns the saved photo too (it used to appear only after a refresh).
+    const again = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
+    expect(again.body.data.user).toMatchObject({ avatarUrl: photo, displayName: "Juana Testcase", role: "MEMBER" });
+  });
+
+  it("does not count /me against the strict sign-in rate limit", async () => {
+    const login = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
+    const strict = login.headers["ratelimit-limit"];
+    const me = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${login.body.data.token}`);
+    expect(me.headers["ratelimit-limit"]).toBeDefined();
+    expect(me.headers["ratelimit-limit"]).not.toBe(strict);
+  });
+
+  it("allows 5 failed sign-ins per account, never counts successful ones, then locks only that account", async () => {
+    const fresh = createApp();
+    const user = `limit_${Date.now()}`;
+    await newMember(app, user);
+    for (let i = 0; i < 6; i++) expect((await request(fresh).post("/api/v1/auth/login").send({ username: user, password: "Test-Pass-2026!" })).status).toBe(200);
+    const remaining: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const bad = await request(fresh).post("/api/v1/auth/login").send({ username: user, password: "wrong-password" });
+      expect(bad.status).toBe(401);
+      remaining.push(String(bad.headers["ratelimit-remaining"]));
+    }
+    expect(remaining).toEqual(["4", "3", "2", "1", "0"]);
+    const locked = await request(fresh).post("/api/v1/auth/login").send({ username: user, password: "Test-Pass-2026!" });
+    expect(locked.status).toBe(429);
+    expect(locked.body.message).toMatch(/failed sign-in attempts/);
+    expect((await request(fresh).post("/api/v1/auth/login").send({ username: username, password: "Test-Pass-2026!" })).status).toBe(200);
+  });
+
+  it("rejects a second member with the same email or a weak password", async () => {
+    const email = `dup_${Date.now()}@example.test`;
+    await newMember(app, `dupa_${Date.now()}`, { email });
+    await expect(newMember(app, `dupb_${Date.now()}`, { email })).rejects.toThrow(/409/);
+    await expect(newMember(app, `weak_${Date.now()}`, { password: "password123" })).rejects.toThrow(/400/);
+  });
+
+  it("changing the password needs the current one and a strong new one; photos must be real images", async () => {
+    const user = `pwchange_${Date.now()}`;
+    let auth = { Authorization: `Bearer ${(await newMember(app, user)).token}` };
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!" })).status).toBe(400);
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!", currentPassword: "wrong-password" })).status).toBe(400);
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "weakpass", currentPassword: "Test-Pass-2026!" })).status).toBe(400);
+    const changed = await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!", currentPassword: "Test-Pass-2026!" });
+    expect(changed.status).toBe(200);
+    // The old token is revoked by the change; the response carries a new one.
+    expect((await request(app).get("/api/v1/auth/me").set(auth)).status).toBe(401);
+    auth = { Authorization: `Bearer ${changed.body.data.token}` };
+    expect((await request(app).post("/api/v1/auth/login").send({ username: user, password: "New-Pass-2026!!" })).status).toBe(200);
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ avatarUrl: "javascript:alert(1)" })).status).toBe(400);
+    expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ avatarUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRg==" })).status).toBe(200);
+  });
+
+  it("forgot password never reveals whether an email has an account, and stores only a hash of the code", async () => {
+    const app = createApp();
+    const stamp = Date.now();
+    const email = `reset_${stamp}@example.com`;
+    const admin = await adminToken(app);
+    const made = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
+      .send({ username: `reset_${stamp}`, password: MEMBER_PASSWORD, displayName: "Reset Tester", memberType: "Student", email });
+    expect(made.status).toBe(201);
+    const known = await request(app).post("/api/v1/auth/forgot-password").send({ email });
+    const unknown = await request(app).post("/api/v1/auth/forgot-password").send({ email: `nobody_${stamp}@example.com` });
+    expect(known.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(unknown.body.message).toBe(known.body.message);
+    expect(unknown.body.data).toEqual(known.body.data);
+    const stored = (await prisma.user.findUnique({ where: { id: made.body.data.id } }))!.otpCode!;
+    expect(stored).toMatch(/^[0-9a-f]{64}$/);
+    expect((await request(app).post("/api/v1/auth/verify-otp").send({ email, otp: "000000" })).status).toBe(400);
+  });
+
+  it("an unknown username takes as long as a wrong password, and the code screen shows only a hint of the email", async () => {
+    const app = createApp();
+    const stamp = Date.now();
+    const admin = await adminToken(app);
+    await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
+      .send({ username: `hint_${stamp}`, password: MEMBER_PASSWORD, displayName: "Hint Tester", memberType: "Student", email: `hint_${stamp}@example.com` });
+    const time = async (username: string, password: string) => { const t = Date.now(); const r = await request(app).post("/api/v1/auth/login").send({ username, password }); return { ms: Date.now() - t, r }; };
+    await time(`nobody_${stamp}`, "Wrong-Pass-1!"); // warms the dummy hash
+    const unknown = await time(`nobody2_${stamp}`, "Wrong-Pass-1!");
+    const wrong = await time(`hint_${stamp}`, "Wrong-Pass-1!");
+    expect(unknown.r.status).toBe(401);
+    expect(wrong.r.status).toBe(401);
+    expect(unknown.r.body.message).toBe(wrong.r.body.message);
+    expect(unknown.ms).toBeGreaterThan(wrong.ms / 3);
+    const ok = await request(app).post("/api/v1/auth/login").send({ username: `hint_${stamp}`, password: MEMBER_PASSWORD });
+    expect(ok.body.data).toMatchObject({ requiresOtp: true, email: "h***@example.com" });
+  });
+});

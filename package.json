@@ -1,0 +1,13 @@
+{
+  "name": "aklatone",
+  "private": true,
+  "description": "AklatOne: Library Management System for Tagumpay National High School (backend + Staff Web/Desktop + Member Mobile).",
+  "scripts": {
+    "dev": "node scripts/dev.mjs web",
+    "dev:desktop": "node scripts/dev.mjs desktop",
+    "dev:all": "node scripts/dev.mjs all",
+    "android": "npm --prefix frontend run android",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  }
+}

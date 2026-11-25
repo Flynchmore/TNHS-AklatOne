@@ -1,0 +1,50 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.log
+
+# Database backups (contain personal data)
+backend/backups/
+backend/email-preview/
+*.sql.gz
+*.sql.gz.enc
+# (plain *.sql is NOT ignored: Prisma migrations are prisma/migrations/*/migration.sql)
+
+# Frontend / app builds
+frontend/test-results/
+frontend/desktop-tauri/target/
+frontend/desktop-tauri/gen/schemas/
+frontend/mobile-capacitor/android/build/
+frontend/mobile-capacitor/android/app/build/
+frontend/mobile-capacitor/android/capacitor-cordova-android-plugins/build/
+frontend/mobile-capacitor/android/.idea/
+frontend/mobile-capacitor/android/app/src/main/assets/public/
+frontend/mobile-capacitor/ios/App/App/public/
+frontend/mobile-capacitor/android/.gradle/
+frontend/mobile-capacitor/android/local.properties
+frontend/mobile-capacitor/ios/App/Pods/
+frontend/mobile-capacitor/ios/DerivedData/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Release signing keys never go in the project (kept in ~/aklatone-keys/ or CI secrets)
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties

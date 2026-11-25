@@ -1,0 +1,221 @@
+# AklatOne Project Context (Master)
+
+## Project identity
+AklatOne: Library Management System for Tagumpay National High School.
+
+## Architecture
+- Backend: Express + TypeScript + Prisma + MariaDB (modular monolith)
+- Frontend: React + TypeScript + Vite + Tailwind
+- Desktop: Tauri (Rust + WebView) - configured, not packaged
+- Mobile: Capacitor (Android) - configured, build verified (JDK 21)
+
+## Platforms
+- Web: implemented
+- Desktop: Tauri shell implemented
+- Mobile: Capacitor configured, debug APK builds. Member screens (/m/*) call the backend (auth, catalog, circulation history, profile). UI-04.1 aligned Member Mobile to design tokens and WCAG 2.2 AA (see docs/aklatone-ui-04.1-member-mobile-design-system.md). Install on phone: bash frontend/scripts/run-android.sh. Physical-device test pending.
+
+## Roles
+- ADMIN, LIBRARIAN, MEMBER (Students/Teachers are member categories)
+
+## Backend modules
+- auth, users, catalog, categories, book-copies, circulation, reports, borrow-requests, notifications, favourites, setup, backup, system, inventory
+
+## Tests (baseline run 2026-11-19)
+- Backend: 56 tests in 10 files pass (run against aklatone_e2e with REDIS_URL blank; see AGENTS.md).
+- Backend typecheck, build, prisma validate: pass. Backend lint: FAILS (7 errors in src/app.ts and src/modules/auth/auth.service.ts: no-explicit-any, fetch no-undef).
+- Frontend (2026-11-19, after UI-04.1): 36 tests (5 files) pass, incl. 30 Member Mobile tests (token contrast, labels, network errors, overdue). Build passes (chunk >500 kB warning). Lint: 0 errors, 13 warnings.
+- Playwright: not installed.
+
+## Database
+- Dev: aklatone on 127.0.0.1:3307
+- E2E: aklatone_e2e on 127.0.0.1:3307
+- HRIS: montalban_hris on 3306 (do not touch)
+
+## Development sequence
+1. Member Mobile UI/UX + Backend
+2. Staff Web
+3. Staff Desktop
+4. Complete system integration
+
+## Alignment rules
+- Inspect before modifying.
+- Prefer minimal changes.
+- Follow developer's requested scope.
+- Do not invent features or business rules.
+- Do not claim tests passed unless executed.
+- Explain dependencies.
+- Protect secrets.
+
+## Skills
+- Local: backend-engineering, database-prisma-mariadb, frontend-react, testing-playwright, security-privacy, capstone-documentation, ui-ux-pro-max, frontend-design, design-system, ui-styling.
+- Global: ponytail family.
+- External: frontend-design (Downloads), ui-ux-pro-max (Montalban-HRIS) now copied.
+- Claude Code: adapted copies in .claude/skills/; ponytail plugin installed at project scope. CLAUDE.md imports AGENTS.md and this file.
+- GSD Core: not installed; project uses AGENTS.md + PROJECT_CONTEXT.md + OPENCODE_SKILLS.md.
+
+## Auth features
+- Self-registration (/auth/register) and Google sign-in (/auth/google) REMOVED 2026-11-24 (developer decision): members are created by the librarian (Members > Add), who will also issue the Library ID card. @capgo/capacitor-social-login uninstalled; ALLOW_PUBLIC_REGISTRATION / GOOGLE_CLIENT_ID no longer read (old values in .env files are ignored). Members first created through Google on dev can sign in with Forgot password (email code).
+- Kept as the second factor: email code at sign-in and forgot/reset password by email code (pending school confirmation).
+
+## Borrow request workflow (2026-11-20)
+- Member requests -> librarian approves/declines -> receipt + alert -> overdue notices -> return outcome (on time / late / torn / missing). See docs/aklatone-library-business-rules.md rules 11-16.
+- Loan policy: 7-day loans, max 8 books per member (developer decision 2026-11-25, was 3; backend/src/config/loanPolicy.ts).
+- Migration 20261120004000_borrow_requests_notifications applied to dev and e2e (dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-borrow-requests.sql).
+- Demo catalog: ALLOW_DEMO_SEED=1 npm run seed:demo-books (dev only, 12 books, idempotent).
+- Tests: backend 60 (11 files, incl. borrow-flow integration on aklatone_e2e); frontend 42 (5 files).
+
+## Staff first-run setup (2026-11-20)
+- Staff Web/Desktop: when no LIBRARIAN account exists, /login redirects to /setup to create the single shared librarian account (Name, Position, Department, Email, Password; same strength rule as mobile, enforced on the server too). Endpoint POST /api/v1/setup/librarian only works while no librarian exists (409 afterwards); rate-limited like sign-in.
+- The librarian signs in with the email; accounts with an email get a 6-digit code (Staff login now supports it; dev fallback: [DEV OTP] in the backend terminal).
+- Migration 20261120010000_user_position_department (dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-librarian-setup.sql).
+
+## Sign-in limits and staff portal (2026-11-20)
+- Failed sign-ins: 5 per account (IP + username) per 15 min on /auth/login and /auth/verify-login-otp; successful logins never count. Screens show "N attempts left". Other auth endpoints keep the 30/15 min limit; each limiter has its own Redis prefix (rl:global:, rl:auth:, rl:login:).
+- Session restore waits for /auth/me (10 s timeout), so a browser refresh no longer signs staff out.
+- Staff Login, OTP and Setup use a split layout (StaffAuthShell) over the blurred banner frontend/public/tnhs-background.webp (from docs/reference/tnhs-background-image.png; the banner's building sign reads "TACUMPAY").
+
+## Alerts, badges, receipt (2026-11-20)
+- Librarian notices: POST /notifications/overdue and /notifications/reminder (editable message, Staff Borrowed Books). Members: DELETE /notifications/:id (update types only), POST /borrow-requests/:id/hide.
+- Migration 20261120050000_request_member_hidden (dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-hide-history.sql).
+- Receipt shows ISBN / serial / publisher instead of copy barcode (shared component, mobile + staff). Nav badges use localStorage "seen" times per member (business rules 22-24).
+
+## Profile, Settings, dark mode (2026-11-20)
+- Profile tabs: Activity | Account (view, then "Update information" to edit) | Statistics (screen time on this phone + borrowing charts). Settings (gear, /m/settings): Theme (light/dark), Change password, Privacy Policy and Terms (DRAFTS pending school approval), About (version from android versionName).
+- New User fields gradeSection, hobbies (teachers use department + position as Designation). Migrations 20261120060000_user_profile_details and 20261120070000_avatar_url_text (avatarUrl was VARCHAR(191), so photo uploads always failed; now MEDIUMTEXT). Dev backups: ~/aklatone-backups/aklatone-2026-11-20-before-profile-fields.sql, ...-before-avatar-text.sql.
+- Photo cropper saves a 256x256 JPEG. Dark theme: :root.ak-dark tokens in index.css (contrast-tested); Member Mobile and, since the Staff Web redesign, Staff Web too. Screen time is stored only in the phone's localStorage.
+
+## Favourites and categories (2026-11-20)
+- Categories have a kind (SUBJECT, WATTPAD, GENRE); max one per kind per book (server-enforced); shown as "Subject - English". Seed: ALLOW_CATEGORY_SEED=1 npm run seed:categories (idempotent; run on dev and e2e). Staff Books dialog has the three selects.
+- Favourites: /api/v1/favourites (heart, folders; deleting a folder keeps its books). My Books tabs are 2x2: Borrowed | Requests / Favourites | History.
+- Migration 20261120080000_favourites_category_kinds (dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-favourites-categories.sql).
+- Main mobile panel background is the blurred TNHS logo (replaced the blurred quadrangle photo; cheaper to render).
+
+## Profile fields, SMS, Google (2026-11-20)
+- User.gender (Male / Female / Prefer not to say, all members) and User.studentRowNo (1-999, students only: number in the teacher's class record). Migrations 20261120090000_user_gender_row_no (empty, applied by mistake; harmless) and 20261120091000_user_gender_row_no_fields. Dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-gender-rowno.sql.
+- SMS removed (developer decision 2026-11-20): OTP and messages go by email only. Librarian overdue/reminder notices are also emailed when the member has an email ([DEV OTP] / "Email not configured" logs in dev).
+- Google sign-up stores only first + last name and email (no photo). Android app: native sign-in via @capgo/capacitor-social-login@8.7.5 (approved 2026-11-20), Credential Manager, webClientId = VITE_GOOGLE_CLIENT_ID (same Web client as backend GOOGLE_CLIENT_ID). Needs an Android OAuth client in Google Cloud for package com.aklatone.app + the signing key SHA-1.
+- Android launcher icon: docs/reference/aklat-one-image.jpg (mipmap-*, white adaptive background).
+- Google on Android verified on a real phone (2026-11-20): the error was "You CANNOT use scopes without modifying the main activity"; login now passes no custom scopes. Android OAuth client is in the same Cloud project as the Web client (849313390562); it is NOT passed to the app (Credential Manager uses the Web client ID).
+- Every sign-in response (login, OTP, Google, register, reset) now returns the full profile (same as /auth/me), so the saved photo shows right after a new login.
+- Web favicon and Tauri desktop icons use the AklatOne logo (public/aklatone-icon.png, desktop-tauri/icons/* (was src-tauri); old icons backed up in ~/aklatone-backups/icons-2026-11-20).
+- Mobile auth screens: curved header and cards, blurred TNHS logo background (AuthWatermark).
+- Google welcome toast (2026-11-20): /auth/google returns isNewUser; Home shows "Account created with Google" or "Signed in with Google" once per sign-in. My Books and Alerts tabs now appear together with their lists (no per-card stagger).
+- Android splash now shows the AklatOne logo on white (drawable*/splash.png, windowSplashScreenBackground white). Old TNHS-seal splashes: ~/aklatone-backups/splash-2026-11-20.
+- Librarian replaced on dev (developer request 2026-11-20): old account deactivated, email cleared, username replaced-librarian-20261120-<id>. Setup now counts only ACTIVE librarians, so /setup reopens when the librarian is deactivated. Dev backup: ~/aklatone-backups/aklatone-2026-11-20-before-new-librarian.sql.
+- Staff Login/Setup polish: AklatOne logo as main mark, small TNHS seal by the school name; highlights hidden on phones.
+
+## Staff Web redesign (2026-11-20)
+- Same tokens/feel as Member Mobile via frontend/src/components/staff/ui.tsx (btn, card, StatTile, Panel, StaffDialog, Segmented, table styles). Toast on every action.
+- Fixed side nav (Layout.tsx): school seal + name at top, blurred tnhs-background.webp, 7 items (Dashboard, Catalog, Borrowing, Members, Reports, Printing, Settings), pending-request badge on Borrowing, AklatOne logo above Logout.
+- Merged: Books + Copies -> /catalog (Copies dialog per book); Borrow Requests + Borrowed Books -> /borrowing (?tab=borrowed); Users -> /members. Old URLs redirect.
+- Dashboard: welcome banner (tnhs-quadrangle.jpg), Total Books / Total Members / Currently Borrowed / Due This Week, Recent Activities (audit log) + Quick Actions. Backend: /reports/summary adds members, dueThisWeek, pendingRequests; new GET /reports/recent-activity.
+- Members (full management, developer decision 2026-11-20): GET /users now returns { items, total } (MEMBER role only, q/memberType/status filters); POST /users, PATCH /users/:id, PATCH /users/:id/status (audited). New permission users:write added to LIBRARIAN in seed.ts and in the Role rows of dev and e2e (backup: ~/aklatone-backups/aklatone-2026-11-20-roles-before-users-write.sql). Librarians must sign in again to get it (permissions live in the JWT).
+- Reports (date range, popular books, copies by status, overdue), Printing (inventory / borrowed / overdue / members with school header; browser print), Settings (profile, change password, theme, About).
+- Emails (backend/src/common/email.ts): one branded layout with a security notice; templates for sign-in code, password reset code, welcome (member / Google / librarian / created by librarian), password changed, overdue / reminder notices. User text is HTML-escaped. Logos attached inline from backend/assets/email/.
+
+## Staff polish and Desktop offline (2026-11-20)
+- Surfaces are light blue-grey in every app (@theme --color-page #EEF2FA, --color-surface #F8FAFF). Blurred TNHS seal behind every staff page; side nav has no visible scrollbar. Selects use .ak-select (own chevron).
+- StaffDialog: gradient header with icon, subtitle and blurred seal; FormSection groups fields. Members uses "Role" (Student/Teacher); forms and View show only the chosen role's details.
+- Dates: frontend/src/lib/dates.ts formats in Asia/Manila (phDate, phDateTime, phISODate...). Reports send whole PH days (+08:00). Before this, the Reports default "to" date was the UTC day (yesterday before 8 AM). Backend notice dates use Asia/Manila.
+- Reports: no Print button; Statistics = GET /reports/statistics (12 PH months, by role, by return outcome).
+- Printing: School ID 308114, no "AklatOne" or browser URL on paper (@page margin 0), toast area never prints, "Generated" bottom-right. Signatories default CHRISTOPHER L. CHUA (Head Teacher I / LRMDS Coordinator) and LEANDRO D. MATOCIÑOS (Principal III); editable per list, saved in localStorage on that computer.
+- Desktop (Tauri, detected by __TAURI_INTERNALS__): nav Dashboard, Catalog, Members, Transactions (= /borrowing), Printing, Reports, Upload, Settings. Offline (developer decisions 2026-11-20): GETs cached on the computer; add/edit books, add copies, add/edit/activate members, returns and notices go to an outbox (lib/offline.ts, localStorage); Upload sends them in order, skips rejected items and shows the reason, stops when offline or the session expires. Last signed-in profile is kept so the app opens offline (login itself needs the server).
+
+## First-run walkthrough, desktop window, security tests (2026-11-20)
+- Member app first launch: 5 swipeable full-screen slides, then Terms & Conditions + Privacy Policy (same DRAFT text as Settings) and consent to essential cookies/on-device storage; both required. Saved in localStorage aklatone_consent with CONSENT_VERSION (bump it when the terms change). Consent is local only (not sent to the server).
+- Desktop: native decorations off (tauri.conf "decorations": false); own title bar with minimize / maximize-restore / close, drag to move, double-click to maximize, invisible edge handles for resizing (window permissions in capabilities/default.json). "System Online/Offline" (animated) at the end of the sidebar, based on GET /health every 15 s. Theme switches instantly on desktop (no view transition in WebKitGTK). Sidebar compacts on short windows (<=880 px, <=700 px).
+- Copies are shown by ISBN + "Copy N"; POST /book-copies generates the copy code when no barcode is sent (<serial or ISBN>-NN, next free number). Borrowed books and printouts show ISBN.
+- Members: the server keeps only the chosen role's fields (Student: grade/section + class record no.; Teacher: department + position).
+- Security tests (backend/tests/security.test.ts): every staff/member endpoint 401 without token; forged/unsigned/expired tokens 401; member token 403 on all staff endpoints; members only see their own transactions; malformed ids/payloads 400; helmet headers. All before any database call. npm audit: frontend 0; backend 3 high in `effect` via the Prisma CLI (@prisma/config), fix needs a Prisma upgrade (not done, needs approval).
+
+## Manuscript diagrams and feature alignment (2026-11-20)
+- docs/diagrams/: AklatOne-Flowchart.drawio (3 pages: member mobile, staff web/desktop, desktop offline), AklatOne-ERD.drawio (from the Prisma schema), AklatOne-DFD.drawio (Level 0 context + Level 1), AklatOne-DFD-Level2.drawio (Level 2, one simplified page: one left-to-right row per Level 1 process); PNG exports in docs/diagrams/png/. Regenerate if the schema or flows change.
+- docs/manuscript/Chapter1-Features-Alignment.md: Chapter 1 General Features vs the built system. Not built yet although the manuscript mentions them: book type, grade level, date received (UI), copy location (UI), verified/unverified inventory status, in-app backup/restore, barcode/QR scanning. Team must choose: build them or use the paste-ready text.
+
+## Run, deploy, security pass (2026-11-22)
+- Root package.json + scripts/dev.mjs: `npm run dev` (MariaDB check, Redis via docker start aklatone-redis, API, Staff Web), `dev:desktop`, `dev:all`, `android`. Reuses an API already on :3000. Frontend renamed aklatone-frontend (was a leftover "learntrack-frontend"); vite banner per mode (`vite --mode desktop` from tauri beforeDevCommand `npm run vite:desktop`); run-android.sh prints a Member Mobile banner.
+- Redis optional at runtime: config/redis.ts FallbackStore (Redis when ready, memory otherwise; one warning, auto-recover). server.ts prints a startup summary (dev) / JSON checks (production).
+- Security: PATCH /auth/profile password change requires currentPassword; strong-password rule now server-side for register, reset-password and profile; avatarUrl must be data:image/(jpeg|png|webp) <= 400 KB; CORS_ORIGINS allow-list (Capacitor/Tauri origins always allowed); TRUST_PROXY; production rejects weak JWT_SECRET; seed skips e2e_admin when NODE_ENV=production.
+- Members list/detail return avatarUrl; Members page shows photos. SplineArea chart (components/SplineArea.tsx) in Reports and mobile Statistics. LoadingScreen and index.html pre-load splash show the AklatOne logo.
+- Deployment: backend/Dockerfile (migrate deploy + seed roles + start dist/src/server.js), frontend/Dockerfile + nginx.conf (Staff Web, proxies /api), docker-compose.yml, root .env.example, .gitignore, .github/workflows/ci.yml, docs/DEPLOYMENT.md (Hostinger VPS). Backend start script fixed to dist/src/server.js. No docker compose plugin on the dev PC (images built with docker build).
+- Removed: unused PageHeader, StatCard, mobile BarChart, mockData, schemas, public/icons.svg, public/library-bg.svg, frontend/test-results, Vite template README, docs/api-contract.md (LearnTrack) and LearnTrack archive sections.
+- docs/AUDIT-2026-11-22.md: remaining risks (deactivated users keep access until token expiry; Google sign-in for any role; no in-app backup/restore; offline outbox password) and feature/UI suggestions.
+
+## Platform shell folders (2026-11-23)
+- frontend/src = shared app code. Shells: frontend/web-pwa (Staff Web PWA: manifest.webmanifest, sw.js, icons; Vite plugin webPwa() serves them in dev and emits them into dist; service worker registered only in the browser build, never caches /api), frontend/desktop-tauri (was src-tauri; Tauri CLI finds tauri.conf.json there), frontend/mobile-capacitor (was android; now android/ and ios/ inside it, capacitor.config.ts android.path / ios.path). Paths updated in run-android.sh, vite.config.ts, .dockerignore, .gitignore, guides. docs/ARCHITECTURE.md describes tiers/layers.
+- capacitor-secure-storage-plugin is already installed on mobile (the plan's audit table said localStorage; check auth.tsx secureSet before planning B6 mobile storage).
+
+## Backup, Excel import, emails (2026-11-24)
+- Backup and Restore (Settings, Web + Desktop online; permission backup:manage, added to LIBRARIAN in seed and dev/e2e Role rows; backup ~/aklatone-backups/aklatone-2026-11-24-roles-before-backup-manage.sql). backend/src/modules/backup: mariadb-dump -> .sql.gz, optional AES-256-GCM password (.sql.gz.enc); every action re-asks the staff password; restore needs typed RESTORE, refuses non-AklatOne dumps and USE/CREATE DATABASE/GRANT, saves a pre-restore safety copy, returns 503 to other requests while running, then runs prisma migrate deploy. Daily automatic copy at BACKUP_HOUR (2 AM PH) in BACKUP_DIR, newest BACKUP_KEEP=14, encrypted with BACKUP_ENCRYPTION_KEY when set. Needs mariadb-client (in backend/Dockerfile). Restore test is opt-in: RUN_RESTORE_TEST=1 on aklatone_e2e only.
+- Desktop saves downloads to the Downloads folder (desktop-tauri/src/lib.rs builds the window with an on_download handler; tauri.conf window "create": false).
+- Excel catalog (exceljs): Catalog > Export Excel / Import Excel (template, preview New / Changed / Not in file / Errors, apply in one transaction). Matching ISBN -> Serial No. -> Title + Author; blank cells keep current values; copies only added; unknown categories are row errors; unknown columns ignored. Books not in the file are only hidden if ticked. Preview token lives in API memory for 15 min.
+- Book.isHidden (migration 20261124010000_book_is_hidden; dev backup ~/aklatone-backups/aklatone-2026-11-24-before-book-hidden.sql): hidden books are excluded for members (catalog, favourites, borrow requests); staff see a Hidden badge, "Hidden books only" filter and Show.
+- Emails: every email has Why / Disclaimer / Terms of Use / Privacy notice (RA 10173) / contact footer; book card with Open Library cover by ISBN (title card fallback). New: Borrow approved (receipt + due date) and Book returned (outcome); overdue/reminder show the book. Preview: cd backend && npm run email:preview (email-preview/, git-ignored).
+- Tests (2026-11-24): backend 105 passed + 1 opt-in skipped (21 files); frontend 92 passed. Backend lint still the 2 old errors in auth.service.ts.
+
+## Security and offline-sync hardening (2026-11-24, Part B groups 1-2)
+- Sessions: authenticate checks the database on every request (middleware/session.ts): inactive accounts and tokens issued before User.sessionsRevokedAt get 401 "Your session has ended". Revoked on deactivation, password change (the response carries a new token for this device), password reset, and a librarian setting a member's password. Role and permissions now come from the database, so librarians no longer need to sign in again after a permission change. Tokens carry ia (issue time in ms). Frontend signs out on any 401 of a signed-in request (SESSION_ENDED event in lib/api.ts). Migration 20261124020000_user_sessions_revoked_at (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-session-revocation.sql). Prisma-mocked tests mock middleware/session.js; tests/session.test.ts covers it on aklatone_e2e.
+- Sign-in audit: auth.login (method password, password+code, google), auth.login_failed (typed username, status), auth.password_change, auth.password_reset, with IP. Hidden from Dashboard Recent Activity.
+- OpenAPI (/api-docs) now lists all 74 routes; tests/openapi.test.ts fails on any undocumented or stale route.
+- Staff Web nginx: Content-Security-Policy + Permissions-Policy in frontend/nginx-security-headers.conf, included in every location (before, the location blocks silently dropped the server-level security headers). Checked: 0 CSP violations on staff and /m pages.
+- Desktop upload: each outbox item is sent with Idempotency-Key outbox-<id> (middleware/idempotency.ts, table IdempotencyKey, kept 30 days), so a retry after a lost answer never adds twice. Book and member edits/status send X-Expected-Updated-At; the server answers 409 if the record changed since (common/conflict.ts), shown as skipped in Upload. Migration 20261124030000_idempotency_keys (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-idempotency.sql).
+- Tests: backend 113 passed + 1 opt-in skipped (24 files); frontend 94 passed.
+
+## Reports Excel, system status, QR inventory, reminders (2026-11-24, Part B groups 3-5)
+- Reports > Export Excel: GET /reports/export.xlsx?from&to (sheets Summary, Loans, Popular books, Copies by status, Overdue; PH dates).
+- Settings > System status (backup:manage): GET /system/status - database version + last migration, Redis, email, Google sign-in, automatic backups (last/next, encrypted), backup storage and free disk. No secrets.
+- Staff Catalog shows book covers (BookCover, Open Library by ISBN). Member Catalog has Filters: category, "Available now only" (API available=1), sort (title, newest, year, author).
+- Automatic return reminder: daily at REMINDER_HOUR (7 AM PH) for active loans due by the end of tomorrow (REMINDER_DAYS_BEFORE=1); one DUE_SOON alert + email per loan, skipped if the librarian already sent one (REMINDER_AUTO=false turns it off). modules/notifications/reminders.service.ts.
+- QR + inventory audit (new deps approved 2026-11-24: qrcode 1.5.4, jsqr 1.4.0, @types/qrcode 1.5.5): Printing > Copy QR labels (QR holds only the copy code; filter by title/code). Catalog > Inventory audit (/inventory): start (one open at a time), scan with a USB scanner, typing, or the camera (components/staff/Scanner.tsx), report Not found / Records to check (scanned but BORROWED/LOST/RETIRED) / Scanned, Excel export, close. Statuses are never changed by the audit. BookCopy.lastVerifiedAt shown in Copies as "Verified <date>" / "Not verified". Migration 20261124040000_inventory_audit (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-inventory-audit.sql). Camera needs HTTPS or localhost; Tauri on Linux (WebKitGTK) may not allow it (USB scanner/typing still work).
+- Tests: backend 117 passed + 1 opt-in skipped (26 files); frontend 95 passed.
+
+## Idle sign-out, Google, mobile keystore, least-privilege DB (2026-11-24)
+- Staff Web signs out after 30 idle minutes with a 1-minute "Still there?" warning (components/staff/IdleLogout.tsx; activity in any tab counts; not on Desktop). Developer decision 2026-11-24.
+- Google sign-in refused for LIBRARIAN/ADMIN (403).
+- Android app keeps the token in the Android keystore (capacitor-secure-storage-plugin, already installed); an old localStorage token is moved there on first start. Web and Desktop keep localStorage.
+- Docker production: API runs as aklatone_app (SELECT/INSERT/UPDATE/DELETE only, created by backend/db-init/01-app-user.sh on first DB start); migrations, seed, backup and restore use DATABASE_ADMIN_URL (full user). New env DB_APP_PASSWORD. Verified in throwaway containers: DROP/CREATE denied for aklatone_app, backup + restore work. Dev keeps one user (no .env change).
+- ERD (docs/diagrams/AklatOne-ERD.drawio + png/ERD.png) updated with InventoryAudit, InventoryScan, IdempotencyKey, User.sessionsRevokedAt, Book.isHidden, BookCopy.lastVerifiedAt (PNG export: flatpak run com.jgraph.drawio.desktop -x -f png -s 1.5, output path inside the home folder). docs/manuscript/Chapter1-Features-Alignment.md updated.
+- Tests: backend 118 passed + 1 opt-in skipped (26 files); frontend 97 passed (12 files).
+
+## Desktop credential store (2026-11-24)
+- New Rust dependency keyring =3.6.3 (approved 2026-11-24; features windows-native, apple-native, sync-secret-service, crypto-rust). desktop-tauri/src/lib.rs exposes secret_get / secret_set / secret_delete (only keys starting with aklatone_). Windows: Credential Manager; Linux: Secret Service (GNOME Keyring / KWallet); service name "AklatOne".
+- Desktop sign-in token is kept there (moved from localStorage on first start; falls back to localStorage when the computer has no credential store). Offline member passwords are moved out of the outbox into the store (OutboxItem.secret) and put back only when uploading; removing the item deletes the secret.
+- Tests: Rust 2 (incl. a real round trip in the OS store, cargo test --lib in desktop-tauri); frontend 99.
+
+## Backlog (developer + ICT Coordinator, 2026-11-24) - do ONE step at a time, then report
+1. DONE 2026-11-24: remove self-registration + Google sign-in (keep email 2FA). Backend lint now clean (0 errors).
+2. DONE 2026-11-24: load readiness. Rate limits now per signed-in account (member 300 / staff 3000 per 15 min) and per IP only without a token (ANON_RATE_LIMIT_MAX 3000, school Wi-Fi shares one IP); forgot/reset per IP + email (tests/rate-limits.test.ts). Load test backend/scripts/load-test.mjs (E2E only; creates loadtest_001.. members). Results on the 4-core dev PC (load generator on the same PC): 300 members browsing = 111 req/s, p95 <= 61 ms, 0 errors; 1000 members = 299 req/s, p95 ~1.0-1.5 s, 0 errors. 300 simultaneous sign-ins finish in 7.3 s (bcrypt cost 12 is CPU-bound; BCRYPT_ROUNDS=11 halves it). A 20-connection DB pool (?connectionLimit=20 in DATABASE_URL) helped a little. Not clustered on purpose (restore lock and Excel preview tokens live in one process's memory).
+3. DONE 2026-11-24: 422 Open Library test books (843 copies, location "Test shelf") on the dev DB with covers, across the 8 school subjects, genres and Wattpad categories: ALLOW_DEMO_SEED=1 npm run seed:openlibrary (serial OL-<work id>, idempotent); remove before real DepEd books with `-- --remove` (deletes unused ones, hides borrowed ones). New Book.coverUrl (migration 20261124050000_book_cover_url; dev backup ~/aklatone-backups/aklatone-2026-11-24-before-cover-url.sql), returned with loans, requests, favourites and emails; BookCover shows it first. Open Library search page in the member app stays for now (temporary).
+4. DONE 2026-11-24: Member ID = User.maskedId (UI "Member ID"): first + last name initials + 6 crypto-random digits (CA123456), unique, made once when the librarian adds a member (modules/users/memberId.ts), never changed on rename; members without one get it at server start (ensureMemberIds). Shown in Members (searchable), member detail, and the member's mobile profile. Printing > Library ID cards (components/LibraryCard.tsx): 85.6 x 54 mm, front = school header + QR (Member ID only) + Member ID + Grade level - Section (Department for teachers), no name/LRN/address/birthday; 8 per A4; batches of 500 oldest first (GET /users/cards returns items + total); after printing the librarian confirms "Yes, mark as printed" (POST /users/cards/printed, User.cardPrintedAt); reprint from Members > View > Print Library ID (/printing?card=<id>). Migration 20261124060000_member_id_card (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-member-id.sql).
+5. DONE 2026-11-24: Borrowing > "Lend a book" (features/circulation/LendDialog.tsx): 1) scan/type the Member ID card (checked online: name, grade/section, books borrowed now), 2) scan/type the copy's QR label code, or search the catalog by title/author/ISBN/serial and take the first copy on the shelf; if the search finds nothing: "not in AklatOne yet" + "Add this book" (opens Catalog > Add book with the title, /catalog?new=1&title=), 3) lend -> receipt. POST /circulation/borrow now accepts borrowerId|memberCode and bookCopyId|copyCode|bookId; same limit as requests (3 borrowed+requested, provisional), 7-day due date, receipt no., BOOK_BORROWED alert + email (borrowedAtDeskEmail), conditional update so a copy is never lent twice. Desktop offline: queued as outbox kind "lend" (Member ID + copy code), checked by the server at upload. Scanner component no longer uses a <form> (forms cannot be nested in dialog forms); Enter key / Record button. No reservation feature (developer decision).
+6. DONE 2026-11-24: Visitor's Log. Staff nav "Visitor's Log" (/visitors, circulation:write) -> Start -> /kiosk full screen (features/visits/Kiosk.tsx): header with TNHS seal, AklatOne logo, name, live PH date/time; left = phone check-in QR (GET /visits/kiosk/qr, new code every 30 s, expires 60 s, signed with JWT_SECRET+':visit-qr'; member app scanning comes in step 13 via POST /visits/phone); right = Member ID field (USB scanner / camera / typing + Enter), big Time In/Time Out banner, today's list (Member ID + times only, no names) that scrolls by itself. Rules (modules/visits): first scan of the PH day = Time In, next = Time Out, repeat within 60 s ignored, a Time In left open on an earlier day stays without Time Out (never guessed), offline scans may be up to 7 days old. Kiosk token (signKioskToken, 12 h, role KIOSK, only visits:kiosk; session.ts enforces it, /auth/me reports it); the apps keep every route on /kiosk while it runs (Protected kiosk prop); leaving needs the librarian password (POST /visits/kiosk/exit, wrong password = 400 so it never signs the kiosk out; rate-limited like sign-in). Offline: scans saved in localStorage aklatone_kiosk_queue and sent automatically with Idempotency-Key when online. Model LibraryVisit (migration 20261124070000_library_visits; dev backup ~/aklatone-backups/aklatone-2026-11-24-before-visitor-log.sql).
+7. DONE 2026-11-24: Time Spent (modules/time). (1) App time: useScreenTimeTracker (components/mobile/screenTime.ts) now also sends seconds per PH day to POST /time/usage every minute (pending kept in localStorage aklatone_apptime_pending while offline), from the member app (mobile) and the staff Layout (web/desktop, librarians); table AppUsage (userId, day, platform, seconds; max 24 h a day; only today and the 7 days before). Kiosk excluded. (2) Library time = Time In -> Time Out from the Visitor's Log (open visits not counted). (3) Loan time = borrowed -> returned (average days) and days so far for books still out. Member app Profile > Statistics: Time in the app (all devices), Time in the library (visits, this week, per visit, last 5 visits), books kept. Staff: Members > View > Time spent; Reports > Time spent (GET /time/summary?from&to: visits, visitors, library time, average visit, members' and librarians' app time, average loan days, visits per day); Reports Excel adds a "Library visits" sheet (Member ID, group, date, in/out, minutes). Migration 20261124080000_app_usage (dev backup ~/aklatone-backups/aklatone-2026-11-24-before-app-usage.sql).
+8. DONE 2026-11-24: Tally: GET /users returns activeLoans + totalLoans (same loan records as the member's app); Members shows "N now / M in all"; Members and Borrowed Books refresh every 30 s; the member app reloads the screen when reopened after a minute away. Dashboard > "Books used this week" (features/dashboard/ThisWeek.tsx, GET /reports/this-week?day=): Monday-Friday school week in PH time (Saturday/Sunday show the week just ended): borrowed/returned/visits per day, totals (titles, borrowers, visitors), 20 most borrowed titles with covers. Scanner component: "Scan with camera" is the primary action, typing/USB scanner second (developer decision).
+9. DONE 2026-11-24: Suggestion Box (checked in the browser: member sends, librarian sees it with the NEW badge). Model Suggestion (migration 20261124090000_suggestions; dev backup ~/aklatone-backups/aklatone-2026-11-24-before-suggestions.sql), modules/suggestions: members POST (BOOK or FEEDBACK, 5 a day), GET /mine; librarians GET (filters, waiting count) and PATCH status NEW/PLANNED/DONE/DECLINED + reply -> SUGGESTION_UPDATE alert. Member app: /m/suggestions (Settings > Library > Suggestion Box; Catalog "Suggest this book" when a search finds nothing). Staff: nav Suggestions with NEW badge (reports/summary newSuggestions), answer dialog, Add to catalog.
+10. DONE 2026-11-24: School Newspaper (components/SchoolNewspaper.tsx): The Victor https://www.facebook.com/TagumpayNHSTheVictor, Masid https://www.facebook.com/profile.php?id=100089962866153, Online newspaper (PDF) "Coming soon". Staff Web/Desktop side nav "School Newspaper" (/newspaper); member app (no side nav): Home quick menu tiles Newspaper + Suggest, Settings > Library (/m/newspaper). Web opens a new tab; Android follows the plain link to the browser; Desktop (desktop-tauri/src/lib.rs on_navigation) opens only these Facebook pages in the computer's browser and never lets the window leave AklatOne (Rust test).
+11. DONE 2026-11-24: new images from docs/reference. public/tnhs-logo.png = new seal with transparent corners (flood-filled white, 512 px, 64 colours, 53 KB; email logo backend/assets/email/tnhs.png 128 px). public/tnhs-background.webp = banner with facade + logos (1600 px, 200 KB; staff login and side nav). public/tnhs-facade.webp (1600 px, dashboard banner) and tnhs-facade-small.webp (800 px, member app headers) replace tnhs-quadrangle.jpg (removed). No blur anywhere: images sit at low opacity over navy with the existing navy overlay (side nav 25%, staff login 60%, member headers 50%; seal watermarks 7-16%). Old images backed up in ~/aklatone-backups/images-2026-11-24.
+12. DONE 2026-11-24: Desktop app: after sign-in (password or email code) /choose (features/visits/ChooseApp.tsx) offers "Visitor's Log" (starts the kiosk, needs the server to start) or "AklatOne LMS" (Offline Mode). Desktop nav = web nav + Upload before Settings (Dashboard, Catalog, Borrowing, Visitor's Log, Members, Suggestions, Reports, Printing, School Newspaper, Upload, Settings); "Transactions" renamed Borrowing (/transactions redirects; txPath = /borrowing). Sidebar compacts at <=880 px window height (logo only, smaller items, no profile row) so all 11 items fit an 800 px window.
+13. DONE 2026-11-24: Mobile RBAC. MobileProtected sends LIBRARIAN/ADMIN to /m/staff and members away from it (tests/mobile-rbac.test.tsx). Librarian mode (features/mobile/MobileStaff.tsx, phone camera first via Scanner): Lend = scan Library ID card (Member ID) then the copy QR label (POST /circulation/borrow memberCode + copyCode); Return = scan the copy QR label + condition (good / damaged / missing); POST /circulation/return now also accepts copyCode instead of transactionId (404 if that copy is not borrowed). Catalog, members, reports and printing stay on Web/Desktop. Member app: Home tile "Visit Log" -> /m/visit (MobileVisit.tsx) scans the kiosk QR -> POST /visits/phone, shows Time In / Time Out. Typed alternative: the kiosk shows a 6-digit code under the QR (GET /visits/kiosk/qr shortCode = HMAC of JWT_SECRET+':visit-qr' and the 30-s window, like an authenticator app; current + previous window accepted, so valid 30-60 s; no table); POST /visits/phone accepts the QR text or the 6 digits (number keypad in the app). Android CAMERA permission added (asked only when scanning). Not yet tried on a real phone.
+14. DONE 2026-11-24: Hybrid offline member app (Android, Capacitor.isNativePlatform -> lib/offline.ts isPhone). mobileApi saves successful GETs of catalog, categories, circulation/transactions (own loans + receipts), borrow-requests/mine, favourites (mine, folders) in localStorage (aklatone_cache:<path>, same helpers as Desktop) and serves them when the server can't be reached (offline: true); borrowing, requests and every change still need the internet (friendly "Can't reach" error, nothing queued). Banner "Offline: showing what was saved on this phone" in MobileLayout (useOnline + setReachable from the last request). Last profile kept so the app opens offline. Sign-out clears the saved copy (cacheClear). Tests: src/tests/mobile-offline.test.ts. Not yet tried on a real phone.
+15. DONE 2026-11-24 (except iOS, see below): (a) Diagrams regenerated by docs/diagrams/generate_diagrams.py (run it after a flow change; --png-commands prints the flatpak draw.io exports): Flowcharts 1 Member app, 2 Staff Web/Desktop, 3 Desktop offline/Upload, 4 Librarian on the phone (new), 5 Visitor's Log kiosk (new); DFD Level 0 (Google removed, Open Library covers added), Level 1 (11 processes, stores D1-D15), Level 2 (one row per process). ERD unchanged (no schema change since Step 9; all 19 models present). Old files in ~/aklatone-backups/diagrams-2026-11-24. (b) Review: dark mode checked on staff + mobile after the new images; new per-member limit on wrong Visit Log codes (10 per 15 min, keyed after sign-in, never per school IP; in-memory, single API process); npm audit: frontend 0, backend = Prisma CLI `effect` (high, needs Prisma upgrade approval) + exceljs -> uuid (moderate, not reachable: v3/v5/v6 with buffer; fix would downgrade exceljs). (c) Compatibility: docs/COMPATIBILITY.md; CI jobs `desktop` (ubuntu-22.04 + windows-latest: cargo test, tauri build --no-bundle) and `android` (debug APK). Verified on this PC: Rust 3 tests, Linux desktop debug build, Android APK. iOS project NOT added: needs approval for @capacitor/ios and a Mac with Xcode (steps in COMPATIBILITY.md). Tests: backend 138 passed + 1 opt-in skipped (33 files), frontend 114 (18 files), lint 0.
+Scanning (developer decision 2026-11-24): the camera (phone camera first) is the primary scanner; a USB scanner / typing is second.
+Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Open Library (no photo/ISBN auto-fill).
+
+## Audit after the backlog (2026-11-24, docs/AUDIT-2026-11-24.md)
+- Prisma stays 7.10.1 (latest); backend package.json overrides effect 3.22.5 + uuid 11.1.1; npm audit 0 (backend and frontend).
+- New limits: wrong password-reset codes 10 per email / 15 min (any IP); wrong Visit Log codes 10 per member / 15 min.
+- Android: usesCleartextTraffic only in debug (manifest placeholder), release = HTTPS only. Desktop: CSP in tauri.conf.json (0 violations on 12 staff pages). index.html viewport-fit=cover (iPhone safe areas).
+- Phone app folder: frontend/mobile-capacitor/android (moved from mobile-capacitor/) + frontend/mobile-capacitor/ios (@capacitor/ios 8.6.2 approved 2026-11-24, SPM, NSCameraUsageDescription, AklatOne icon/splash). One code base; Capacitor.getPlatform() tells the OS. CI jobs: backend, frontend, desktop (Windows + Linux), android, ios.
+- Open items: manuscript fields (book type, grade level, date received, copy location), school policies, real-device tests, release signing, domain + HTTPS, removing Open Library test books, Git repo so CI runs.
+
+## Policy, release signing, server, CI (2026-11-25)
+- Loan policy 7 days / 8 books (MAX_BOOKS_PER_MEMBER = 8; was 3). Email code at sign-in stays as 2FA (no school confirmation needed). Privacy Policy / Terms left as drafts on purpose.
+- Android release signing: ~/aklatone-keys/aklatone-release.jks + keystore.properties (alias aklatone, PKCS12, RSA 4096, CN=AklatOne, O=Tagumpay National High School, C=PH; never in the project; back it up). app/build.gradle reads that file or ANDROID_KEYSTORE_* env (CI). Signed APK/AAB verified with apksigner.
+- Server: docker-compose proxy service (caddy:2.10-alpine, Caddyfile, SITE_ADDRESS, caddy-data volume), web container no longer published, TRUST_PROXY 2. scripts/offsite-backup.sh (rsync to OFFSITE_TARGET). Uptime via /health. docs/DEPLOYMENT.md sections 3-5 rewritten.
+- CI: .github/workflows/release.yml (tag v*: check HTTPS API_BASE_URL, signed Android APK/AAB, Windows/Linux installers with optional Windows cert, GitHub Release). ci.yml + release.yml pass actionlint. Needs a GitHub repo to run.
+
+## Unresolved
+- Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
+- Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.
+- School policies (borrowing limits, loan periods, etc.)
+- iOS build requires macOS (Xcode project is in frontend/mobile-capacitor/ios; CI compiles it on macos-latest)

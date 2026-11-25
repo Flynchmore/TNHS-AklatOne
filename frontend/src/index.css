@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/* AklatOne design tokens (Tailwind v4 CSS-first). Shared by Member Mobile and Staff Web (components/staff/ui.tsx).
+   Contrast ratios: docs/aklatone-ui-04.1-member-mobile-design-system.md */
+@theme {
+  --color-primary: #3354B5;        /* approved canonical primary */
+  --color-primary-strong: #1E326D; /* navy: headings, hover, header gradient */
+  --color-primary-soft: #EAF0FF;
+  --color-on-primary: #FFFFFF;
+  --color-accent: #F0F000;         /* school yellow: decorative only, never under white text */
+  --color-on-accent: #123A78;
+  --color-accent-soft: #FDE047;    /* yellow tile gradient start; on-accent text >= 8.3:1 */
+  --color-accent-strong: #EAB308;  /* yellow tile gradient end; on-accent text >= 5.7:1 */
+  --color-page: #EEF2FA;           /* light blue-grey (was #F5F7FC); text contrast re-checked >= 4.5:1 */
+  --color-surface: #F8FAFF;        /* soft off-white containers instead of pure white (was #FFFFFF) */
+  --color-ink: #202A3B;
+  --color-ink-muted: #5B6578;      /* >= 4.5:1 on page, surface and primary-soft */
+  --color-line: #DCE3F0;           /* decorative card edges and dividers */
+  --color-line-strong: #7B88A1;    /* input and control boundaries, >= 3:1 (WCAG 1.4.11) */
+  --color-focus: #3354B5;
+  --color-danger: #C42B2A;         /* darkened school red: >= 4.5:1 as text and under white text */
+  --color-danger-soft: #FEF2F2;
+  --color-success: #15803D;
+  --color-success-soft: #F0FDF4;
+  --color-success-strong: #14532D; /* green tile gradient end; white text 9.1:1 */
+  --color-warning: #B45309;
+  --color-warning-soft: #FFFBEB;
+  --color-info: #3354B5;
+  --color-info-soft: #EAF0FF;
+  --color-danger-strong: #8F1D1C; /* red tile gradient end; white text 8.9:1 */
+  --color-chart: #3354B5;          /* single-series chart bars */
+}
+
+body { @apply bg-page text-ink antialiased; }
+
+/* Tailwind v4 gives buttons the default arrow cursor; show the hand on anything clickable. */
+@layer base {
+  button:not(:disabled), [role="button"], [role="tab"], a[href], select, summary, label:has(> input[type="file"]) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.4s ease-out; }
+
+/* Member Mobile entrance animations (previously duplicated inline in each screen). */
+@keyframes akFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes akSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes akScaleIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes akToastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+.ak-fade { animation: akFadeIn .5s ease-out both; }
+.ak-slide { animation: akSlideUp .55s cubic-bezier(.2,.8,.2,1) both; }
+.ak-scale { animation: akScaleIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.ak-toast-in { animation: akToastIn .35s cubic-bezier(.2,.8,.2,1) both; }
+
+/* Staff sign-in / setup screens. */
+@keyframes akFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -14px, 0); } }
+@keyframes akFromLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes akFromRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes akBgDrift { from { transform: scale(1.08); } to { transform: scale(1.14); } }
+.ak-float { animation: akFloat 7s ease-in-out infinite; }
+.ak-float-slow { animation: akFloat 11s ease-in-out infinite; }
+.ak-from-left { animation: akFromLeft .6s cubic-bezier(.2,.8,.2,1) both; }
+.ak-from-right { animation: akFromRight .6s cubic-bezier(.2,.8,.2,1) both; }
+.ak-bg-drift { animation: akBgDrift 30s ease-in-out infinite alternate; }
+@keyframes akToastBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.ak-toast-bar { animation-name: akToastBar; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes akToastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-12px) scale(.96); } }
+.ak-toast-out { animation: akToastOut .3s ease-in forwards; }
+
+/* Alerts nav icon: a bell swing that eases out, rests, and repeats until the member opens Alerts. */
+@keyframes akRing {
+  0%, 52%, 100% { transform: rotate(0); }
+  6% { transform: rotate(16deg); } 14% { transform: rotate(-14deg); } 22% { transform: rotate(10deg); }
+  30% { transform: rotate(-7deg); } 38% { transform: rotate(4deg); } 45% { transform: rotate(-2deg); }
+}
+.ak-ring { animation: akRing 2.4s cubic-bezier(.36,.07,.19,.97) infinite; transform-origin: 50% 8%; will-change: transform; }
+@keyframes akBadgePop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.ak-badge-pop { animation: akBadgePop .4s cubic-bezier(.34,1.56,.64,1) both; }
+/* Favourite heart: pop, plus six dots flying outwards (--a = direction). */
+@keyframes akHeartPop { 0% { transform: scale(.6); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.ak-heart-pop { animation: akHeartPop .45s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes akHeartDot { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-22px) scale(.4); } }
+.ak-heart-dot { animation: akHeartDot .55s ease-out forwards; }
+
+/* Member Mobile: no pull-to-refresh bounce (surface/page colours now apply to every app via @theme). */
+.ak-mobile { overscroll-behavior-y: contain; }
+
+/* Member Mobile dark theme (Profile > Settings > Theme). Every pair re-checked: text >= 4.5:1, borders/bars >= 3:1.
+   Brand fills (primary, danger, success gradients) keep their light values so white text on them stays readable;
+   only the text colours that sit on dark surfaces switch to lighter tints (unlayered, so they win over utilities). */
+:root.ak-dark {
+  color-scheme: dark;
+  --color-page: #0E1424;
+  --color-surface: #172036;
+  --color-ink: #E7ECF6;
+  --color-ink-muted: #A3AEC4;
+  --color-line: #2A3552;
+  --color-line-strong: #6B7894;
+  --color-focus: #9DB5FF;
+  --color-primary-soft: #22305A;
+  --color-info-soft: #22305A;
+  --color-danger-soft: #3A1D22;
+  --color-success-soft: #13301F;
+  --color-warning-soft: #35280F;
+  --color-chart: #7F9CF5;
+  --color-slate-50: #1C2740;
+  --color-slate-100: #26314A;
+  --color-slate-200: #2E3A56;
+  --color-slate-300: #3A4766;
+}
+:root.ak-dark .text-primary, :root.ak-dark .hover\:text-primary:hover { color: #9DB5FF; }
+:root.ak-dark .text-primary-strong { color: #C9D6FF; }
+:root.ak-dark .text-danger { color: #FF9B9B; }
+:root.ak-dark .text-success { color: #6EE7A0; }
+:root.ak-dark .text-warning { color: #FCC36B; }
+:root.ak-dark img[src="/tnhs-logo.png"]:not(.ak-watermark) { background: #FFFFFF; border-radius: 9999px; }
+
+/* Theme switch: one quick cross-fade of the whole screen (a GPU snapshot, so it stays smooth on phones). */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .26s; animation-timing-function: cubic-bezier(.4,0,.2,1); }
+
+/* Keep keyboard-focused elements from scrolling under the fixed mobile bottom nav (WCAG 2.4.11). */
+html:has(.ak-mobile-nav) { scroll-padding-bottom: 6rem; }
+
+/* Loading screen: a short bar sliding back and forth. */
+@keyframes akLoadingBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.ak-loading-bar { animation: akLoadingBar 1.2s ease-in-out infinite; }
+
+/* Scrollable area without a visible scrollbar (staff side nav on short screens). */
+.ak-no-scrollbar { scrollbar-width: none; }
+.ak-no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Staff selects: own chevron with room from the rounded edge (the native arrow sat on the pill's border). */
+.ak-select { appearance: none; -webkit-appearance: none; padding-right: 2.75rem !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235B6578' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1.1rem center; background-size: 16px; }
+:root.ak-dark .ak-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23A3AEC4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+
+/* Dropdown lists use the app's blue-grey surface instead of the browser's pure white / black. */
+select option { background-color: var(--color-surface); color: var(--color-ink); }
+
+/* Desktop app: custom title bar (window controls) sits above everything. */
+html.ak-desktop { --ak-titlebar: 2.5rem; }
+html.ak-desktop body { padding-top: var(--ak-titlebar); }
+
+/* Desktop "System Online / Offline": a calm pulse when online, a wobble and blinking dot when offline. */
+@keyframes akSignalPulse { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+.ak-signal-pulse { animation: akSignalPulse 1.8s ease-out infinite; }
+@keyframes akWobble { 0%, 60%, 100% { transform: rotate(0); } 10% { transform: rotate(-14deg); } 20% { transform: rotate(12deg); } 30% { transform: rotate(-8deg); } 40% { transform: rotate(5deg); } }
+.ak-wobble { animation: akWobble 2.6s ease-in-out infinite; transform-origin: 50% 80%; }
+@keyframes akBlink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+.ak-blink { animation: akBlink 1.2s ease-in-out infinite; }
+
+/* Staff Printing: only the sheet goes to paper. */
+@media print {
+  .ak-no-print { display: none !important; }
+  html.ak-desktop body { padding-top: 0 !important; }
+  body, .bg-page { background: #fff !important; }
+  .md\:pl-72 { padding-left: 0 !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  .ak-print-sheet { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: #fff !important; animation: none !important; }
+  :root.ak-dark { --color-ink: #202A3B; --color-ink-muted: #5B6578; --color-surface: #fff; --color-page: #fff; --color-line: #DCE3F0; --color-line-strong: #7B88A1; }
+  :root.ak-dark .text-primary-strong { color: #1E326D; }
+  /* Zero page margin removes the browser's own header/footer (page URL, title, date); the sheet adds its own padding. */
+  @page { size: auto; margin: 0; }
+  .ak-print-sheet { padding: 14mm 16mm !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .ak-fade, .ak-slide, .ak-scale, .ak-toast-in,
+  .ak-float, .ak-float-slow, .ak-from-left, .ak-from-right, .ak-bg-drift, .ak-ring, .ak-badge-pop, .ak-heart-pop, .ak-signal-pulse, .ak-wobble, .ak-blink, .ak-loading-bar { animation: none; }
+  .ak-heart-dot { display: none; }
+  .ak-toast-out { animation-duration: 1ms; }
+}

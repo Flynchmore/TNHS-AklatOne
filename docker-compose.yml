@@ -1,0 +1,87 @@
+# AklatOne full stack: MariaDB + Redis + API + Staff Web (nginx) + HTTPS proxy (Caddy).
+#   cp .env.example .env   (fill in the passwords, secret and SITE_ADDRESS)
+#   docker compose up -d --build
+# Staff Web: https://<SITE_ADDRESS>/   API: https://<SITE_ADDRESS>/api/v1   (Caddy -> nginx -> API)
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: aklatone
+      MARIADB_USER: aklatone
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+      # Creates the limited API user on first start (see backend/db-init/01-app-user.sh).
+      - ./backend/db-init:/docker-entrypoint-initdb.d:ro,z
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    environment:
+      NODE_ENV: production
+      # Least privilege: requests run as aklatone_app (rows only); migrations, backups and restores use the full user.
+      DATABASE_URL: mysql://aklatone_app:${DB_APP_PASSWORD}@db:3306/aklatone
+      DATABASE_ADMIN_URL: mysql://aklatone:${DB_PASSWORD}@db:3306/aklatone
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (openssl rand -hex 32)}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Two proxies in front (Caddy, then nginx): the member's real IP is the second address from the end.
+      TRUST_PROXY: 2
+      # Daily automatic backups go to the backups volume; set a key so they are encrypted.
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      REMINDER_AUTO: ${REMINDER_AUTO:-true}
+      REMINDER_HOUR: ${REMINDER_HOUR:-7}
+      REMINDER_DAYS_BEFORE: ${REMINDER_DAYS_BEFORE:-1}
+    volumes:
+      - backups:/app/backups
+    # Not published: only the web container talks to it. Uncomment to reach the API directly (e.g. for the mobile app).
+    # ports: ["3000:3000"]
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    restart: unless-stopped
+    depends_on: [api]
+    # Reached only through the HTTPS proxy below.
+
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on: [web]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  backups:
+  caddy-data:   # HTTPS certificates; keep it, or Let's Encrypt limits may block new ones
+  caddy-config:
