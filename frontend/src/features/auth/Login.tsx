@@ -54,7 +54,7 @@ export function Login() {
         ? `${rejected} ${err.remaining} attempt${err.remaining === 1 ? "" : "s"} left before a 15-minute lock.`
         : `${rejected} This account is now locked for 15 minutes.`;
     }
-    if (err.status === 0) return "Can't reach the AklatOne server. Make sure the backend is running.";
+    if (err.status === 0) return "Can't reach the AklatOne server. Check your connection and try again.";
     if (err.status === 429) return err.message ?? "Too many failed attempts. Please wait 15 minutes and try again.";
     return err.message ?? "Sign-in failed. Please try again.";
   };
@@ -118,7 +118,6 @@ export function Login() {
           {info && <Alert tone="success">{info}</Alert>}
           <form onSubmit={verify} className="space-y-5" noValidate>
             <OtpBoxes value={otp} onChange={setOtp} />
-            <p className="text-xs text-ink-muted">No email? During development the code is also printed in the backend terminal as [DEV OTP].</p>
             <button type="submit" className={btnPrimary} disabled={loading}>{loading && <Spinner />}{loading ? "Verifying…" : "Verify Code"}</button>
           </form>
           <div className="flex items-center justify-between text-sm">

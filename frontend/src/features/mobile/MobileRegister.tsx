@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, User, Lock, Mail, IdCard, GraduationCap, Building2, Award } from "lucide-react";
@@ -6,7 +7,7 @@ import { Alert, Field, FieldIconButton, MemberTypePicker, Spinner, StrengthMeter
 import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
 import { CodeStep } from "./MobileLogin";
 
-const GENDERS = ["Male", "Female", "Prefer not to say"] as const;
+const SEXES = ["Male", "Female"] as const;
 
 /**
  * Create an account: the same details as Profile > Personal information (the Member ID is made by the system once the
@@ -32,6 +33,7 @@ export function MobileRegister() {
     if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(f.username.trim())) return setError("Username: 3 to 50 letters, numbers, dot, dash or underscore.");
     if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) return setError("Please enter a valid email. Your activation code is sent there.");
     if (student ? !f.gradeSection.trim() : !f.department.trim()) return setError(student ? "Please enter your grade and section." : "Please enter your department.");
+    if (student && !GRADE_SECTION.test(f.gradeSection.trim())) return setError(GRADE_SECTION_ERROR);
     if (passwordStrength(f.password).score < 3) return setError("Please use a stronger password.");
     if (f.password !== f.confirm) return setError("Passwords do not match.");
     setLoading(true);
@@ -67,9 +69,9 @@ export function MobileRegister() {
           <p className="text-xs text-ink-muted mt-1.5">Choose carefully: this is set once. To change it later, ask the librarian.</p>
         </div>
         <fieldset>
-          <legend className="block text-sm font-medium text-ink mb-1.5">Gender</legend>
-          <div className="grid grid-cols-3 gap-2">
-            {GENDERS.map(g => {
+          <legend className="block text-sm font-medium text-ink mb-1.5">Sex</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {SEXES.map(g => {
               const on = gender === g;
               return (
                 <button key={g} type="button" aria-pressed={on} onClick={() => setGender(on ? "" : g)}
@@ -81,7 +83,7 @@ export function MobileRegister() {
           </div>
         </fieldset>
         {student ? (
-          <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. Grade 10 - Sampaguita" value={f.gradeSection} onChange={set("gradeSection")} maxLength={50} />
+          <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. 10 - Archimedes" value={f.gradeSection} onChange={e => setF(v => ({ ...v, gradeSection: formatGradeSection(e.target.value, v.gradeSection) }))} maxLength={50} hint={GRADE_SECTION_HINT} />
         ) : (
           <>
             <Field label="Department" icon={<Building2 size={18} />} placeholder="e.g. Science Department" value={f.department} onChange={set("department")} maxLength={100} />

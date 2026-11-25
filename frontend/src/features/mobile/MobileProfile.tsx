@@ -13,6 +13,7 @@ import { PhotoCropper } from "../../components/mobile/PhotoCropper";
 import { SplineArea } from "../../components/SplineArea";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
 import { phISODate } from "../../lib/dates";
+import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 
 interface Details { displayName?: string | null; username: string; email?: string | null; avatarUrl?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; position?: string | null; hobbies?: string | null; gender?: string | null; studentRowNo?: number | null; role?: string; maskedId?: string | null; readingGoal?: number | null }
 type Tab = "activity" | "account" | "stats";
@@ -220,17 +221,18 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
   const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const [rowNo, setRowNo] = useState("");
-  const startEdit = () => { setForm(me); setRowNo(me.studentRowNo ? String(me.studentRowNo) : ""); setError(""); setEditing(true); };
+  const startEdit = () => { setForm({ ...me, gradeSection: me.gradeSection ? formatGradeSection(me.gradeSection) : me.gradeSection }); setRowNo(me.studentRowNo ? String(me.studentRowNo) : ""); setError(""); setEditing(true); };
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!form.username?.trim()) { setError("Username is required."); return; }
+    if (type === "Student" && form.gradeSection?.trim() && !GRADE_SECTION.test(form.gradeSection.trim())) { setError(GRADE_SECTION_ERROR); return; }
     if (type === "Student" && rowNo !== "" && !(Number(rowNo) >= 1 && Number(rowNo) <= 999)) { setError("Student Row No. must be a number from 1 to 999."); return; }
     setSaving(true);
     const payload: Record<string, unknown> = {
       displayName: form.displayName?.trim() ?? "", username: form.username.trim(), memberType: type,
       hobbies: form.hobbies?.trim() ?? "",
-      gender: form.gender ?? "",
+      gender: form.gender === "Male" || form.gender === "Female" ? form.gender : "",
       ...(type === "Student"
         ? { gradeSection: form.gradeSection?.trim() ?? "", studentRowNo: rowNo === "" ? null : Number(rowNo) }
         : { department: form.department?.trim() ?? "", position: form.position?.trim() ?? "" }),
@@ -250,7 +252,7 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       { label: "Username", value: me.username, Icon: UserIcon },
       { label: "Email", value: me.email, Icon: Mail },
       { label: "Role", value: me.memberType, Icon: type === "Teacher" ? Briefcase : GraduationCap },
-      { label: "Gender", value: me.gender, Icon: Users },
+      { label: "Sex", value: me.gender === "Male" || me.gender === "Female" ? me.gender : null, Icon: Users },
       ...(type === "Student"
         ? [{ label: "Grade & section", value: me.gradeSection, Icon: GraduationCap }, { label: "Student Row No.", value: me.studentRowNo ? String(me.studentRowNo) : null, Icon: Hash }]
         : [{ label: "Department", value: me.department, Icon: Building2 }, { label: "Designation", value: me.position, Icon: Award }]),
@@ -291,9 +293,9 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
         <MemberTypePicker value={type} onChange={v => setForm(f => ({ ...f, memberType: v }))} />
       )}
       <fieldset>
-        <legend className="block text-sm font-medium text-ink mb-1.5">Gender</legend>
-        <div className="grid grid-cols-3 gap-2">
-          {["Male", "Female", "Prefer not to say"].map(g => {
+        <legend className="block text-sm font-medium text-ink mb-1.5">Sex</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {["Male", "Female"].map(g => {
             const on = form.gender === g;
             return (
               <button key={g} type="button" aria-pressed={on} onClick={() => setForm(f => ({ ...f, gender: on ? "" : g }))}
@@ -304,7 +306,7 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       </fieldset>
       {type === "Student" ? (
         <>
-          <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. Grade 10 - Sampaguita" value={form.gradeSection ?? ""} onChange={set("gradeSection")} maxLength={50} />
+          <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. 10 - Archimedes" value={form.gradeSection ?? ""} onChange={e => { const v = e.target.value; setForm(f => ({ ...f, gradeSection: formatGradeSection(v, f.gradeSection ?? "") })); }} maxLength={50} hint={GRADE_SECTION_HINT} />
           <Field label="Student Row No." icon={<Hash size={18} />} inputMode="numeric" placeholder="e.g. 23" value={rowNo} onChange={e => setRowNo(e.target.value.replace(/\D/g, "").slice(0, 3))} hint="Your number in your teacher's class record." />
         </>
       ) : (

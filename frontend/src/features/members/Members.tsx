@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -187,8 +188,8 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
     setError(""); setShow(false);
     setForm(member === "new" ? blank : {
       displayName: member.displayName ?? "", username: member.username, memberType: member.memberType === "Teacher" ? "Teacher" : "Student",
-      email: member.email ?? "", gradeSection: member.gradeSection ?? "", studentRowNo: member.studentRowNo ? String(member.studentRowNo) : "",
-      department: member.department ?? "", position: member.position ?? "", gender: member.gender ?? "", password: "",
+      email: member.email ?? "", gradeSection: member.gradeSection ? formatGradeSection(member.gradeSection) : "", studentRowNo: member.studentRowNo ? String(member.studentRowNo) : "",
+      department: member.department ?? "", position: member.position ?? "", gender: member.gender === "Male" || member.gender === "Female" ? member.gender : "", password: "",
     });
   }, [member]);
 
@@ -200,6 +201,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
     if (!form.displayName.trim() || (isNew && !form.username.trim())) { setError("Name and username are required."); return; }
     // Every account needs an email: sign-in codes (2FA), activation and password codes go there.
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) { setError("A valid email is required for every member."); return; }
+    if (student && form.gradeSection.trim() && !GRADE_SECTION.test(form.gradeSection.trim())) { setError(GRADE_SECTION_ERROR); return; }
     if ((isNew || form.password) && passwordStrength(form.password).score < 3) { setError("Please use a stronger password (12+ characters, mixed case, numbers, symbols)."); return; }
     setSaving(true); setError("");
     const { username, password, studentRowNo, ...rest } = form;
@@ -257,9 +259,9 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
           )}
           {field("Email (required)", "email", { type: "email", maxLength: 191, autoComplete: "off", required: true })}
           <div>
-            <label htmlFor="member-gender" className={label}>Gender</label>
+            <label htmlFor="member-gender" className={label}>Sex</label>
             <select id="member-gender" value={form.gender} onChange={set("gender")} className={select}>
-              <option value="">Not set</option><option>Male</option><option>Female</option><option>Prefer not to say</option>
+              <option value="">Not set</option><option>Male</option><option>Female</option>
             </select>
           </div>
         </div>
@@ -268,7 +270,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
         <div key={form.memberType} className="grid sm:grid-cols-2 gap-4 ak-fade">
           {student ? (
             <>
-              {field("Grade & section", "gradeSection", { maxLength: 50, placeholder: "e.g. Grade 10 - Rizal" })}
+              {field("Grade & section", "gradeSection", { maxLength: 50, placeholder: "e.g. 10 - Archimedes", title: GRADE_SECTION_HINT, onChange: e => { const v = e.target.value; setForm(f => ({ ...f, gradeSection: formatGradeSection(v, f.gradeSection) })); } })}
               {field("Class record no.", "studentRowNo", { type: "number", min: 1, max: 999 })}
             </>
           ) : (
@@ -311,7 +313,7 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
   const m = detail.data ?? member;
   const teacher = m?.memberType === "Teacher";
   // Each role only shows its own details.
-  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", m.email], ["Gender", m.gender], ["Member since", phDate(m.createdAt)]] : [];
+  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", m.email], ["Sex", m.gender === "Male" || m.gender === "Female" ? m.gender : null], ["Member since", phDate(m.createdAt)]] : [];
   const roleRows: [string, string | number | null | undefined][] = !m ? [] : teacher ? [["Department", m.department], ["Position", m.position]] : m.memberType === "Student" ? [["Grade & section", m.gradeSection], ["Class record no.", m.studentRowNo]] : [];
   const list = (rows: [string, string | number | null | undefined][]) => (
     <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">

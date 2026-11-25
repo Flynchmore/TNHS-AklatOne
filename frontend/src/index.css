@@ -11,8 +11,8 @@
   --color-on-accent: #123A78;
   --color-accent-soft: #FDE047;    /* yellow tile gradient start; on-accent text >= 8.3:1 */
   --color-accent-strong: #EAB308;  /* yellow tile gradient end; on-accent text >= 5.7:1 */
-  --color-page: #EEF2FA;           /* light blue-grey (was #F5F7FC); text contrast re-checked >= 4.5:1 */
-  --color-surface: #F8FAFF;        /* soft off-white containers instead of pure white (was #FFFFFF) */
+  --color-page: #FAF9F5;           /* warm off-white / ivory page background (developer decision 2026-11-26; was #EEF2FA) */
+  --color-surface: #FFFFFF;        /* pure white cards, dialogs, boxes and book tiles on the ivory page (was #F8FAFF) */
   --color-ink: #202A3B;
   --color-ink-muted: #5B6578;      /* >= 4.5:1 on page, surface and primary-soft */
   --color-line: #DCE3F0;           /* decorative card edges and dividers */

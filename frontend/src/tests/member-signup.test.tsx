@@ -24,7 +24,7 @@ describe("Create an account", () => {
   it("asks for the Personal information details, then the emailed activation code", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ success: true, data: { requiresActivation: true, email: "j***@example.com" } }));
     render(<MemoryRouter><ToastProvider><MobileRegister /></ToastProvider></MemoryRouter>);
-    for (const label of ["Full name", "Username", "Email", "Gender", "Grade & section", "Password", "Confirm password"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    for (const label of ["Full name", "Username", "Email", "Sex", "Grade & section", "Password", "Confirm password"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Phone/i)).toBeNull();
     expect(screen.queryByText(/Student Row No/i)).toBeNull();
     expect(screen.getByText(/this is set once/i)).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe("Create an account", () => {
     expect(await screen.findByText("Activate your account")).toBeInTheDocument();
     expect(screen.getByText(/j\*\*\*@example.com/)).toBeInTheDocument();
     const sent = JSON.parse(String(fetchMock.mock.calls[0]![1]!.body));
-    expect(sent).toMatchObject({ username: "juan.dc", email: "juan@example.com", memberType: "Student", gradeSection: "Grade 10 - Rizal" });
+    expect(sent).toMatchObject({ username: "juan.dc", email: "juan@example.com", memberType: "Student", gradeSection: "10 - Rizal" });
     expect(sent.department).toBeUndefined();
   });
 });

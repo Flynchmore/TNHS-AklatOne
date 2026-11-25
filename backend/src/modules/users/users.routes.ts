@@ -12,6 +12,7 @@ import { isStrongPassword } from "../../common/passwordStrength.js";
 import { sendWelcomeEmail } from "../../common/email.js";
 import { hashPassword } from "../auth/auth.service.js";
 import { newMemberId } from "./memberId.js";
+import { gradeSectionField } from "../../common/gradeSection.js";
 
 export const usersRouter = Router();
 
@@ -34,10 +35,10 @@ const memberBase = {
   // Required for every account: sign-in codes (2FA), activation and password codes go there.
   email: z.string().trim().toLowerCase().email("A valid email is required").max(191),
   memberType: z.enum(["Student", "Teacher"]),
-  gradeSection: optText(50),
+  gradeSection: z.preprocess(blankToNull, gradeSectionField.nullable().optional()),
   department: optText(100),
   position: optText(100),
-  gender: z.preprocess(blankToNull, z.enum(["Male", "Female", "Prefer not to say"]).nullable().optional()),
+  gender: z.preprocess(blankToNull, z.enum(["Male", "Female"]).nullable().optional()),
   studentRowNo: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(1).max(999).nullable().optional()),
 };
 const createMemberSchema = z.object({

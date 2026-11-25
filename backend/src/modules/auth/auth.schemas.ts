@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isStrongPassword } from "../../common/passwordStrength.js";
+import { gradeSectionField } from "../../common/gradeSection.js";
 
 // Same rule as the strength meter in the apps, enforced here so direct API calls cannot skip it.
 const strongPassword = z.string().min(8).max(128).refine(isStrongPassword, "Password is too weak. Use 12+ characters with uppercase, lowercase, numbers and symbols.");
@@ -37,8 +38,8 @@ export const registerSchema = z.object({
   displayName: z.string().trim().min(1, "Full name is required").max(100),
   email: z.string().trim().toLowerCase().email().max(191),
   memberType: z.enum(["Student", "Teacher"]),
-  gender: z.enum(["Male", "Female", "Prefer not to say"]).optional(),
-  gradeSection: optText(50),
+  gender: z.enum(["Male", "Female"]).optional(),
+  gradeSection: gradeSectionField.optional(),
   department: optText(100),
   position: optText(100),
   hobbies: optText(300),
@@ -59,11 +60,11 @@ export const profileUpdateSchema = z.object({
   displayName: z.string().max(100).optional(),
   memberType: z.enum(["Student", "Teacher"]).optional(),
   avatarUrl: photo.optional(),
-  gradeSection: z.string().trim().max(50).optional(),
+  gradeSection: gradeSectionField.optional(),
   department: z.string().trim().max(100).optional(),
   position: z.string().trim().max(100).optional(),
   hobbies: z.string().trim().max(300).optional(),
-  gender: z.enum(["Male", "Female", "Prefer not to say", ""]).optional(),
+  gender: z.enum(["Male", "Female", ""]).optional(),
   // null clears it
   studentRowNo: z.number().int().min(1).max(999).nullable().optional(),
   // Books to borrow each month; null clears the goal.

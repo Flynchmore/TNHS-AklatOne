@@ -142,7 +142,6 @@ function Consent({ onBack, onAccept }: { onBack: () => void; onAccept: () => voi
           ))}
         </div>
         <article role="tabpanel" tabIndex={0} aria-label={doc === "terms" ? "Terms & Conditions" : "Privacy Policy"} className={`max-h-72 overflow-y-auto bg-surface rounded-3xl border border-line p-5 space-y-3 text-sm leading-relaxed [&_h2]:font-bold [&_h2]:text-primary-strong [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 ${focusRing}`}>
-          <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-warning-soft text-warning">Draft for review by Tagumpay National High School. Final wording is pending school approval.</p>
           {doc === "terms" ? <TermsText /> : <PrivacyText />}
         </article>
 

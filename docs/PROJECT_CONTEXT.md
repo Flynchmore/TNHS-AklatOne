@@ -112,7 +112,7 @@ AklatOne: Library Management System for Tagumpay National High School.
 - Emails (backend/src/common/email.ts): one branded layout with a security notice; templates for sign-in code, password reset code, welcome (member / Google / librarian / created by librarian), password changed, overdue / reminder notices. User text is HTML-escaped. Logos attached inline from backend/assets/email/.
 
 ## Staff polish and Desktop offline (2026-11-20)
-- Surfaces are light blue-grey in every app (@theme --color-page #EEF2FA, --color-surface #F8FAFF). Blurred TNHS seal behind every staff page; side nav has no visible scrollbar. Selects use .ak-select (own chevron).
+- Surfaces (since 2026-11-26): page #FAF9F5 warm off-white / ivory, cards and dialogs pure white #FFFFFF (was --color-page #EEF2FA, --color-surface #F8FAFF). Blurred TNHS seal behind every staff page; side nav has no visible scrollbar. Selects use .ak-select (own chevron).
 - StaffDialog: gradient header with icon, subtitle and blurred seal; FormSection groups fields. Members uses "Role" (Student/Teacher); forms and View show only the chosen role's details.
 - Dates: frontend/src/lib/dates.ts formats in Asia/Manila (phDate, phDateTime, phISODate...). Reports send whole PH days (+08:00). Before this, the Reports default "to" date was the UTC day (yesterday before 8 AM). Backend notice dates use Asia/Manila.
 - Reports: no Print button; Statistics = GET /reports/statistics (12 PH months, by role, by return outcome).
@@ -314,6 +314,14 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Recovery key Print fixed (web + desktop): RecoveryKeyCard no longer opens a popup window (blocked in the Tauri app and some browsers); it renders a print-only sheet (portal to body, .ak-key-sheet) and calls window.print() with html.ak-print-key so only that sheet goes to paper. Checked with Chrome's PDF output.
 - Members (developer decision, privacy): the list's Member column = photo + Member ID + grade & section (students) or department · designation (teachers); no full name or username there; the Role column shows only the badge. View dialog: title Member ID, subtitle section / department; below, photo + Member ID. Toasts, aria-labels and offline outbox labels use the Member ID. Avatar initial = first letter of the Member ID. The edit form still has Full name; search still finds names.
 - Username tip (lib/username.ts): register, phone profile edit and staff Add member show "do not use your real name"; a stronger warning when the username contains part of the full name (looksLikeRealName, accents/case ignored). Warning only, not blocked.
+
+## Grade & section format, Sex, ivory background, no developer text (2026-11-26)
+- Grade & section is always "10 - Archimedes" (Grade 7-10, " - ", section). Frontend lib/gradeSection.ts formatGradeSection formats while typing (10a / 10 / 10- / "Grade 10 archimedes" -> "10 - A..."; backspace removes the " - "); used in phone sign-up, phone profile edit and staff Members form (old values like "Grade 10 - Rizal" are shown as "10 - Rizal" when editing). Backend common/gradeSection.ts gradeSectionField normalizes and rejects anything else (register, profile, POST/PATCH /users). Existing dev rows are not rewritten; they change on the next save.
+- "Gender" is now "Sex" in every form and view, Male or Female only (server enums too). The column stays User.gender; an old "Prefer not to say" shows as not set and is cleared on the next save.
+- Colors: --color-page #FAF9F5 (ivory) and --color-surface #FFFFFF (cards, dialogs, book tiles, the Desktop sign-in card); PWA manifest + index.html splash too. Dark theme unchanged.
+- Removed developer-only text from the apps: [DEV OTP] hint on the staff code screen, "Make sure the backend is running", and the "Draft for review / for the developers" banners on Terms, Privacy and About.
+- E2E DB was reset (reset:e2e + seed:categories): over 200 leftover PENDING requests made borrow-flow.test.ts miss its own request in GET /borrow-requests?status=PENDING (take 200, oldest first).
+- Tests: backend 167 passed + 1 opt-in skipped (40 files), frontend 140 (28 files).
 
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.

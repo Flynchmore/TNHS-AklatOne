@@ -359,7 +359,7 @@ describe("Member Mobile screens", () => {
     fireEvent.change(screen.getByLabelText("Student Row No."), { target: { value: "23" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Information updated")).toBeInTheDocument();
-    expect(JSON.parse(patches[0]!)).toMatchObject({ displayName: "Juana Testcase", hobbies: "Reading, chess", gradeSection: "Grade 10 - Sampaguita", memberType: "Student", gender: "Female", studentRowNo: 23 });
+    expect(JSON.parse(patches[0]!)).toMatchObject({ displayName: "Juana Testcase", hobbies: "Reading, chess", gradeSection: "10 - Sampaguita", memberType: "Student", gender: "Female", studentRowNo: 23 });
     expect(screen.getByText("Reading, chess")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: /Statistics/ }));

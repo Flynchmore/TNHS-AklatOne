@@ -15,7 +15,7 @@ const plantCode = (username: string, code: string, minutes = 10) =>
   prisma.user.update({ where: { username }, data: { otpCode: otpHash(code), otpExpiry: new Date(Date.now() + minutes * 60_000) } });
 const form = (n: string, extra: object = {}) => ({
   username: `selfreg_${n}_${stamp}`, password: PW, displayName: "Juan Dela Cruz", email: `selfreg_${n}_${stamp}@example.com`,
-  memberType: "Student", gender: "Male", gradeSection: "Grade 10 - Rizal", hobbies: "Reading", ...extra,
+  memberType: "Student", gender: "Male", gradeSection: "10 - Rizal", hobbies: "Reading", ...extra,
 });
 
 describe("self-registration", () => {
@@ -25,7 +25,7 @@ describe("self-registration", () => {
     expect(r.status).toBe(200);
     expect(r.body.data).toEqual({ requiresActivation: true, email: "s***@example.com" });
     const pending = await prisma.user.findUniqueOrThrow({ where: { username: f.username } });
-    expect(pending).toMatchObject({ isActive: false, activationPending: true, maskedId: null, memberType: "Student", gradeSection: "Grade 10 - Rizal", department: null });
+    expect(pending).toMatchObject({ isActive: false, activationPending: true, maskedId: null, memberType: "Student", gradeSection: "10 - Rizal", department: null });
 
     // Signing in before activation sends a new activation code instead of a token.
     const early = await request(app).post("/api/v1/auth/login").send({ username: f.username, password: PW });

@@ -168,7 +168,6 @@ function Doc({ title, back = "/m/settings", children }: { title: string; back?: 
   return (
     <ScreenShell title={title} subtitle="AklatOne · Tagumpay National High School" back={back}>
       <article className="bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4 text-sm text-ink leading-relaxed [&_h2]:font-bold [&_h2]:text-primary-strong [&_h2]:text-base [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1">
-        <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-warning-soft text-warning">Draft for review by Tagumpay National High School. Final wording is pending school approval.</p>
         {children}
       </article>
     </ScreenShell>
@@ -248,7 +247,6 @@ function About() {
         </dl>
       </section>
       <article className="bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4 text-sm text-ink leading-relaxed [&_h3]:font-bold [&_h3]:text-primary-strong [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1">
-        <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-warning-soft text-warning">Draft written for the developers to review and edit before release.</p>
         <h3>Why we built AklatOne</h3>
         <p>
           The name comes from <em>aklat</em>, the Filipino word for book, and <em>one</em>: one place for everything about the

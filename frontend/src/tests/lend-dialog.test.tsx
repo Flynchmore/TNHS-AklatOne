@@ -9,7 +9,7 @@ import { ToastProvider } from "../components/Toast";
 import { LendDialog } from "../features/circulation/LendDialog";
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify({ success: status < 400, data, message: status >= 400 ? "No" : "OK" }), { status });
-const member = { id: "m1", maskedId: "JC123456", displayName: "Juan Dela Cruz", memberType: "Student", gradeSection: "Grade 10 - Rizal", activeLoans: 1, isActive: true };
+const member = { id: "m1", maskedId: "JC123456", displayName: "Juan Dela Cruz", memberType: "Student", gradeSection: "10 - Rizal", activeLoans: 1, isActive: true };
 const show = (onLent = vi.fn()) => {
   render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><ToastProvider><LendDialog open onClose={() => {}} onLent={onLent} /></ToastProvider></MemoryRouter></QueryClientProvider>);
   return onLent;
@@ -30,7 +30,7 @@ describe("Lend a book (desk)", () => {
     expect(await screen.findByText(/is not a Member ID/)).toBeInTheDocument();
     scan("lend-member", "jc123456");
     expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(screen.getByText(/Grade 10 - Rizal · 1 book\(s\) borrowed now/)).toBeInTheDocument();
+    expect(screen.getByText(/10 - Rizal · 1 book\(s\) borrowed now/)).toBeInTheDocument();
   });
 
   it("tells the librarian to add a book that is not in AklatOne yet", async () => {

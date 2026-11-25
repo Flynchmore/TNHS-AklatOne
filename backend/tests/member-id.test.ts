@@ -23,7 +23,7 @@ describe("Member ID", () => {
     const auth = () => ({ Authorization: `Bearer ${admin}` });
 
     it("is made when the librarian adds a member, is unique, and survives a name change", async () => {
-      const a = await newMember(app, `mid_a_${stamp}`, { displayName: "Juan Dela Cruz", gradeSection: "Grade 10 - Rizal" });
+      const a = await newMember(app, `mid_a_${stamp}`, { displayName: "Juan Dela Cruz", gradeSection: "10 - Rizal" });
       const b = await newMember(app, `mid_b_${stamp}`, { displayName: "Juan Dela Cruz" });
       const getA = async () => (await request(app).get(`/api/v1/users/${a.id}`).set(auth())).body.data;
       const idA = (await getA()).maskedId as string;
@@ -37,10 +37,10 @@ describe("Member ID", () => {
     });
 
     it("cards wait in Printing until they are marked as printed", async () => {
-      const m = await newMember(app, `mid_card_${stamp}`, { displayName: "Card Testcase", gradeSection: "Grade 8 - Sampaguita" });
+      const m = await newMember(app, `mid_card_${stamp}`, { displayName: "Card Testcase", gradeSection: "8 - Sampaguita" });
       const waiting = async () => (await request(app).get("/api/v1/users/cards").set(auth())).body.data as { items: { id: string; cardPrintedAt: string | null }[]; total: number };
       const detail = async () => (await request(app).get(`/api/v1/users/${m.id}`).set(auth())).body.data;
-      expect(await detail()).toMatchObject({ cardPrintedAt: null, gradeSection: "Grade 8 - Sampaguita" });
+      expect(await detail()).toMatchObject({ cardPrintedAt: null, gradeSection: "8 - Sampaguita" });
       expect((await detail()).maskedId).toMatch(/^CT\d{6}$/);
       const before = await waiting();
       // Batches of at most 500, oldest first, with the full count so the librarian knows more are waiting.

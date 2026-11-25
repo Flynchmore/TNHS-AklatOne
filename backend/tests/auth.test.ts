@@ -37,10 +37,10 @@ describe("auth", () => {
   it("saves and returns the member's profile details; blank clears a field", async () => {
     const token = await signIn(app, username, "Test-Pass-2026!");
     const auth = { Authorization: `Bearer ${token}` };
-    const upd = await request(app).patch("/api/v1/auth/profile").set(auth).send({ displayName: "Juana Testcase", memberType: "Student", gradeSection: "Grade 10 - Sampaguita", hobbies: "Reading, chess" });
+    const upd = await request(app).patch("/api/v1/auth/profile").set(auth).send({ displayName: "Juana Testcase", memberType: "Student", gradeSection: "10 - Sampaguita", hobbies: "Reading, chess" });
     expect(upd.status).toBe(200);
     let me = (await request(app).get("/api/v1/auth/me").set(auth)).body.data;
-    expect(me).toMatchObject({ displayName: "Juana Testcase", gradeSection: "Grade 10 - Sampaguita", hobbies: "Reading, chess" });
+    expect(me).toMatchObject({ displayName: "Juana Testcase", gradeSection: "10 - Sampaguita", hobbies: "Reading, chess" });
     await request(app).patch("/api/v1/auth/profile").set(auth).send({ hobbies: "" });
     me = (await request(app).get("/api/v1/auth/me").set(auth)).body.data;
     expect(me.hobbies).toBeNull();

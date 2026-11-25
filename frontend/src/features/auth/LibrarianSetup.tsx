@@ -48,7 +48,7 @@ export function LibrarianSetup({ recover = false }: { recover?: boolean }) {
     const r = await apiFetch(recover ? "/api/v1/setup/recover" : "/api/v1/setup/librarian", { method: "POST", body: JSON.stringify({ name, position, department, email, password, ...(recover ? { recoveryKey } : {}) }) });
     setLoading(false);
     if (r.ok) { const d = r.data as { username: string; recoveryKey?: string }; setNewKey(d.recoveryKey ?? ""); setDone(d.username); }
-    else setError(r.status === 0 ? "Can't reach the AklatOne server. Make sure the backend is running." : r.message ?? "Setup failed.");
+    else setError(r.status === 0 ? "Can't reach the AklatOne server. Check your connection and try again." : r.message ?? "Setup failed.");
   };
 
   const shell = (children: React.ReactNode) => (
