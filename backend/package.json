@@ -20,7 +20,6 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "reset:e2e": "node scripts/reset-e2e.mjs",
-    "provision-dev-accounts": "node scripts/provision-dev-accounts.mjs",
     "provision-dev-librarian": "node scripts/provision-dev-librarian.mjs",
     "librarian:reopen-setup": "node scripts/reopen-librarian-setup.mjs",
     "seed:demo-books": "node scripts/seed-demo-books.mjs",

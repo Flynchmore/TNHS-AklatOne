@@ -21,25 +21,34 @@ export function cropSource(x: number, y: number, scale: number, view = VIEW) {
  * Full-screen cropper: drag to move, pinch or slider to zoom, inside a round mask.
  * Save returns a 256x256 JPEG data URL; "Choose another" asks the parent to reopen the file picker.
  */
-export function PhotoCropper({ src, onSave, onCancel, onPickAnother, saving }: { src: string; onSave: (dataUrl: string) => void; onCancel: () => void; onPickAnother: () => void; saving?: boolean }) {
+export function PhotoCropper({ file, onSave, onCancel, onPickAnother, saving }: { file: Blob; onSave: (dataUrl: string) => void; onCancel: () => void; onPickAnother: () => void; saving?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  const [img, setImg] = useState<ImageBitmap | null>(null);
+  const view = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ dist: number; zoom: number } | null>(null);
 
   useEffect(() => { ref.current?.showModal?.(); }, []);
+  // The chosen file is decoded straight into pixels (no URL or <img src>), then painted on a canvas.
   useEffect(() => {
-    const i = new Image();
-    i.onload = () => {
+    let live = true;
+    createImageBitmap(file).then(i => {
+      if (!live) return i.close();
       setImg(i);
       setZoom(1);
       const s = VIEW / Math.min(i.width, i.height);
       setPos({ x: (VIEW - i.width * s) / 2, y: (VIEW - i.height * s) / 2 });
-    };
-    i.src = src;
-  }, [src]);
+    }, () => {});
+    return () => { live = false; };
+  }, [file]);
+  useEffect(() => {
+    const c = view.current;
+    if (!c || !img) return;
+    c.width = img.width; c.height = img.height;
+    c.getContext("2d")?.drawImage(img, 0, 0);
+  }, [img]);
 
   const base = img ? VIEW / Math.min(img.width, img.height) : 1;
   const scale = base * zoom;
@@ -100,7 +109,7 @@ export function PhotoCropper({ src, onSave, onCancel, onPickAnother, saving }: {
             role="img"
             aria-label="Photo preview. Drag to move, pinch or use the slider to zoom."
           >
-            {img && /^(blob:|data:image\/)/.test(src) && <img src={src} alt="" draggable={false} className="absolute top-0 left-0 max-w-none origin-top-left pointer-events-none" style={{ width: img.width, height: img.height, transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})` }} />}
+            {img && <canvas ref={view} aria-hidden="true" className="absolute top-0 left-0 max-w-none origin-top-left pointer-events-none" style={{ width: img.width, height: img.height, transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})` }} />}
             {/* Round mask: everything outside the circle is dimmed. */}
             <span className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 0 999px rgba(11,16,32,.65)" }} aria-hidden="true" />
             <span className="absolute inset-0 rounded-full ring-2 ring-white/80 pointer-events-none" aria-hidden="true" />

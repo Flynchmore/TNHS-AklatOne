@@ -116,8 +116,8 @@ describe("desktop offline", () => {
 
   it("desktop side nav matches the web, plus Upload", async () => {
     const { navLinks } = await import("../components/Layout");
-    expect(navLinks(true).map(l => l.label)).toEqual(["Dashboard", "Catalog", "Borrowing", "Visitor's Log", "Members", "Suggestions", "Reports", "Printing", "School Newspaper", "Upload", "Settings"]);
-    expect(navLinks(false).map(l => l.label)).toEqual(["Dashboard", "Catalog", "Borrowing", "Visitor's Log", "Members", "Suggestions", "Reports", "Printing", "School Newspaper", "Settings"]);
+    expect(navLinks(true).map(l => l.label)).toEqual(["Dashboard", "Catalog", "Borrowing", "Suggestions", "Members", "Visitor's Log", "Reports", "Printing", "School Newspaper", "Upload", "Settings"]);
+    expect(navLinks(false).map(l => l.label)).toEqual(["Dashboard", "Catalog", "Borrowing", "Suggestions", "Members", "Visitor's Log", "Reports", "Printing", "School Newspaper", "Settings"]);
   });
 });
 

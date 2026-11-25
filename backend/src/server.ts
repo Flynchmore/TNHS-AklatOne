@@ -1,3 +1,4 @@
+import type { AddressInfo } from "node:net";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
@@ -11,8 +12,10 @@ const app = createApp();
 let stopBackups = () => {};
 let stopReminders = () => {};
 
+// The port is read back from the socket so nothing from the env object (which also holds secrets) is logged.
+const listeningPort = () => (server.address() as AddressInfo).port;
 const server = app.listen(env.PORT, () => {
-  logger.info({ port: env.PORT }, "AklatOne backend listening");
+  logger.info({ port: listeningPort() }, "AklatOne backend listening");
   stopBackups = startBackupSchedule();
   stopReminders = startReminderSchedule();
   void ensureMemberIds().catch((err) => logger.error({ err }, "Could not create Member IDs"));
@@ -35,7 +38,7 @@ async function startupSummary() {
   const tty = process.stdout.isTTY;
   const c = (code: string, s: string) => (tty ? `\x1b[${code}m${s}\x1b[0m` : s);
   const ok = c("32", "✔"), warn = c("33", "⚠"), bad = c("31", "✖"), arrow = c("36", "➜");
-  const base = `http://localhost:${env.PORT}`;
+  const base = `http://localhost:${listeningPort()}`;
   const lines = [
     " ",
     c("1;34", "  ┌──────────────────────────────────────────────┐"),

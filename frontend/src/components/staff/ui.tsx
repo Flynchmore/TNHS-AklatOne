@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { X, type LucideIcon } from "lucide-react";
+import { Search, X, type LucideIcon } from "lucide-react";
 import { focusRing } from "../mobile/ui";
 
 /**
@@ -186,4 +186,28 @@ export function Segmented<K extends string>({ label: aria, options, value, onCha
       })}
     </div>
   );
+}
+
+/** Search box used on every staff list: search icon, clear button, and how many rows match. */
+export function SearchField({ id, label: aria, value, onChange, placeholder, shown, total, className = "" }: { id: string; label: string; value: string; onChange: (v: string) => void; placeholder: string; shown?: number; total?: number; className?: string }) {
+  return (
+    <div className={`flex-1 min-w-[16rem] ${className}`}>
+      <label htmlFor={id} className="sr-only">{aria}</label>
+      <div className="relative">
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
+        <input id={id} type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete="off" className={`${input} pl-11 pr-11 !rounded-full shadow-sm [&::-webkit-search-cancel-button]:hidden`} />
+        {value && <button type="button" onClick={() => onChange("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><X size={16} aria-hidden="true" /></button>}
+      </div>
+      {value.trim() && shown !== undefined && total !== undefined && <p className="mt-1 px-4 text-xs text-ink-muted" aria-live="polite">{shown} of {total} match “{value.trim()}”</p>}
+    </div>
+  );
+}
+
+/** Case- and accent-insensitive "does any of these texts contain the search words" (every word must match somewhere). */
+export function matches(q: string, ...fields: (string | number | null | undefined)[]) {
+  const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  const hay = norm(fields.filter(f => f !== null && f !== undefined).join(" "));
+  return words.every(w => hay.includes(w));
 }

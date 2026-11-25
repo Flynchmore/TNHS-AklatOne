@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, X, Receipt, ClipboardList } from "lucide-react";
 import { apiFetch } from "../../lib/api";
@@ -6,7 +7,7 @@ import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { ReceiptDialog } from "./ReceiptDialog";
 import { RefreshButton } from "./RefreshButton";
-import { Badge, EmptyState, Segmented, Skeleton, btn, btnSm, input, table } from "../../components/staff/ui";
+import { Badge, EmptyState, SearchField, Segmented, Skeleton, btn, btnSm, input, matches, select, table } from "../../components/staff/ui";
 import { phDateTime } from "../../lib/dates";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -32,6 +33,10 @@ export function BorrowRequests() {
   const [reason, setReason] = useState("");
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const canWrite = hasPerm("circulation:write");
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? "");
+  useEffect(() => { const v = params.get("q"); if (v !== null) setQ(v); }, [params]); // global search opening this page again
+  const [who, setWho] = useState<"" | "Student" | "Teacher">("");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["borrow-requests", tab],
@@ -56,6 +61,8 @@ export function BorrowRequests() {
     onError: (e) => toast({ tone: "error", title: "Action failed", message: (e as Error).message }),
   });
 
+  const rows = data?.filter(r => (!who || r.member.memberType === who) && matches(q, r.member.displayName, r.member.username, r.book.title, r.book.authors, r.transaction?.receiptNo, r.decisionNote));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -63,19 +70,25 @@ export function BorrowRequests() {
         <RefreshButton what="borrow requests" onRefresh={refetch} />
       </div>
       <p className="text-sm text-ink-muted">Review member requests. Approving lends an available copy for 7 days and issues a receipt.</p>
+      <div className="flex flex-wrap items-start gap-3">
+        <SearchField id="requests-search" label="Search borrow requests" value={q} onChange={setQ} placeholder="Search member, book, author or receipt no." shown={rows?.length} total={data?.length} />
+        <label htmlFor="requests-who" className="sr-only">Member type</label>
+        <select id="requests-who" value={who} onChange={e => setWho(e.target.value as typeof who)} className={`${select} !w-auto !rounded-full`}><option value="">Students and teachers</option><option value="Student">Students only</option><option value="Teacher">Teachers only</option></select>
+      </div>
 
       {isLoading && <Skeleton rows={4} />}
       {isError && <p role="alert" className="text-danger">Could not load requests. <button className="underline" onClick={() => refetch()}>Try again</button></p>}
       {data && data.length === 0 && <EmptyState icon={ClipboardList} text={`No ${tabs.find(t => t.key === tab)?.label.toLowerCase()} requests.`} />}
 
-      {data && data.length > 0 && (
+      {data && data.length > 0 && rows?.length === 0 && <EmptyState icon={ClipboardList} text="No requests match your search or filter." />}
+      {rows && rows.length > 0 && (
         <div key={tab} className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}>
               <tr><th className={table.th}>Member</th><th className={table.th}>Book</th><th className={table.th}>Requested</th><th className={table.th}>{tab === "PENDING" ? "Available copies" : "Decision"}</th><th className={`${table.th} text-right`}>Actions</th></tr>
             </thead>
             <tbody>
-              {data.map(r => (
+              {rows.map(r => (
                 <tr key={r.id} className={table.row}>
                   <td className={table.td}><div className="font-semibold text-ink">{r.member.displayName || r.member.username}</div><div className="text-xs text-ink-muted">{r.member.username}{r.member.memberType ? ` · ${r.member.memberType}` : ""}</div></td>
                   <td className={table.td}><div className="font-semibold text-ink">{r.book.title}</div><div className="text-xs text-ink-muted">{r.book.authors}</div></td>

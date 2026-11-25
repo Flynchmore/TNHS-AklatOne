@@ -6,7 +6,7 @@ import { apiFetch } from "../../lib/api";
 import { phDateTime } from "../../lib/dates";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { Badge, EmptyState, PageHeader, Segmented, Skeleton, StaffDialog, btn, btnSm, card, label, select } from "../../components/staff/ui";
+import { Badge, EmptyState, PageHeader, SearchField, Segmented, Skeleton, StaffDialog, btn, btnSm, card, label, matches, select } from "../../components/staff/ui";
 
 interface Suggestion {
   id: string; kind: "BOOK" | "FEEDBACK"; title: string; author: string | null; message: string | null; status: string; reply: string | null; createdAt: string;
@@ -35,6 +35,8 @@ export function Suggestions() {
     refetchInterval: 60_000,
   });
   const canAnswer = hasPerm("circulation:write");
+  const [find, setFind] = useState("");
+  const items = q.data?.items.filter(s => matches(find, s.title, s.author, s.message, s.reply, s.member.maskedId, s.member.displayName, s.member.gradeSection, s.member.department));
 
   return (
     <div className="space-y-6">
@@ -48,9 +50,10 @@ export function Suggestions() {
           <option value="">Books and feedback</option><option value="BOOK">Book suggestions</option><option value="FEEDBACK">Feedback</option>
         </select>
       </div>
-      {q.isLoading ? <Skeleton rows={4} /> : q.isError ? <p role="alert" className="text-danger">Could not load suggestions.</p> : !q.data?.items.length ? <EmptyState icon={Lightbulb} text={filter === "NEW" ? "No new suggestions." : "Nothing here."} /> : (
+      <SearchField id="sugg-search" label="Search suggestions" value={find} onChange={setFind} placeholder="Search title, author, message, Member ID or section" shown={items?.length} total={q.data?.items.length} className="max-w-2xl" />
+      {q.isLoading ? <Skeleton rows={4} /> : q.isError ? <p role="alert" className="text-danger">Could not load suggestions.</p> : !q.data?.items.length ? <EmptyState icon={Lightbulb} text={filter === "NEW" ? "No new suggestions." : "Nothing here."} /> : !items?.length ? <EmptyState icon={Lightbulb} text="No suggestions match your search." /> : (
         <ul className="grid lg:grid-cols-2 gap-4">
-          {q.data.items.map(s => (
+          {items.map(s => (
             <li key={s.id} className={`${card} p-5 space-y-2`}>
               <div className="flex items-start justify-between gap-3">
                 <p className="font-bold text-ink">{s.kind === "BOOK" ? <BookPlus size={16} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" /> : <MessageSquareText size={16} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" />}{s.title}{s.author && <span className="font-normal text-ink-muted"> · {s.author}</span>}</p>

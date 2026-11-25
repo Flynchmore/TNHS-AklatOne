@@ -4,6 +4,7 @@ import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { Receipt, type ReceiptData } from "../../components/Receipt";
 import { Skeleton } from "../../components/staff/ui";
+import { PrintPreview } from "../../components/PrintPreview";
 
 /** Staff receipt viewer. `transactionId` null = closed. */
 export function ReceiptDialog({ transactionId, onClose }: { transactionId: string | null; onClose: () => void }) {
@@ -11,6 +12,7 @@ export function ReceiptDialog({ transactionId, onClose }: { transactionId: strin
   const ref = useRef<HTMLDialogElement>(null);
   const [data, setData] = useState<ReceiptData | null>(null);
   const [error, setError] = useState("");
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
     const d = ref.current;
@@ -21,7 +23,7 @@ export function ReceiptDialog({ transactionId, onClose }: { transactionId: strin
       setError("");
       apiFetch(`/api/v1/circulation/transactions/${transactionId}`, { token }).then(r => r.ok ? setData(r.data as ReceiptData) : setError(r.message ?? "Could not load receipt"));
     }
-    if (!transactionId && d.open) d.close();
+    if (!transactionId && d.open) { d.close(); setPreview(false); }
   }, [transactionId, token]);
 
   return (
@@ -30,7 +32,7 @@ export function ReceiptDialog({ transactionId, onClose }: { transactionId: strin
         <div className="flex justify-between items-center print:hidden">
           <h2 className="font-bold text-primary-strong">Borrowing receipt</h2>
           <div className="flex gap-2">
-            <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium cursor-pointer hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><Printer size={16} aria-hidden="true" />Print</button>
+            <button type="button" onClick={() => setPreview(true)} disabled={!data} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium cursor-pointer hover:bg-primary-strong disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><Printer size={16} aria-hidden="true" />Print preview</button>
             <button type="button" onClick={onClose} aria-label="Close" className="p-2 rounded-lg cursor-pointer hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><X size={18} aria-hidden="true" /></button>
           </div>
         </div>
@@ -38,6 +40,11 @@ export function ReceiptDialog({ transactionId, onClose }: { transactionId: strin
         {!data && !error && <Skeleton rows={4} className="h-8" />}
         {data && <Receipt data={data} />}
       </div>
+      {data && (
+        <PrintPreview open={preview} title={`Borrowing receipt ${data.receiptNo ?? ""}`.trim()} onClose={() => setPreview(false)}>
+          <div style={{ padding: "10mm" }}><Receipt data={data} /></div>
+        </PrintPreview>
+      )}
     </dialog>
   );
 }

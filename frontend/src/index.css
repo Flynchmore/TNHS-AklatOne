@@ -132,6 +132,8 @@ html:has(.ak-mobile-nav) { scroll-padding-bottom: 6rem; }
 /* Scrollable area without a visible scrollbar (staff side nav on short screens). */
 .ak-no-scrollbar { scrollbar-width: none; }
 .ak-no-scrollbar::-webkit-scrollbar { display: none; }
+/* Staff side nav: items fade out at the top/bottom edge when the menu scrolls, so they never butt against the profile / Logout part. */
+.ak-nav-scroll { mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%); }
 
 /* Staff selects: own chevron with room from the rounded edge (the native arrow sat on the pill's border). */
 .ak-select { appearance: none; -webkit-appearance: none; padding-right: 2.75rem !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235B6578' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1.1rem center; background-size: 16px; }
@@ -152,11 +154,17 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
 @keyframes akBlink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 .ak-blink { animation: akBlink 1.2s ease-in-out infinite; }
 
-/* Recovery key: a sheet that exists only on paper (RecoveryKeyCard). */
-.ak-key-sheet { display: none; }
+/* PrintPreview paper is always light, like real paper, even in the dark theme. */
+.ak-paper { color-scheme: light; --color-ink: #202A3B; --color-ink-muted: #5B6578; --color-surface: #FFFFFF; --color-page: #FFFFFF; --color-line: #DCE3F0; --color-line-strong: #7B88A1; --color-primary-soft: #EAF0FF; --color-primary-strong: #1E326D; }
+/* PrintPreview (receipt, recovery key): only the previewed paper goes to the printer. */
 @media print {
-  html.ak-print-key body > *:not(.ak-key-sheet) { display: none !important; }
-  html.ak-print-key .ak-key-sheet { display: block !important; padding: 20mm; color: #000; background: #fff; font-family: Arial, sans-serif; }
+  html.ak-print-preview body > *:not(.ak-preview) { display: none !important; }
+  html.ak-print-preview .ak-preview { position: static !important; display: block !important; width: auto !important; height: auto !important; overflow: visible !important; background: #fff !important; }
+  html.ak-print-preview .ak-preview::backdrop { display: none; }
+  html.ak-print-preview .ak-preview > div { height: auto !important; background: #fff !important; display: block !important; }
+  html.ak-print-preview .ak-preview-bar { display: none !important; }
+  html.ak-print-preview .ak-preview .overflow-auto { overflow: visible !important; padding: 0 !important; }
+  html.ak-print-preview .ak-paper { box-shadow: none !important; margin: 0 auto !important; }
 }
 
 /* Staff Printing: only the sheet goes to paper. */

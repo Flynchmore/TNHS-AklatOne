@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 
 // Recovery key: 25 random characters (about 125 bits) shown as AKLT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX; letters that look
@@ -8,7 +8,8 @@ const normalize = (key: string) => key.toUpperCase().replace(/^AKLT/, "").replac
 const hash = (key: string) => createHash("sha256").update(normalize(key)).digest("hex");
 
 export function newRecoveryKey(): string {
-  const chars = [...randomBytes(25)].map((b) => ALPHABET[b % ALPHABET.length]).join("");
+  // randomInt is uniform (a byte % 31 would make some letters more likely).
+  const chars = Array.from({ length: 25 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
   return `AKLT-${chars.match(/.{5}/g)!.join("-")}`;
 }
 

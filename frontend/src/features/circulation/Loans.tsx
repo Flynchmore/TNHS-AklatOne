@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, Undo2, AlarmClock, Send, Receipt, BookCheck } from "lucide-react";
 import { apiFetch } from "../../lib/api";
@@ -7,7 +8,7 @@ import { loanStatus } from "../../components/mobile/ui";
 import { ReceiptDialog } from "./ReceiptDialog";
 import { RefreshButton } from "./RefreshButton";
 import { useToast } from "../../components/Toast";
-import { EmptyState, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, table, select } from "../../components/staff/ui";
+import { EmptyState, SearchField, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, matches, table, select } from "../../components/staff/ui";
 import { phDate } from "../../lib/dates";
 import { queuedToast } from "../../lib/offline";
 
@@ -35,6 +36,10 @@ export function Loans() {
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
   const canWrite = hasPerm("circulation:write");
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? "");
+  useEffect(() => { const v = params.get("q"); if (v !== null) setQ(v); }, [params]); // global search opening this page again
+  const [show, setShow] = useState("");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["loans", view],
@@ -70,26 +75,39 @@ export function Loans() {
 
   const isOverdue = (l: Loan) => l.status === "ACTIVE" && !!l.dueAt && new Date(l.dueAt).getTime() < now;
 
+  const keep = (l: Loan) => !show || (show === "overdue" ? isOverdue(l) : show === "ontime" ? !isOverdue(l) : l.status === show);
+  const rows = data?.filter(l => keep(l) && matches(q, l.bookCopy?.book?.title, l.bookCopy?.book?.isbn, l.bookCopy?.barcode, l.borrower?.displayName, l.borrower?.username, l.receiptNo));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented label="Borrowed books view" value={view} onChange={v => { setView(v); setReturning(null); }} options={[{ key: "ACTIVE", label: "Borrowed now" }, { key: "CLOSED", label: "Returned & closed" }]} />
+        <Segmented label="Borrowed books view" value={view} onChange={v => { setView(v); setReturning(null); setShow(""); }} options={[{ key: "ACTIVE", label: "Borrowed now" }, { key: "CLOSED", label: "Returned & closed" }]} />
         <RefreshButton what="borrowed books" onRefresh={refetch} />
       </div>
       <p className="text-sm text-ink-muted">Books currently borrowed. When a book comes back, record how it was returned.</p>
+      <div className="flex flex-wrap items-start gap-3">
+        <SearchField id="loans-search" label="Search borrowed books" value={q} onChange={setQ} placeholder="Search book, ISBN, copy code, member or receipt no." shown={rows?.length} total={data?.length} />
+        <label htmlFor="loans-show" className="sr-only">Show</label>
+        <select id="loans-show" value={show} onChange={e => setShow(e.target.value)} className={`${select} !w-auto !rounded-full`}>
+          {view === "ACTIVE"
+            ? <><option value="">All borrowed books</option><option value="overdue">Overdue only</option><option value="ontime">Not overdue</option></>
+            : <><option value="">Returned and lost</option><option value="RETURNED">Returned only</option><option value="LOST">Lost only</option></>}
+        </select>
+      </div>
 
       {isLoading && <Skeleton rows={4} />}
       {isError && <p role="alert" className="text-danger">Could not load borrowed books. <button className="underline" onClick={() => refetch()}>Try again</button></p>}
       {data && data.length === 0 && <EmptyState icon={BookCheck} text={view === "ACTIVE" ? "No books are borrowed right now." : "No returned books yet."} />}
 
-      {data && data.length > 0 && (
+      {data && data.length > 0 && rows?.length === 0 && <EmptyState icon={BookCheck} text="No borrowed books match your search or filter." />}
+      {rows && rows.length > 0 && (
         <div key={view} className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}>
               <tr>{["Book", "Member", "Borrowed", "Due", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr>
             </thead>
             <tbody>
-              {data.map(l => {
+              {rows.map(l => {
                 const st = loanStatus(l, now);
                 return (
                   <tr key={l.id} className={table.row}>

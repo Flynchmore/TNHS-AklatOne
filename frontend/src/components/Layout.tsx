@@ -1,31 +1,39 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Skeleton } from "./staff/ui";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, X, LogOut, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
+import { Menu, X, LogOut, Search, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
 import { useAuth } from "../features/auth/auth";
 import { apiFetch } from "../lib/api";
 import { useToast } from "./Toast";
 import { focusRing } from "./mobile/ui";
 import { isDesktop, useOnline, useOutbox } from "../lib/offline";
 import { IdleLogout } from "./staff/IdleLogout";
+import { GlobalSearch } from "./staff/GlobalSearch";
 import { useScreenTimeTracker } from "./mobile/screenTime";
 
-type NavItem = { to: string; label: string; icon: LucideIcon; perm?: string };
+type NavItem = { to: string; label: string; icon: LucideIcon; perm?: string; group: string };
+// Grouped like a school portal menu: a small category title, then its pages (developer request 2026-11-26).
 const webLinks: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/catalog", label: "Catalog", icon: Library, perm: "catalog:read" },
-  { to: "/borrowing", label: "Borrowing", icon: ArrowLeftRight, perm: "circulation:read" },
-  { to: "/visitors", label: "Visitor's Log", icon: DoorOpen, perm: "circulation:write" },
-  { to: "/members", label: "Members", icon: Users, perm: "users:read" },
-  { to: "/suggestions", label: "Suggestions", icon: Lightbulb, perm: "circulation:read" },
-  { to: "/reports", label: "Reports", icon: BarChart3, perm: "reports:read" },
-  { to: "/printing", label: "Printing", icon: Printer, perm: "reports:read" },
-  { to: "/newspaper", label: "School Newspaper", icon: Newspaper },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, group: "Overview" },
+  { to: "/catalog", label: "Catalog", icon: Library, perm: "catalog:read", group: "Collection & Borrowing" },
+  { to: "/borrowing", label: "Borrowing", icon: ArrowLeftRight, perm: "circulation:read", group: "Collection & Borrowing" },
+  { to: "/suggestions", label: "Suggestions", icon: Lightbulb, perm: "circulation:read", group: "Collection & Borrowing" },
+  { to: "/members", label: "Members", icon: Users, perm: "users:read", group: "Members & Visitors" },
+  { to: "/visitors", label: "Visitor's Log", icon: DoorOpen, perm: "circulation:write", group: "Members & Visitors" },
+  { to: "/reports", label: "Reports", icon: BarChart3, perm: "reports:read", group: "Reports & Printing" },
+  { to: "/printing", label: "Printing", icon: Printer, perm: "reports:read", group: "Reports & Printing" },
+  { to: "/newspaper", label: "School Newspaper", icon: Newspaper, group: "School & System" },
+  { to: "/settings", label: "Settings", icon: Settings, group: "School & System" },
 ];
 // Desktop app (Tauri), "Offline Mode" of AklatOne LMS: the same sections as the web, plus Upload for changes made offline.
-const desktopLinks: NavItem[] = [...webLinks.slice(0, -1), { to: "/upload", label: "Upload", icon: UploadCloud }, webLinks[webLinks.length - 1]!];
+const desktopLinks: NavItem[] = [...webLinks.slice(0, -1), { to: "/upload", label: "Upload", icon: UploadCloud, group: "School & System" }, webLinks[webLinks.length - 1]!];
+/** Nav items split into their categories, in order. */
+const navGroups = (items: NavItem[]) => items.reduce<{ title: string; items: NavItem[] }[]>((groups, item) => {
+  const last = groups[groups.length - 1];
+  if (last?.title === item.group) last.items.push(item); else groups.push({ title: item.group, items: [item] });
+  return groups;
+}, []);
 export const navLinks = (desktop = isDesktop) => (desktop ? desktopLinks : webLinks);
 
 export function Layout() {
@@ -36,6 +44,17 @@ export function Layout() {
   const nav = useNavigate();
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  // Kept stable while the permissions stay the same (the search box reuses it).
+  const permKey = user?.permissions.join(",") ?? "";
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pages = useMemo(() => navLinks().filter(l => !l.perm || hasPerm(l.perm)), [permKey, !!user]);
+  // Ctrl+K (Cmd+K on a Mac) opens the search from any staff page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setOpen(false); setSearching(true); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // Pending borrow requests badge on "Borrowing" (same query key as the Dashboard, so it is fetched once).
   const { data: summary } = useQuery({
     queryKey: ["summary"],
@@ -64,44 +83,59 @@ export function Layout() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary via-primary-strong to-primary-strong" aria-hidden="true" />
         <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="ak-watermark absolute left-1/2 top-[62%] -translate-x-1/2 -translate-y-1/2 w-[26rem] max-w-none opacity-[0.10] pointer-events-none" />
 
-        {/* Short windows (e.g. the 800 px desktop window) get a compact sidebar so every item stays visible. */}
-        <div className="relative flex flex-col items-center text-center px-5 pt-7 pb-5 [@media(max-height:880px)]:pt-4 [@media(max-height:880px)]:pb-3 border-b border-white/15">
-          <button className={`md:hidden absolute right-3 top-3 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-white/10 ${focusRing}`} onClick={() => setOpen(false)} aria-label="Close menu"><X size={20} aria-hidden="true" /></button>
-          <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className="w-20 h-20 [@media(max-height:880px)]:w-14 [@media(max-height:880px)]:h-14 [@media(max-height:700px)]:w-11 [@media(max-height:700px)]:h-11 rounded-full bg-white p-1 shadow-xl ring-4 ring-accent/70 motion-safe:transition-transform motion-safe:duration-500 hover:rotate-[360deg]" />
-          <p className="mt-3 text-base font-bold leading-tight [@media(max-height:880px)]:hidden">Tagumpay National<br />High School</p>
-          <p className="text-xs text-accent font-semibold mt-1 tracking-wide uppercase [@media(max-height:880px)]:hidden">School Library</p>
+        {/* School header in one row (seal + name) so the menu below gets the room; short windows hide the name. */}
+        <div className="relative flex items-center gap-3 px-5 pt-5 pb-4 [@media(max-height:960px)]:pt-3 [@media(max-height:960px)]:pb-2 border-b border-white/15">
+          <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className="w-14 h-14 [@media(max-height:960px)]:w-10 [@media(max-height:960px)]:h-10 shrink-0 rounded-full bg-white p-0.5 shadow-xl ring-[3px] ring-accent/70 motion-safe:transition-transform motion-safe:duration-500 hover:rotate-[360deg]" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold leading-tight">Tagumpay National High School</p>
+            <p className="text-[11px] text-accent font-semibold mt-0.5 tracking-wide uppercase">School Library</p>
+          </div>
+          <button className={`md:hidden w-10 h-10 shrink-0 rounded-xl flex items-center justify-center hover:bg-white/10 ${focusRing}`} onClick={() => setOpen(false)} aria-label="Close menu"><X size={20} aria-hidden="true" /></button>
         </div>
 
-        {/* Scrolls only if the window is very short, and never shows a scrollbar. */}
-        <nav aria-label="Main" className="relative flex-1 overflow-y-auto ak-no-scrollbar px-4 py-5 [@media(max-height:880px)]:py-3">
-          <ul className="flex flex-col gap-2 [@media(max-height:880px)]:gap-1">
-            {navLinks().filter(l => !l.perm || hasPerm(l.perm)).map(l => (
-              <li key={l.to}>
-                <NavLink
-                  to={l.to}
-                  end={l.to === "/"}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) => `group relative flex items-center gap-3 min-h-12 [@media(max-height:880px)]:min-h-9 [@media(max-height:700px)]:min-h-8 px-4 rounded-2xl text-sm font-semibold motion-safe:transition-all motion-safe:duration-200 active:scale-[0.97] ${focusRing} ${isActive ? "bg-white text-[#1E326D] shadow-lg shadow-black/20" : "text-white/90 hover:bg-white/12 hover:text-white hover:translate-x-1"}`}
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && <span className="absolute left-0 top-2.5 bottom-2.5 w-1.5 rounded-r-full bg-accent" aria-hidden="true" />}
-                      <l.icon size={20} aria-hidden="true" className={`shrink-0 motion-safe:transition-transform motion-safe:duration-200 ${isActive ? "text-[#3354B5]" : "group-hover:scale-110"}`} />
-                      <span className="flex-1">{l.label}</span>
-                      {badge(l.to) > 0 && <span className={`min-w-6 h-6 px-1.5 rounded-full text-white text-xs font-bold flex items-center justify-center ak-badge-pop ${l.to === "/upload" ? "bg-warning" : "bg-danger"}`} aria-label={l.to === "/upload" ? `${badge(l.to)} waiting to upload` : `${badge(l.to)} pending requests`}>{badge(l.to) > 99 ? "99+" : badge(l.to)}</span>}
-                    </>
-                  )}
-                </NavLink>
-              </li>
+        <div className="relative px-4 pt-4 [@media(max-height:960px)]:pt-3">
+          <button type="button" onClick={() => { setOpen(false); setSearching(true); }} className={`w-full flex items-center gap-3 min-h-11 [@media(max-height:960px)]:min-h-9 px-4 rounded-2xl bg-white/10 border border-white/20 text-sm text-white/85 hover:bg-white/15 hover:text-white motion-safe:transition ${focusRing}`}>
+            <Search size={18} aria-hidden="true" /><span className="flex-1 text-left">Search AklatOne…</span><kbd className="text-[11px] font-semibold border border-white/30 rounded-md px-1.5 py-0.5">Ctrl K</kbd>
+          </button>
+        </div>
+
+        {/* Categories with clear gaps; scrolls (no scrollbar, faded edge) only if the window is short, and keeps space above the profile / Logout part. */}
+        <nav aria-label="Main" className="ak-nav-scroll relative flex-1 overflow-y-auto ak-no-scrollbar px-4 pt-5 pb-8 [@media(max-height:960px)]:pt-3 [@media(max-height:960px)]:pb-6">
+          <div className="flex flex-col gap-6 [@media(max-height:960px)]:gap-4">
+            {navGroups(pages).map(g => (
+              <section key={g.title} aria-labelledby={`nav-${g.title}`}>
+                <h2 id={`nav-${g.title}`} className="px-4 mb-2 [@media(max-height:960px)]:mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-accent/90">{g.title}</h2>
+                <ul className="flex flex-col gap-1.5 [@media(max-height:960px)]:gap-1">
+                  {g.items.map(l => (
+                    <li key={l.to}>
+                      <NavLink
+                        to={l.to}
+                        end={l.to === "/"}
+                        onClick={() => setOpen(false)}
+                        className={({ isActive }) => `group relative flex items-center gap-3 min-h-11 [@media(max-height:960px)]:min-h-9 [@media(max-height:700px)]:min-h-8 px-4 rounded-2xl text-sm font-semibold motion-safe:transition-all motion-safe:duration-200 active:scale-[0.97] ${focusRing} ${isActive ? "bg-white text-[#1E326D] shadow-lg shadow-black/20" : "text-white/90 hover:bg-white/12 hover:text-white hover:translate-x-1"}`}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            {isActive && <span className="absolute left-0 top-2.5 bottom-2.5 w-1.5 rounded-r-full bg-accent" aria-hidden="true" />}
+                            <l.icon size={20} aria-hidden="true" className={`shrink-0 motion-safe:transition-transform motion-safe:duration-200 ${isActive ? "text-[#3354B5]" : "group-hover:scale-110"}`} />
+                            <span className="flex-1">{l.label}</span>
+                            {badge(l.to) > 0 && <span className={`min-w-6 h-6 px-1.5 rounded-full text-white text-xs font-bold flex items-center justify-center ak-badge-pop ${l.to === "/upload" ? "bg-warning" : "bg-danger"}`} aria-label={l.to === "/upload" ? `${badge(l.to)} waiting to upload` : `${badge(l.to)} pending requests`}>{badge(l.to) > 99 ? "99+" : badge(l.to)}</span>}
+                          </>
+                        )}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         </nav>
 
-        <div className="relative px-4 pt-4 pb-5 [@media(max-height:880px)]:pt-3 [@media(max-height:880px)]:pb-3 [@media(max-height:880px)]:space-y-2 border-t border-white/15 space-y-3">
+        <div className="relative px-4 pt-4 pb-5 [@media(max-height:960px)]:pt-3 [@media(max-height:960px)]:pb-3 [@media(max-height:960px)]:space-y-2 border-t border-white/15 space-y-3">
           {/* Desktop: always visible at the end of the menu (this part never scrolls). */}
           {isDesktop && <SystemStatus online={online} waiting={waiting} />}
-          <div className="flex items-center gap-3 px-2 [@media(max-height:880px)]:hidden">
-            <img src="/aklatone-icon.png" alt="" className="w-11 h-11 [@media(max-height:880px)]:w-9 [@media(max-height:880px)]:h-9 rounded-xl bg-white p-1 shadow-md" />
+          <div className="flex items-center gap-3 px-2 [@media(max-height:960px)]:hidden">
+            <img src="/aklatone-icon.png" alt="" className="w-11 h-11 [@media(max-height:960px)]:w-9 [@media(max-height:960px)]:h-9 rounded-xl bg-white p-1 shadow-md" />
             <div className="min-w-0">
               <p className="text-lg font-bold leading-tight">AklatOne</p>
               <p className="text-xs text-white/80 truncate">{user?.displayName || user?.username}{user?.position ? ` · ${user.position}` : ""}</p>
@@ -124,10 +158,12 @@ export function Layout() {
         <div className="ak-no-print md:hidden sticky top-[var(--ak-titlebar,0px)] z-20 flex items-center gap-3 px-4 py-3 bg-primary-strong text-white shadow-md">
           <button className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 ${focusRing}`} onClick={() => setOpen(true)} aria-label="Open menu"><Menu size={20} aria-hidden="true" /></button>
           <img src="/aklatone-icon.png" alt="" className="w-8 h-8 rounded-lg bg-white p-0.5" />
-          <span className="font-bold">AklatOne</span>
+          <span className="font-bold flex-1">AklatOne</span>
+          <button className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 ${focusRing}`} onClick={() => setSearching(true)} aria-label="Search AklatOne"><Search size={20} aria-hidden="true" /></button>
         </div>
         <main id="main" className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
           <Suspense fallback={<Skeleton rows={6} />}><div key={location.pathname} className="ak-page"><Outlet /></div></Suspense>
+          <GlobalSearch pages={pages} open={searching} onClose={() => setSearching(false)} />
           <IdleLogout paused={isDesktop && !online} onTimeout={() => { logout(true); nav("/login"); }} />
         </main>
       </div>

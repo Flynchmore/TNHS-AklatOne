@@ -36,6 +36,8 @@ Short step-by-step guides for the librarian and for members. Setup and installat
 | Library attendance | **Visitor's Log > Start**: the screen becomes a kiosk. Members scan their card, type their Member ID, or scan the screen with their app. To leave the kiosk, enter your password. |
 | Answer suggestions; approve or hide book reviews | **Suggestions** (red number = new suggestions + reviews waiting) |
 | Check the shelves | **Catalog > Inventory audit** > Start, scan every copy on the shelves, then read *Not found* and *Records to check* |
+| Find anything | **Search AklatOne** at the top of the side menu (or **Ctrl+K**): pages, books, members (by Member ID) and borrowed books in one box; tap a filter (Books, Members, Borrowed) to narrow it. Every list page also has its own search box and filters. |
+| Print a receipt or the recovery key | **Print preview** shows the paper first; **Print** then sends only that paper (choose a printer or *Save as PDF*). |
 | Reports and printouts | **Reports** (date range, time spent, Excel export) and **Printing** (inventory, borrowed, overdue, member lists with signatories) |
 
 ### Desktop app without internet

@@ -3,12 +3,12 @@ import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSect
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, UserPlus, Search, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
+import { Users, UserPlus, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { RefreshButton } from "../circulation/RefreshButton";
-import { Badge, EmptyState, FormSection, PageHeader, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, table, select } from "../../components/staff/ui";
+import { Badge, EmptyState, FormSection, PageHeader, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, table, select, SearchField } from "../../components/staff/ui";
 import { StrengthMeter, loanStatus, passwordStrength } from "../../components/mobile/ui";
 import { phDate } from "../../lib/dates";
 import { fmtDuration } from "../../components/mobile/screenTime";
@@ -46,7 +46,8 @@ export function Members() {
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const canWrite = hasPerm("users:write");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => params.get("q") ?? "");
+  useEffect(() => { const v = params.get("q"); if (v !== null) setQ(v); }, [params]); // global search opening this page again
   const [search, setSearch] = useState("");
   const [type, setType] = useState<TypeFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("active");
@@ -98,11 +99,7 @@ export function Members() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-60 max-w-lg">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
-          <label htmlFor="members-search" className="sr-only">Search members</label>
-          <input id="members-search" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, username, email, section or Member ID" className={`${input} pl-11 !rounded-full shadow-sm`} />
-        </div>
+        <SearchField id="members-search" label="Search members" value={q} onChange={setQ} placeholder="Search name, username, email, section or Member ID" className="max-w-lg" />
         <Segmented label="Role" value={type} onChange={t => { setType(t); setPage(0); }} options={[{ key: "all", label: "All" }, { key: "Student", label: "Students" }, { key: "Teacher", label: "Teachers" }]} />
         <label htmlFor="members-status" className="sr-only">Account status</label>
         <select id="members-status" value={status} onChange={e => { setStatus(e.target.value as StatusFilter); setPage(0); }} className={`${select} !w-auto !rounded-full`}>

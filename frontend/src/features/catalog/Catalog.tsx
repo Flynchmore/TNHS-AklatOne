@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Library, Copy, BookOpen, CheckCircle2, BookUp, AlertTriangle, Archive, BookPlus, Tags, FileText, Info, FileSpreadsheet, FileDown, EyeOff, Eye, ClipboardCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Library, Copy, BookOpen, CheckCircle2, BookUp, AlertTriangle, Archive, BookPlus, Tags, FileText, Info, FileSpreadsheet, FileDown, EyeOff, Eye, ClipboardCheck } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { Stars } from "../../components/Stars";
 import { RefreshButton } from "../circulation/RefreshButton";
-import { Badge, EmptyState, FormSection, PageHeader, Skeleton, StaffDialog, btn, btnSm, card, input, label, table, select } from "../../components/staff/ui";
+import { Badge, EmptyState, FormSection, PageHeader, Skeleton, StaffDialog, btn, btnSm, card, input, label, table, select, SearchField } from "../../components/staff/ui";
 import { CopiesDialog } from "./CopiesDialog";
 import { BookCover } from "../../components/mobile/ui";
 import { queuedToast, useOnline } from "../../lib/offline";
@@ -45,7 +45,8 @@ export function Catalog() {
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const canWrite = hasPerm("catalog:write");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => params.get("q") ?? "");
+  useEffect(() => { const v = params.get("q"); if (v !== null) setQ(v); }, [params]); // global search opening this page again
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<Book | "new" | null>(null);
@@ -130,11 +131,7 @@ export function Catalog() {
       )}
 
       <div className="flex flex-wrap items-center gap-4">
-      <div className="relative flex-1 min-w-[16rem] max-w-lg">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
-        <label htmlFor="books-search" className="sr-only">Search books</label>
-        <input id="books-search" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search title, author, ISBN or serial number" className={`${input} pl-11 !rounded-full shadow-sm`} />
-      </div>
+      <SearchField id="books-search" label="Search books" value={q} onChange={setQ} placeholder="Search title, author, ISBN or serial number" className="max-w-lg" />
       <label htmlFor="books-type" className="sr-only">Book type</label>
       <select id="books-type" value={bookType} onChange={e => { setBookType(e.target.value); setPage(0); }} className={`${select} !w-auto`}>
         <option value="">All book types</option>{BOOK_TYPES.map(t => <option key={t}>{t}</option>)}

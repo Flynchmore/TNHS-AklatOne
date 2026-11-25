@@ -23,11 +23,13 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("staff portal pages", () => {
-  it("side nav shows exactly the ten sections in order, plus Logout", async () => {
+  it("side nav shows the ten sections in their categories, in order, plus search and Logout", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ pendingRequests: 3 }));
     wrap(<Layout />);
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(within(nav).getAllByRole("link").map(l => l.textContent?.replace(/\d+$/, ""))).toEqual(["Dashboard", "Catalog", "Borrowing", "Visitor's Log", "Members", "Suggestions", "Reports", "Printing", "School Newspaper", "Settings"]);
+    expect(within(nav).getAllByRole("link").map(l => l.textContent?.replace(/\d+$/, ""))).toEqual(["Dashboard", "Catalog", "Borrowing", "Suggestions", "Members", "Visitor's Log", "Reports", "Printing", "School Newspaper", "Settings"]);
+    expect(within(nav).getAllByRole("heading").map(h => h.textContent)).toEqual(["Overview", "Collection & Borrowing", "Members & Visitors", "Reports & Printing", "School & System"]);
+    expect(screen.getAllByRole("button", { name: /Search AklatOne/ }).length).toBeGreaterThan(0); // side nav + phone top bar
     expect(await within(nav).findByLabelText("3 pending requests")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Logout/ })).toBeInTheDocument();
     expect(screen.getByText("Tagumpay National", { exact: false })).toBeInTheDocument();
@@ -71,5 +73,26 @@ describe("staff portal pages", () => {
     expect(await screen.findByText("Member deactivated")).toBeInTheDocument();
     expect(patches[0]!.url).toContain("/api/v1/users/m1/status");
     expect(JSON.parse(patches[0]!.body)).toEqual({ isActive: false });
+  });
+});
+
+describe("staff search", () => {
+  it("Ctrl+K opens one search for pages, books, members and borrowed books, with a filter per kind", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
+      const url = String(input);
+      if (url.includes("/api/v1/catalog?q=")) return json({ items: [{ id: "b1", title: "Noli Me Tangere", authors: "Jose Rizal", isbn: "9789710000001" }], total: 1 });
+      if (url.includes("/api/v1/users?q=")) return json({ items: [{ id: "m1", maskedId: "JC123456", memberType: "Student", gradeSection: "10 - Rizal", displayName: "Juan Dela Cruz" }], total: 1 });
+      if (url.includes("/circulation/transactions")) return json({ items: [] });
+      return json({});
+    });
+    wrap(<Layout />);
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    fireEvent.change(await screen.findByLabelText(/Search pages, books, members/), { target: { value: "rizal" } });
+    expect(await screen.findByText("Noli Me Tangere")).toBeInTheDocument();
+    expect(await screen.findByText("JC123456")).toBeInTheDocument();
+    expect(screen.queryByText("Juan Dela Cruz")).toBeNull(); // members by Member ID only
+    fireEvent.click(screen.getByRole("radio", { name: /Books/ }));
+    expect(screen.queryByText("JC123456")).toBeNull();
+    expect(screen.getByText("Noli Me Tangere")).toBeInTheDocument();
   });
 });

@@ -50,7 +50,7 @@ export function MobileProfile() {
   const [now] = useState(() => Date.now());
   const [tab, setTab] = useState<Tab>("activity");
   const [me, setMe] = useState<Details | null>(auth.user ? { ...auth.user } as Details : null);
-  const [crop, setCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState<File | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -72,10 +72,9 @@ export function MobileProfile() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (crop) URL.revokeObjectURL(crop);
-    setCrop(URL.createObjectURL(file));
+    setCrop(file);
   };
-  const closeCrop = () => { if (crop) URL.revokeObjectURL(crop); setCrop(null); };
+  const closeCrop = () => setCrop(null);
   const savePhoto = async (dataUrl: string) => {
     setSavingPhoto(true);
     const r = await patch({ avatarUrl: dataUrl });
@@ -183,7 +182,7 @@ export function MobileProfile() {
         auth.logout();
       }} />}
 
-      {crop && <PhotoCropper src={crop} saving={savingPhoto} onSave={savePhoto} onCancel={closeCrop} onPickAnother={() => fileRef.current?.click()} />}
+      {crop && <PhotoCropper file={crop} saving={savingPhoto} onSave={savePhoto} onCancel={closeCrop} onPickAnother={() => fileRef.current?.click()} />}
     </ScreenShell>
   );
 }
