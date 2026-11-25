@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Copy, BookOpen } from "lucide-react";
+import { Plus, Trash2, Copy, BookOpen, Pencil, Check, X } from "lucide-react";
 import { apiFetch } from "../../lib/api";
-import { phDate } from "../../lib/dates";
+import { phDate, phISODate } from "../../lib/dates";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { Badge, Skeleton, StaffDialog, btn, btnSm, table, type badgeTone, select } from "../../components/staff/ui";
+import { Badge, Skeleton, StaffDialog, btn, btnSm, table, type badgeTone, select, input } from "../../components/staff/ui";
 import type { Book } from "./Catalog";
 import { queuedToast } from "../../lib/offline";
 
-interface CopyRow { id: string; barcode: string; status: string; lastVerifiedAt?: string | null }
+interface CopyRow { id: string; barcode: string; status: string; lastVerifiedAt?: string | null; location?: string | null; acquiredAt?: string | null }
 const STATUS_TONE: Record<string, keyof typeof badgeTone> = { AVAILABLE: "success", BORROWED: "primary", LOST: "danger", DAMAGED: "warning", RETIRED: "muted" };
 
 /** Status changes the server allows (BORROWED only changes through circulation). */
@@ -26,6 +26,8 @@ export function CopiesDialog({ book, onClose }: { book: Book | null; onClose: ()
   const qc = useQueryClient();
   const canWrite = hasPerm("copies:write");
   const [confirm, setConfirm] = useState<string | null>(null);
+  // Copy being edited: its shelf location and date received.
+  const [edit, setEdit] = useState<{ id: string; location: string; dateReceived: string } | null>(null);
 
   const list = useQuery({
     queryKey: ["copies", book?.id],
@@ -53,6 +55,11 @@ export function CopiesDialog({ book, onClose }: { book: Book | null; onClose: ()
     onSuccess: ({ c, status }) => { toast({ tone: "success", title: "Status updated", message: `${nameOf(c)} is now ${status.toLowerCase()}.` }); refresh(); },
     onError: fail("Could not update status"),
   });
+  const saveDetails = useMutation({
+    mutationFn: (e: { id: string; location: string; dateReceived: string }) => call(`/api/v1/book-copies/${e.id}`, "PATCH", { location: e.location, dateReceived: e.dateReceived }),
+    onSuccess: () => { toast({ tone: "success", title: "Copy updated", message: "Location and date received were saved." }); setEdit(null); refresh(); },
+    onError: fail("Could not save the copy"),
+  });
   const remove = useMutation({
     mutationFn: (c: CopyRow) => call(`/api/v1/book-copies/${c.id}`, "DELETE").then(() => c),
     onSuccess: (c) => { toast({ tone: "success", title: "Copy removed", message: `${nameOf(c)} of "${book!.title}" was removed.` }); setConfirm(null); refresh(); },
@@ -75,12 +82,28 @@ export function CopiesDialog({ book, onClose }: { book: Book | null; onClose: ()
       ) : (
         <div className={table.wrap}>
           <table className={table.table}>
-            <thead className={table.head}><tr><th className={table.th}>Copy</th><th className={table.th}>ISBN</th><th className={table.th}>Status</th><th className={table.th}>Change status</th><th className={`${table.th} text-right`}>Actions</th></tr></thead>
+            <thead className={table.head}><tr><th className={table.th}>Copy</th><th className={table.th}>Location · Received</th><th className={table.th}>Status</th><th className={table.th}>Change status</th><th className={`${table.th} text-right`}>Actions</th></tr></thead>
             <tbody>
               {list.data.items.map(c => (
                 <tr key={c.id} className={table.row}>
                   <td className={`${table.td} font-semibold text-ink`}>{nameOf(c)}</td>
-                  <td className={`${table.td} font-mono text-xs text-ink-muted`}>{isbn}</td>
+                  <td className={table.td}>
+                    {edit?.id === c.id ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="sr-only" htmlFor={`loc-${c.id}`}>Location</label>
+                        <input id={`loc-${c.id}`} value={edit.location} maxLength={100} placeholder="e.g. Shelf A3" onChange={e => setEdit({ ...edit, location: e.target.value })} className={`${input} !min-h-9 !py-1 max-w-36`} />
+                        <label className="sr-only" htmlFor={`rcv-${c.id}`}>Date received</label>
+                        <input id={`rcv-${c.id}`} type="date" value={edit.dateReceived} onChange={e => setEdit({ ...edit, dateReceived: e.target.value })} className={`${input} !min-h-9 !py-1 max-w-40`} />
+                        <button type="button" aria-label="Save" disabled={saveDetails.isPending} onClick={() => saveDetails.mutate(edit)} className={`${btn.primary} ${btnSm}`}><Check size={14} aria-hidden="true" /></button>
+                        <button type="button" aria-label="Cancel" onClick={() => setEdit(null)} className={`${btn.ghost} ${btnSm}`}><X size={14} aria-hidden="true" /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs"><div className="text-ink font-medium">{c.location || <span className="text-ink-muted italic">No location</span>}</div><div className="text-ink-muted">{c.acquiredAt ? `Received ${phDate(c.acquiredAt)}` : "Date received not set"}</div></div>
+                        {canWrite && <button type="button" aria-label={`Edit location and date received of ${nameOf(c)}`} onClick={() => setEdit({ id: c.id, location: c.location ?? "", dateReceived: c.acquiredAt ? phISODate(c.acquiredAt) : "" })} className={`${btn.ghost} ${btnSm}`}><Pencil size={14} aria-hidden="true" /></button>}
+                      </div>
+                    )}
+                  </td>
                   <td className={table.td}><Badge tone={STATUS_TONE[c.status] ?? "muted"}>{c.status}</Badge><div className="text-[11px] text-ink-muted mt-1">{c.lastVerifiedAt ? `Verified ${phDate(c.lastVerifiedAt)}` : "Not verified"}</div></td>
                   <td className={table.td}>
                     <select aria-label={`Status of ${nameOf(c)}`} className={`${select} !min-h-9 !py-1 !rounded-xl max-w-40`} value={c.status} disabled={!canWrite || allowedTransitions(c.status).length === 0 || setStatus.isPending} onChange={e => setStatus.mutate({ c, status: e.target.value })}>

@@ -2,18 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { StaffDialog, btn } from "./ui";
 
-/** Developer decision 2026-11-24: Staff Web signs out after 30 idle minutes (not on Desktop, which cannot sign in offline). */
+/**
+ * Staff Web and Desktop sign out after 30 idle minutes (Web: developer decision 2026-11-24; Desktop added 2026-11-25).
+ * While the Desktop app is offline the timer waits (`paused`): signing in needs the server, so an offline sign-out
+ * would lock the librarian out of offline work until the internet is back.
+ */
 export const IDLE_MS = 30 * 60_000;
 const WARN_MS = 60_000;
 const KEY = "aklatone_last_activity";
 const EVENTS = ["pointerdown", "pointermove", "keydown", "wheel", "touchstart", "scroll"] as const;
 
 /** Activity in any open tab keeps every tab signed in (shared through localStorage). */
-export function IdleLogout({ onTimeout }: { onTimeout: () => void }) {
+export function IdleLogout({ onTimeout, paused = false }: { onTimeout: () => void; paused?: boolean }) {
   const [warn, setWarn] = useState(false);
   const last = useRef(Date.now());
   const timeout = useRef(onTimeout);
   useEffect(() => { timeout.current = onTimeout; }, [onTimeout]);
+  const pausedRef = useRef(paused);
+  useEffect(() => { pausedRef.current = paused; if (paused) { last.current = Date.now(); setWarn(false); } }, [paused]);
 
   useEffect(() => {
     let written = 0;
@@ -29,6 +35,7 @@ export function IdleLogout({ onTimeout }: { onTimeout: () => void }) {
     const check = setInterval(() => {
       let shared = 0;
       try { shared = Number(localStorage.getItem(KEY)) || 0; } catch { /* ignore */ }
+      if (pausedRef.current) { last.current = Date.now(); return; }
       const idle = Date.now() - Math.max(last.current, shared);
       if (idle >= IDLE_MS) { clearInterval(check); timeout.current(); }
       else setWarn(idle >= IDLE_MS - WARN_MS);

@@ -298,6 +298,12 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Security: every API answer carries Cache-Control: no-store (covers keep their 30-day cache), so a shared library computer's browser keeps no member records (test in security.test.ts).
 - Small UI: staff Badge px-3, catalog "Not set" serial muted (was red), "No ratings yet" on one line.
 
+## Desktop idle sign-out, manuscript book fields (2026-11-25)
+- Desktop now signs out after 30 idle minutes too (developer decision: library computers are not shared, but asked for it); the timer waits while the Desktop is offline (IdleLogout paused), because signing in needs the server.
+- Manuscript Chapter 1 gaps built (Chapter1-Features-Alignment.md option (a)): Book.bookType (Textbook / Teacher's Manual / Worksheet / Other) and Book.gradeLevel (Grade 7-12 / All grade levels), migration 20261125050000_book_type_grade_level (dev backup ~/aklatone-backups/aklatone-2026-11-25-before-book-type-grade.sql). Lists in backend book.schemas.ts and frontend lib/bookFields.ts. Catalog filters ?bookType= &gradeLevel= (a grade also lists "All grade levels" books); staff Catalog filters + form; member Catalog filters + details row; phone Add book; inventory printout column; Excel columns "Book type", "Grade level" (spellings like "textbook", "7", "Grade 07", "All" are read).
+- Date received + location: POST /catalog dateReceived/location for the first copies; POST /book-copies dateReceived; new PATCH /book-copies/:id {location, dateReceived, notes} (copies:write, audited); Catalog > Copies shows and edits them. Dates are PH days (YYYY-MM-DD -> +08:00 midnight).
+- ERD Book rows + BookCopy labels; DFD 2.1/2.2. Tests: backend 165 passed + 1 opt-in skipped (39 files), frontend 135.
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

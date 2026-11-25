@@ -1,6 +1,6 @@
 # AklatOne: Chapter 1 Features vs. the Built System
 
-Checked on 2026-11-20 against the source code (Prisma schema, backend routes, web/desktop/mobile screens); updated 2026-11-24 after backup/restore, Excel import, QR inventory audit and the security hardening were built.
+Checked on 2026-11-20 against the source code (Prisma schema, backend routes, web/desktop/mobile screens); updated 2026-11-25 (book type, grade level, date received, copy location built) and 2026-11-24 after backup/restore, Excel import, QR inventory audit and the security hardening were built.
 Chapter 1 has a "General Features of the System" table only; there is no "Core Features" section yet.
 Part B below proposes both, written to match what the system actually does.
 
@@ -8,8 +8,8 @@ Part B below proposes both, written to match what the system actually does.
 
 | Chapter 1 General Feature | Status | What the system does today |
 |---|---|---|
-| Catalog and copy management | Partly aligned | Title, author, ISBN, publisher, publication **year**, serial number, description, categories (Subject / Wattpad / Genre) and individual copies (auto copy code, shown as "Copy 1, 2…" under the ISBN). **Missing:** book type (textbook, teacher's manual, worksheet), grade level, date received in the screens. "Learning area" is covered by the Subject category. The database has `BookCopy.acquiredAt` but no screen uses it. |
-| Inventory verification | Aligned (location still missing) | Inventory audit: printable QR label per copy, scanning by USB scanner, camera or typed code, report of copies not found and of scanned copies whose record disagrees, Excel export. Each copy shows "Verified <date>" or "Not verified" (`BookCopy.lastVerifiedAt`). Condition: copy status (Available, Borrowed, Lost, Damaged, Retired) and return outcome. **Location** exists in the database (`BookCopy.location`, shown in the audit) but cannot be edited in the screens yet. |
+| Catalog and copy management | Aligned | Title, author, ISBN, publisher, publication year, serial number, **book type** (Textbook, Teacher's Manual, Worksheet, Other), **grade level** (Grade 7 to 12 or all), description, categories (Subject / Wattpad / Genre) and individual copies (auto copy code, shown as "Copy 1, 2…" under the ISBN) with their **date received** and **shelf location**, editable per copy. "Learning area" is covered by the Subject category. Members filter the catalog by grade level and book type. |
+| Inventory verification | Aligned | Inventory audit: printable QR label per copy, scanning by USB scanner, camera or typed code, report of copies not found and of scanned copies whose record disagrees, Excel export. Each copy shows "Verified <date>" or "Not verified" (`BookCopy.lastVerifiedAt`). Condition: copy status (Available, Borrowed, Lost, Damaged, Retired) and return outcome. Each copy's shelf location is kept and editable (Catalog > Copies). |
 | Search and availability | Aligned | Mobile catalog search and filters (category, available now, sort), book covers, available / total copies, ratings; borrower details are never shown in the catalog. |
 | Circulation | Aligned | Member borrow request → librarian approve / decline → receipt and due date → due-soon / overdue notices (app + email) → return with outcome. Eligibility = an available copy and at most 8 books (active loans + pending requests); loan = 7 days (developer decision 2026-11-25; the historical policy was 3 or 5 days). |
 | Reports and history | Aligned | Dashboard statistics, Reports (date range, monthly statistics, borrowers by role, return outcomes, popular books, copies by status, overdue list), member and staff transaction history, printable lists (inventory, borrowed, overdue, members, copy QR labels) with School ID 308114 and signatories, Excel export of reports and of the catalog, Excel import of old catalog records with a preview. |
@@ -22,7 +22,7 @@ Other Chapter 1 / Chapter 3 statements that no longer match:
 3. **3.10 Software Requirements**: password hashing is **bcrypt** (confirmed in code, Argon2id is not used). Desktop offline saving and upload **is** built (outbox on the computer; rejected items are skipped and shown). Playwright is **not installed**; testing uses Vitest and Supertest.
 4. Built but not mentioned anywhere: email one-time code at sign-in, password reset by email, member management by the librarian, favourites and ratings, in-app alerts and branded emails, first-launch walkthrough with Terms / Privacy consent, light and dark theme. Email codes still need school confirmation. Google sign-in and member self-registration were removed on 2026-11-24 (accounts are made by the librarian).
 
-**Decision needed:** either (a) keep the manuscript as written and build the missing items (book type, grade level, date received in the screens, copy location in the screens), or (b) paste the Part B text, which describes only what exists. Items in square brackets in Part B are the ones to delete if you choose (b) and they are not built.
+**Done 2026-11-25:** option (a): book type, grade level, date received and copy location are now built, so the manuscript's General Features stand as written. Square brackets in Part B no longer need deleting.
 
 ## B. Paste-ready text
 
@@ -30,7 +30,7 @@ Other Chapter 1 / Chapter 3 statements that no longer match:
 
 | Feature | Purpose |
 |---|---|
-| Catalog and copy management | Record each title's details (title, author, ISBN, publisher, publication year, serial number, subject or category and description) and its individual physical copies. Copies are identified by the book's ISBN and a copy number, so titles and physical copies are counted separately. |
+| Catalog and copy management | Aligned | Title, author, ISBN, publisher, publication year, serial number, **book type** (Textbook, Teacher's Manual, Worksheet, Other), **grade level** (Grade 7 to 12 or all), description, categories (Subject / Wattpad / Genre) and individual copies (auto copy code, shown as "Copy 1, 2…" under the ISBN) with their **date received** and **shelf location**, editable per copy. "Learning area" is covered by the Subject category. Members filter the catalog by grade level and book type. |
 | Copy condition and status monitoring | Track whether each copy is available, borrowed, lost, damaged or retired, record the condition of returned books (returned on time, returned late, torn or damaged, or missing), and verify the copies on the shelves through a QR-based inventory audit. |
 | Search and availability | Let students and teachers search and filter the approved catalog and see how many copies are available, without exposing borrower details. |
 | Circulation | Handle borrow requests, librarian approval or decline, digital receipts, due dates, due-soon and overdue notices, and returns, under borrowing limits and loan periods set by the school. |

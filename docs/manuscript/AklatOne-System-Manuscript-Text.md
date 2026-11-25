@@ -35,7 +35,7 @@ Library ID cards and book QR labels for lending and returns.
 
 | Feature | Purpose |
 |---|---|
-| Catalog and copy management | Record each title's details (title, author, ISBN, publisher, publication year, serial number, subject, genre or Wattpad category, description and cover) and each physical copy, identified by a copy code printed as a QR label. |
+| Catalog and copy management | Record each title's details (title, author, ISBN, publisher, publication year, serial number, book type, grade level, subject, genre or Wattpad category, description and cover) and each physical copy, identified by a copy code printed as a QR label. |
 | Member and Library ID management | Create student and teacher accounts, give each member a unique Member ID, and print Library ID cards that carry only the Member ID, a QR code and the grade and section (or department). |
 | Search and availability | Let students and teachers search and filter the catalog and see how many copies are available, without showing who borrowed them. |
 | Circulation | Handle borrow requests, librarian approval or decline, lending at the desk by scanning the Library ID card and the book's QR label, digital receipts, due dates (7 days, up to 8 books per member), reminders, overdue notices and returns with the book's condition. |
@@ -51,7 +51,7 @@ Library ID cards and book QR labels for lending and returns.
 **Mobile Application for students and teachers (Android and iOS)**
 1. Account access with username or email and password, a 6-digit email verification code as the second factor, and password reset by email code. Accounts are created by the librarian.
 2. First-launch walkthrough and acceptance of the Terms and Conditions, Privacy Policy and essential on-device storage.
-3. Catalog search with subject, genre and Wattpad categories, filters (available now, sort), book covers (kept on the school server, so they also show on the school Wi-Fi without internet), details, ratings and available copies, and the most borrowed books of the week. Members can scan a book's QR label on the shelf, ask to be notified when a borrowed book is back, write reviews that the librarian approves first, and set a monthly reading goal.
+3. Catalog search with subject, genre and Wattpad categories, filters (grade level, book type, available now, sort), book covers (kept on the school server, so they also show on the school Wi-Fi without internet), details, ratings and available copies, and the most borrowed books of the week. Members can scan a book's QR label on the shelf, ask to be notified when a borrowed book is back, write reviews that the librarian approves first, and set a monthly reading goal.
 4. Borrow requests within the borrowing limit, request status, digital receipts and due dates.
 5. My Books: borrowed books, pending requests, favourites in folders and borrowing history.
 6. Alerts for approved or declined requests, books lent at the desk, recorded returns, due-soon reminders, overdue notices and answered suggestions.
@@ -66,7 +66,7 @@ Library ID cards and book QR labels for lending and returns.
 
 **Staff Web Portal for the librarian and administrator**
 1. Dashboard with total books, members, borrowed books, books due this week, books used this week (Monday to Friday), recent activities and quick actions.
-2. Catalog management of titles and copies, with copy status, covers, Excel import and export, and hiding titles from members.
+2. Catalog management of titles (book type, grade level) and copies (date received, shelf location), with copy status, covers, Excel import and export, and hiding titles from members.
 3. Borrowing: lending at the desk by scanning or searching, approval or decline of member requests, tracking of borrowed books, return recording with condition, and overdue notices and reminders by app alert and email.
 4. Members: adding, editing, deactivating and viewing students and teachers, their Member IDs, borrowing tallies and time spent.
 5. Visitor's Log: starts a full-screen kiosk that records Time In and Time Out; leaving the kiosk requires the librarian's password.

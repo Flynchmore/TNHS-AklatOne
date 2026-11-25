@@ -13,10 +13,11 @@ import { BookCover } from "../../components/mobile/ui";
 import { queuedToast, useOnline } from "../../lib/offline";
 import { ImportDialog } from "./ImportDialog";
 import { downloadXlsx } from "../../lib/download";
+import { BOOK_TYPES, GRADE_LEVELS, typeAndGrade } from "../../lib/bookFields";
 
 export interface Book {
   id: string; title: string; authors?: string | null; publisher?: string | null; publishedYear?: number | null;
-  isbn?: string | null; coverUrl?: string | null; serialNumber?: string | null; description?: string | null;
+  isbn?: string | null; coverUrl?: string | null; serialNumber?: string | null; description?: string | null; bookType?: string | null; gradeLevel?: string | null;
   availability: { total: number; available: number }; rating: { average: number; count: number }; borrowCount?: number; viewCount?: number;
   categories?: Category[];
   isHidden?: boolean;
@@ -26,8 +27,8 @@ interface Category { id: string; name: string; kind: Kind }
 type Kind = "SUBJECT" | "WATTPAD" | "GENRE";
 const KINDS: { kind: Kind; label: string }[] = [{ kind: "SUBJECT", label: "Subject" }, { kind: "WATTPAD", label: "Wattpad" }, { kind: "GENRE", label: "Genre" }];
 const noCats: Record<Kind, string> = { SUBJECT: "", WATTPAD: "", GENRE: "" };
-type FormState = { title: string; authors: string; publisher: string; publishedYear: string; isbn: string; serialNumber: string; copies: string; description: string };
-const empty: FormState = { title: "", authors: "", publisher: "", publishedYear: "", isbn: "", serialNumber: "", copies: "1", description: "" };
+type FormState = { title: string; authors: string; publisher: string; publishedYear: string; isbn: string; serialNumber: string; copies: string; description: string; bookType: string; gradeLevel: string; dateReceived: string; location: string };
+const empty: FormState = { title: "", authors: "", publisher: "", publishedYear: "", isbn: "", serialNumber: "", copies: "1", description: "", bookType: "", gradeLevel: "", dateReceived: "", location: "" };
 const PAGE = 20;
 const STATUS_TILE: Record<string, { icon: typeof Copy; cls: string; label: string }> = {
   AVAILABLE: { icon: CheckCircle2, cls: "bg-success-soft text-success", label: "Available" },
@@ -52,6 +53,8 @@ export function Catalog() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [hiddenOnly, setHiddenOnly] = useState(false);
+  const [bookType, setBookType] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
   const online = useOnline();
 
   useEffect(() => { const t = setTimeout(() => { setSearch(q.trim()); setPage(0); }, 300); return () => clearTimeout(t); }, [q]);
@@ -61,9 +64,10 @@ export function Catalog() {
   useEffect(() => { if (params.get("new") === "1" && canWrite) { setNewTitle(params.get("title") ?? ""); setEditing("new"); setParams({}, { replace: true }); } }, [params, setParams, canWrite]);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["catalog", search, page, hiddenOnly],
+    queryKey: ["catalog", search, page, hiddenOnly, bookType, gradeLevel],
     queryFn: async () => {
-      const r = await apiFetch(`/api/v1/catalog?q=${encodeURIComponent(search)}&limit=${PAGE}&offset=${page * PAGE}${hiddenOnly ? "&hidden=1" : ""}`, { token });
+      const filters = `${hiddenOnly ? "&hidden=1" : ""}${bookType ? `&bookType=${encodeURIComponent(bookType)}` : ""}${gradeLevel ? `&gradeLevel=${encodeURIComponent(gradeLevel)}` : ""}`;
+      const r = await apiFetch(`/api/v1/catalog?q=${encodeURIComponent(search)}&limit=${PAGE}&offset=${page * PAGE}${filters}`, { token });
       if (!r.ok) throw new Error(r.message);
       return r.data as { items: Book[]; total: number };
     },
@@ -131,6 +135,14 @@ export function Catalog() {
         <label htmlFor="books-search" className="sr-only">Search books</label>
         <input id="books-search" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search title, author, ISBN or serial number" className={`${input} pl-11 !rounded-full shadow-sm`} />
       </div>
+      <label htmlFor="books-type" className="sr-only">Book type</label>
+      <select id="books-type" value={bookType} onChange={e => { setBookType(e.target.value); setPage(0); }} className={`${select} !w-auto`}>
+        <option value="">All book types</option>{BOOK_TYPES.map(t => <option key={t}>{t}</option>)}
+      </select>
+      <label htmlFor="books-grade" className="sr-only">Grade level</label>
+      <select id="books-grade" value={gradeLevel} onChange={e => { setGradeLevel(e.target.value); setPage(0); }} className={`${select} !w-auto`}>
+        <option value="">All grade levels</option>{GRADE_LEVELS.filter(g => g !== "All grade levels").map(g => <option key={g}>{g}</option>)}
+      </select>
       {canWrite && (
         <label className="inline-flex items-center gap-2 text-sm font-semibold text-ink cursor-pointer">
           <input type="checkbox" checked={hiddenOnly} onChange={e => { setHiddenOnly(e.target.checked); setPage(0); }} className="w-4 h-4 accent-primary" />
@@ -153,7 +165,7 @@ export function Catalog() {
               {data.items.map(b => (
                 <tr key={b.id} className={table.row}>
                   <td className={`${table.td} font-mono text-xs text-ink`}>{b.serialNumber ?? <span className="text-ink-muted font-sans italic">Not set</span>}</td>
-                  <td className={table.td}><div className="flex items-center gap-3"><BookCover isbn={b.isbn} coverUrl={b.coverUrl} title={b.title} className="w-10 h-14 rounded-lg shrink-0 shadow-sm" /><div className="min-w-0"><div className="font-semibold text-ink">{b.title} {b.isHidden && <Badge tone="warning"><EyeOff size={12} aria-hidden="true" />Hidden</Badge>}</div><div className="text-xs text-ink-muted">{b.authors || "Unknown author"}</div></div></div></td>
+                  <td className={table.td}><div className="flex items-center gap-3"><BookCover isbn={b.isbn} coverUrl={b.coverUrl} title={b.title} className="w-10 h-14 rounded-lg shrink-0 shadow-sm" /><div className="min-w-0"><div className="font-semibold text-ink">{b.title} {b.isHidden && <Badge tone="warning"><EyeOff size={12} aria-hidden="true" />Hidden</Badge>}</div><div className="text-xs text-ink-muted">{b.authors || "Unknown author"}</div>{typeAndGrade(b) && <div className="text-xs font-medium text-primary mt-0.5">{typeAndGrade(b)}</div>}</div></div></td>
                   <td className={`${table.td} text-ink-muted`}>{[b.publishedYear, b.publisher].filter(Boolean).join(" · ") || "—"}</td>
                   <td className={`${table.td} text-ink-muted font-mono text-xs`}>{b.isbn ?? "N/A"}</td>
                   <td className={table.td}><Badge tone={b.availability.available > 0 ? "success" : "danger"}>{b.availability.available} / {b.availability.total}</Badge></td>
@@ -217,21 +229,31 @@ function BookDialog({ book, onClose, onSaved, newTitle = "" }: { book: Book | "n
     setForm(book === "new" ? { ...empty, title: newTitle.slice(0, 255) } : {
       title: book.title, authors: book.authors ?? "", publisher: book.publisher ?? "", publishedYear: book.publishedYear ? String(book.publishedYear) : "",
       isbn: book.isbn ?? "", serialNumber: book.serialNumber ?? "", copies: "0", description: book.description ?? "",
+      bookType: book.bookType ?? "", gradeLevel: book.gradeLevel ?? "", dateReceived: "", location: "",
     });
     // One category per kind (the server enforces this too).
     setCats(book === "new" ? noCats : { ...noCats, ...Object.fromEntries((book.categories ?? []).map(c => [c.kind, c.id])) });
   }, [book, newTitle]);
 
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const choose = (text: string, k: "bookType" | "gradeLevel", options: readonly string[]) => (
+    <div>
+      <label htmlFor={`book-${k}`} className={label}>{text}</label>
+      <select id={`book-${k}`} value={form[k]} onChange={set(k)} className={select}>
+        <option value="">Not set</option>{options.map(o => <option key={o}>{o}</option>)}
+      </select>
+    </div>
+  );
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) { setError("Title is required."); return; }
     setSaving(true);
     setError("");
-    const { copies, ...fields } = form;
+    // Date received and location belong to the copies: sent only with the first copies of a new book.
+    const { copies, dateReceived, location, ...fields } = form;
     const categoryIds = Object.values(cats).filter(Boolean);
-    const body = isNew ? { ...fields, copies: Number(copies) || 0, categoryIds } : { ...fields, categoryIds };
+    const body = isNew ? { ...fields, copies: Number(copies) || 0, dateReceived, location, categoryIds } : { ...fields, categoryIds };
     // Edits carry the version they started from; the server refuses them if someone changed the book meanwhile.
     const expected = !isNew && (book as Book).updatedAt ? { "X-Expected-Updated-At": (book as Book).updatedAt! } : undefined;
     const r = await apiFetch(isNew ? "/api/v1/catalog" : `/api/v1/catalog/${(book as Book).id}`, { method: isNew ? "POST" : "PATCH", body: JSON.stringify(body), token, ...(expected ? { headers: expected } : {}), offline: { kind: "book", label: `${isNew ? "Add" : "Edit"} book "${form.title.trim()}"` } });
@@ -273,7 +295,11 @@ function BookDialog({ book, onClose, onSaved, newTitle = "" }: { book: Book | "n
           {field("Published year", "publishedYear", { inputMode: "numeric", placeholder: "e.g. 1887" })}
           {field("ISBN", "isbn", { maxLength: 20 }, "Leave blank if none (shown as N/A).")}
           {field("Serial number", "serialNumber", { maxLength: 30, placeholder: "e.g. NMT-001", style: { textTransform: "uppercase" } }, "Library code. Letters, numbers and dashes.")}
+          {choose("Book type", "bookType", BOOK_TYPES)}
+          {choose("Grade level", "gradeLevel", GRADE_LEVELS)}
           {isNew && field("Copies", "copies", { type: "number", min: 0, max: 50 }, "Copy codes are made automatically; staff see copies by ISBN.")}
+          {isNew && field("Date received", "dateReceived", { type: "date" }, "When the copies arrived at the library.")}
+          {isNew && field("Location", "location", { maxLength: 100, placeholder: "e.g. Shelf A3" }, "Where the copies are kept.")}
         </div>
       </FormSection>
       <FormSection title="Categories" icon={Tags}>

@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { idParamSchema } from "../../common/schemas.js";
-import { bookCreateSchema, bookUpdateSchema, ratingSchema, reviewStatusSchema } from "./book.schemas.js";
+import { bookCreateSchema, bookUpdateSchema, ratingSchema, reviewStatusSchema, BOOK_TYPES, GRADE_LEVELS, phDate } from "./book.schemas.js";
 import { ok, created, fail } from "../../common/response.js";
 import { writeAuditTx } from "../../common/audit.js";
 import { editConflict } from "../../common/conflict.js";
@@ -97,6 +97,11 @@ catalogRouter.get("/", async (req, res, next) => {
     const where: Record<string, unknown> = {};
     if (q) where.OR = [{ title: { contains: q } }, { authors: { contains: q } }, { isbn: { contains: q } }, { serialNumber: { contains: q } }];
     if (categoryId) where.categories = { some: { id: categoryId } };
+    // Book type / grade level filters (the "All grade levels" books show under every grade).
+    if (typeof req.query.bookType === "string" && (BOOK_TYPES as readonly string[]).includes(req.query.bookType)) where.bookType = req.query.bookType;
+    if (typeof req.query.gradeLevel === "string" && (GRADE_LEVELS as readonly string[]).includes(req.query.gradeLevel)) {
+      where.gradeLevel = req.query.gradeLevel === "All grade levels" ? req.query.gradeLevel : { in: [req.query.gradeLevel, "All grade levels"] };
+    }
     // "Available now": at least one copy on the shelf.
     if (req.query.available === "1") where.copies = { some: { status: "AVAILABLE" } };
     if (!viewerIsStaff(req)) where.isHidden = false;
@@ -275,7 +280,7 @@ async function duplicateMessage(data: { serialNumber?: string | null | undefined
 
 catalogRouter.post("/", authenticate, requirePermission("catalog:write"), validate({ body: bookCreateSchema }), async (req, res, next) => {
   try {
-    const { categoryIds, copies = 0, ...data } = req.body as z.infer<typeof bookCreateSchema>;
+    const { categoryIds, copies = 0, dateReceived, location, ...data } = req.body as z.infer<typeof bookCreateSchema>;
     const catError = await checkCategories(categoryIds);
     if (catError) return fail(res, 400, catError);
     const dup = await duplicateMessage(data);
@@ -286,7 +291,7 @@ catalogRouter.post("/", authenticate, requirePermission("catalog:write"), valida
         data: defined({
           ...data,
           categories: categoryIds?.length ? { connect: categoryIds.map((id: string) => ({ id })) } : undefined,
-          copies: copies > 0 ? { create: Array.from({ length: copies }, (_, i) => ({ barcode: `${prefix}-${String(i + 1).padStart(2, "0")}` })) } : undefined,
+          copies: copies > 0 ? { create: Array.from({ length: copies }, (_, i) => ({ barcode: `${prefix}-${String(i + 1).padStart(2, "0")}`, acquiredAt: dateReceived ? phDate(dateReceived) : null, location: location ?? null })) } : undefined,
         }) as Prisma.BookCreateInput,
         include: { categories: true },
       });

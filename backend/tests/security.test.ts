@@ -21,7 +21,7 @@ const STAFF: [string, string, object?][] = [
   ["post", "/api/v1/catalog", { title: "T" }], ["delete", `/api/v1/catalog/${ID}`],
   ["get", "/api/v1/catalog/export.xlsx"], ["get", "/api/v1/catalog/import-template.xlsx"], ["post", "/api/v1/catalog/import/preview"], ["post", "/api/v1/catalog/import/apply", { token: "x".repeat(20) }],
   ["patch", `/api/v1/catalog/${ID}`, { isHidden: false }],
-  ["get", "/api/v1/book-copies"], ["post", "/api/v1/book-copies", { bookId: ID }], ["delete", `/api/v1/book-copies/${ID}`],
+  ["get", "/api/v1/book-copies"], ["post", "/api/v1/book-copies", { bookId: ID }], ["delete", `/api/v1/book-copies/${ID}`], ["patch", `/api/v1/book-copies/${ID}`, { location: "A1" }],
   ["post", "/api/v1/categories", { name: "N", kind: "GENRE" }],
   ["post", "/api/v1/circulation/return", { transactionId: ID, outcome: "RETURNED_ON_TIME" }],
   ["get", "/api/v1/borrow-requests?status=PENDING"], ["post", `/api/v1/borrow-requests/${ID}/approve`, {}], ["post", `/api/v1/borrow-requests/${ID}/reject`, {}],

@@ -106,6 +106,7 @@ export const openApiSpec = {
     "/book-copies/summary": { get: auth("/book-copies", "Copy counts by status", "copies:read") },
     "/book-copies/{id}": {
       get: auth("/book-copies", "Copy details", "copies:read", { "404": "Not found" }),
+      patch: auth("/book-copies", "Edit the shelf location, date received (dateReceived YYYY-MM-DD) and notes of a copy", "copies:write", { "404": "Not found" }),
       delete: auth("/book-copies", "Delete a copy", "copies:write", { "404": "Not found", "409": "Has borrowing history" }),
     },
     "/book-copies/{id}/status": { patch: auth("/book-copies", "Change copy status", "copies:write", { "404": "Not found" }) },

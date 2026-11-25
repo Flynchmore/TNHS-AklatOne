@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { typeAndGrade } from "../../lib/bookFields";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Printer, Library, BookUp, AlertTriangle, Users, PenLine, RotateCcw, QrCode, Search, IdCard, Smartphone, type LucideIcon } from "lucide-react";
@@ -47,8 +48,8 @@ const SHEETS: Record<Kind, { title: string; hint: string; icon: LucideIcon; load
   inventory: {
     title: "Book inventory", hint: "Every title with its copies", icon: Library,
     load: async (t) => {
-      const books = await all<{ serialNumber?: string | null; title: string; authors?: string | null; isbn?: string | null; publishedYear?: number | null; availability: { total: number; available: number } }>("/api/v1/catalog", t);
-      return { columns: ["#", "Serial", "Title", "Author", "ISBN", "Year", "Available / Total"], rows: books.map((b, i) => [i + 1, b.serialNumber ?? "—", b.title, b.authors || "—", b.isbn ?? "N/A", b.publishedYear ?? "—", `${b.availability.available} / ${b.availability.total}`]) };
+      const books = await all<{ serialNumber?: string | null; title: string; authors?: string | null; isbn?: string | null; publishedYear?: number | null; bookType?: string | null; gradeLevel?: string | null; availability: { total: number; available: number } }>("/api/v1/catalog", t);
+      return { columns: ["#", "Serial", "Title", "Author", "Type · Grade", "ISBN", "Year", "Available / Total"], rows: books.map((b, i) => [i + 1, b.serialNumber ?? "—", b.title, b.authors || "—", typeAndGrade(b) || "—", b.isbn ?? "N/A", b.publishedYear ?? "—", `${b.availability.available} / ${b.availability.total}`]) };
     },
   },
   borrowed: {

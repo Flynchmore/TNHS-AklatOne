@@ -4,10 +4,11 @@ import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { Alert, Field, Spinner, btnPrimary, btnSecondary, focusRing, mobileApi } from "../../components/mobile/ui";
 import { nativeOcr, photoText, type TextLine } from "../../lib/phoneCamera";
+import { BOOK_TYPES, GRADE_LEVELS } from "../../lib/bookFields";
 
 export interface BookGuess { title: string; authors: string; publisher: string; publishedYear: string; isbn: string }
 const EMPTY: BookGuess = { title: "", authors: "", publisher: "", publishedYear: "", isbn: "" };
-type Key = keyof BookGuess | "serialNumber" | "copies";
+type Key = keyof BookGuess | "serialNumber" | "copies" | "location";
 
 /**
  * Best guess of the book details in the text read from a photo of the cover, title page or copyright page.
@@ -36,17 +37,20 @@ const FIELDS: { key: Key; label: string; inputMode?: "numeric" }[] = [
   { key: "title", label: "Title" }, { key: "authors", label: "Author(s)" }, { key: "publisher", label: "Publisher" },
   { key: "publishedYear", label: "Year published", inputMode: "numeric" }, { key: "isbn", label: "ISBN" },
   { key: "serialNumber", label: "Serial number (optional)" }, { key: "copies", label: "Copies", inputMode: "numeric" },
+  { key: "location", label: "Location (optional)" },
 ];
+const BLANK = { ...EMPTY, serialNumber: "", copies: "1", location: "" };
 
 /** Librarian mode > Add book: take a photo of the book and its details are typed in for you (Android app). */
 export function MobileAddBook() {
   const { token } = useAuth();
   const toast = useToast();
-  const [form, setForm] = useState<Record<Key, string>>({ ...EMPTY, serialNumber: "", copies: "1" });
+  const [form, setForm] = useState<Record<Key, string>>(BLANK);
   const [lines, setLines] = useState<TextLine[]>([]);
   const [target, setTarget] = useState<Key>("title");
   const [busy, setBusy] = useState<"" | "reading" | "saving">("");
   const [error, setError] = useState("");
+  const [extra, setExtra] = useState({ bookType: "", gradeLevel: "", dateReceived: "" });
   const set = (k: Key, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const capture = async () => {
@@ -74,14 +78,15 @@ export function MobileAddBook() {
     setBusy("saving");
     const r = await mobileApi("/api/v1/catalog", {
       method: "POST", token,
-      body: JSON.stringify({ title: form.title, authors: form.authors, publisher: form.publisher, publishedYear: form.publishedYear, isbn: form.isbn, serialNumber: form.serialNumber, copies: Number(form.copies) || 0 }),
+      body: JSON.stringify({ title: form.title, authors: form.authors, publisher: form.publisher, publishedYear: form.publishedYear, isbn: form.isbn, serialNumber: form.serialNumber, copies: Number(form.copies) || 0, location: form.location, ...extra }),
     });
     setBusy("");
     if (!r.ok) { setError(r.message ?? "The book was not added. Please check the details."); return; }
     toast({ tone: "success", title: "Book added", message: `"${form.title}" is in the catalog${Number(form.copies) ? ` with ${form.copies} cop${Number(form.copies) === 1 ? "y" : "ies"}` : ""}.` });
-    setForm({ ...EMPTY, serialNumber: "", copies: "1" });
+    setForm(BLANK);
     setLines([]);
     setTarget("title");
+    setExtra({ bookType: "", gradeLevel: "", dateReceived: "" });
   };
 
   const ocr = nativeOcr();
@@ -119,8 +124,19 @@ export function MobileAddBook() {
         <Field key={f.key} label={f.label} inputMode={f.inputMode} value={form[f.key]} onFocus={() => setTarget(f.key)} onChange={e => set(f.key, e.target.value)}
           className={target === f.key && lines.length ? "ring-2 ring-primary/40" : ""} />
       ))}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="add-type" className="block text-sm font-medium text-ink mb-1.5">Book type</label>
+          <select id="add-type" value={extra.bookType} onChange={e => setExtra(x => ({ ...x, bookType: e.target.value }))} className={`ak-select w-full min-h-12 rounded-xl border border-line-strong bg-surface px-3 text-ink ${focusRing}`}><option value="">Not set</option>{BOOK_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+        </div>
+        <div>
+          <label htmlFor="add-grade" className="block text-sm font-medium text-ink mb-1.5">Grade level</label>
+          <select id="add-grade" value={extra.gradeLevel} onChange={e => setExtra(x => ({ ...x, gradeLevel: e.target.value }))} className={`ak-select w-full min-h-12 rounded-xl border border-line-strong bg-surface px-3 text-ink ${focusRing}`}><option value="">Not set</option>{GRADE_LEVELS.map(g => <option key={g}>{g}</option>)}</select>
+        </div>
+      </div>
+      <Field label="Date received" type="date" value={extra.dateReceived} onChange={e => setExtra(x => ({ ...x, dateReceived: e.target.value }))} />
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" className={btnSecondary} onClick={() => { setForm({ ...EMPTY, serialNumber: "", copies: "1" }); setLines([]); setError(""); }}>Clear</button>
+        <button type="button" className={btnSecondary} onClick={() => { setForm(BLANK); setLines([]); setError(""); setExtra({ bookType: "", gradeLevel: "", dateReceived: "" }); }}>Clear</button>
         <button type="submit" className={btnPrimary} disabled={!!busy}>{busy === "saving" ? <Spinner /> : <Save size={18} aria-hidden="true" />}Save book</button>
       </div>
     </form>

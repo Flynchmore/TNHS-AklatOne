@@ -130,6 +130,10 @@ model Book {
   publisher      String?
   publishedYear  Int?
   description    String?         @db.Text
+  /// Manuscript Chapter 1: Textbook, Teacher's Manual, Worksheet or Other (catalog/book.schemas.ts BOOK_TYPES).
+  bookType       String?         @db.VarChar(30)
+  /// Grade 7 to Grade 12, or All grade levels (catalog/book.schemas.ts GRADE_LEVELS).
+  gradeLevel     String?         @db.VarChar(20)
   categories     Category[]
   copies         BookCopy[]
   borrowRequests BorrowRequest[]
@@ -147,6 +151,7 @@ model Book {
 
   @@index([title])
   @@index([authors])
+  @@index([gradeLevel])
   @@index([isHidden])
 }
 

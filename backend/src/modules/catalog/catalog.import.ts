@@ -1,13 +1,13 @@
 import ExcelJS from "exceljs";
 import { randomBytes } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { bookCreateSchema } from "./book.schemas.js";
+import { BOOK_TYPES, bookCreateSchema } from "./book.schemas.js";
 
 /**
  * Excel import/export of the book catalog.
  * Only the known columns below are read; any other column is reported as ignored and never changes the database schema.
  */
-type Field = "title" | "authors" | "isbn" | "serialNumber" | "publisher" | "publishedYear" | "subject" | "wattpad" | "genre" | "description" | "copies" | "hidden";
+type Field = "title" | "authors" | "isbn" | "serialNumber" | "publisher" | "publishedYear" | "bookType" | "gradeLevel" | "subject" | "wattpad" | "genre" | "description" | "copies" | "hidden";
 const COLUMNS: { field: Field; header: string; aliases: string[] }[] = [
   { field: "title", header: "Title", aliases: ["book title", "title of book", "pamagat"] },
   { field: "authors", header: "Author", aliases: ["authors", "author(s)", "may-akda"] },
@@ -15,6 +15,8 @@ const COLUMNS: { field: Field; header: string; aliases: string[] }[] = [
   { field: "serialNumber", header: "Serial No.", aliases: ["serial", "serial no", "serial number", "accession no", "accession number", "call number"] },
   { field: "publisher", header: "Publisher", aliases: ["publishers"] },
   { field: "publishedYear", header: "Year", aliases: ["year published", "published year", "publication year", "copyright"] },
+  { field: "bookType", header: "Book type", aliases: ["type", "type of book", "material type"] },
+  { field: "gradeLevel", header: "Grade level", aliases: ["grade", "level", "baitang"] },
   { field: "subject", header: "Subject", aliases: [] },
   { field: "wattpad", header: "Wattpad", aliases: [] },
   { field: "genre", header: "Genre", aliases: [] },
@@ -25,7 +27,20 @@ const COLUMNS: { field: Field; header: string; aliases: string[] }[] = [
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9()]+/g, " ").trim();
 const HEADER_MAP = new Map<string, Field>(COLUMNS.flatMap((c) => [[norm(c.header), c.field] as const, ...c.aliases.map((a) => [norm(a), c.field] as const)]));
 const KIND = { subject: "SUBJECT", wattpad: "WATTPAD", genre: "GENRE" } as const;
-const BOOK_FIELDS = ["title", "authors", "isbn", "serialNumber", "publisher", "publishedYear", "description"] as const;
+const BOOK_FIELDS = ["title", "authors", "isbn", "serialNumber", "publisher", "publishedYear", "bookType", "gradeLevel", "description"] as const;
+
+/** Spreadsheet spellings of a book type / grade level ("textbook", "7", "Grade 07", "all") to the app's values. */
+export function normBookType(v?: string): string | undefined {
+  if (!v) return v;
+  const k = v.toLowerCase().replace(/[^a-z]/g, "");
+  return BOOK_TYPES.find((t) => t.toLowerCase().replace(/[^a-z]/g, "") === k) ?? (/manual/.test(k) ? "Teacher's Manual" : /worksheet|activity|module/.test(k) ? "Worksheet" : /text/.test(k) ? "Textbook" : v);
+}
+export function normGradeLevel(v?: string): string | undefined {
+  if (!v) return v;
+  if (/^all/i.test(v.trim())) return "All grade levels";
+  const n = Number(v.replace(/\D/g, ""));
+  return n >= 7 && n <= 12 ? `Grade ${n}` : v;
+}
 type BookField = (typeof BOOK_FIELDS)[number];
 const LABEL: Record<string, string> = Object.fromEntries(COLUMNS.map((c) => [c.field, c.header]));
 
@@ -38,6 +53,8 @@ const FRIENDLY: Record<string, string> = {
   isbn: "ISBN can have at most 20 characters.",
   authors: "Author can have at most 255 characters.",
   publisher: "Publisher can have at most 255 characters.",
+  bookType: "Book type must be Textbook, Teacher's Manual, Worksheet or Other.",
+  gradeLevel: "Grade level must be Grade 7 to Grade 12, or All grade levels.",
   description: "Description can have at most 2000 characters.",
 };
 
@@ -93,7 +110,7 @@ export async function parseWorkbook(buf: Buffer): Promise<{ rows: ImportRow[]; c
 }
 
 type Db = PrismaClient | Prisma.TransactionClient;
-type ExistingBook = { id: string; title: string; authors: string | null; isbn: string | null; serialNumber: string | null; publisher: string | null; publishedYear: number | null; description: string | null; isHidden: boolean; categories: { id: string; kind: string }[]; _count: { copies: number } };
+type ExistingBook = { id: string; title: string; authors: string | null; isbn: string | null; serialNumber: string | null; publisher: string | null; publishedYear: number | null; bookType: string | null; gradeLevel: string | null; description: string | null; isHidden: boolean; categories: { id: string; kind: string }[]; _count: { copies: number } };
 
 export interface PlannedCreate { row: number; data: Record<BookField, unknown>; categoryIds: string[]; copies: number; hidden: boolean }
 export interface PlannedUpdate { row: number; id: string; title: string; changes: { field: string; from: string; to: string }[]; data: Partial<Record<BookField, unknown>>; categoryIds?: string[]; addCopies: number; isHidden?: boolean }
@@ -111,7 +128,7 @@ const show = (v: unknown) => (v == null || v === "" ? "(blank)" : String(v));
 /** Works out what the import would do against the current catalog. Called for the preview and again inside the apply transaction. */
 export async function planImport(db: Db, rows: ImportRow[]): Promise<ImportPlan> {
   const [books, cats] = await Promise.all([
-    db.book.findMany({ select: { id: true, title: true, authors: true, isbn: true, serialNumber: true, publisher: true, publishedYear: true, description: true, isHidden: true, categories: { select: { id: true, kind: true } }, _count: { select: { copies: true } } } }) as Promise<ExistingBook[]>,
+    db.book.findMany({ select: { id: true, title: true, authors: true, isbn: true, serialNumber: true, publisher: true, publishedYear: true, bookType: true, gradeLevel: true, description: true, isHidden: true, categories: { select: { id: true, kind: true } }, _count: { select: { copies: true } } } }) as Promise<ExistingBook[]>,
     db.category.findMany({ select: { id: true, name: true, kind: true } }),
   ]);
   const byIsbn = new Map(books.filter((b) => b.isbn).map((b) => [key(b.isbn), b]));
@@ -128,7 +145,7 @@ export async function planImport(db: Db, rows: ImportRow[]): Promise<ImportPlan>
     // Same validation as the Add Book form.
     const parsed = bookCreateSchema.safeParse({
       title: v.title ?? "", authors: v.authors, isbn: v.isbn, serialNumber: v.serialNumber, publisher: v.publisher,
-      publishedYear: v.publishedYear, description: v.description, copies: v.copies || undefined,
+      publishedYear: v.publishedYear, bookType: normBookType(v.bookType), gradeLevel: normGradeLevel(v.gradeLevel), description: v.description, copies: v.copies || undefined,
     });
     if (!parsed.success) {
       const i = parsed.error.issues[0]!;
@@ -277,7 +294,7 @@ function sheet(wb: ExcelJS.Workbook, name: string) {
 export async function templateWorkbook(): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   const ws = sheet(wb, "Books");
-  ws.addRow({ title: "Noli Me Tangere", authors: "Jose Rizal", isbn: "9789710810736", serialNumber: "NMT-001", publisher: "Sample Publisher", publishedYear: 1887, subject: "", wattpad: "", genre: "", description: "Sample row: replace or delete it.", copies: 2, hidden: "No" });
+  ws.addRow({ title: "Noli Me Tangere", authors: "Jose Rizal", isbn: "9789710810736", serialNumber: "NMT-001", publisher: "Sample Publisher", publishedYear: 1887, bookType: "Other", gradeLevel: "Grade 9", subject: "", wattpad: "", genre: "", description: "Sample row: replace or delete it.", copies: 2, hidden: "No" });
   const help = wb.addWorksheet("How to fill");
   help.columns = [{ header: "Column", width: 14 }, { header: "What to put", width: 90 }];
   help.getRow(1).font = { bold: true };
@@ -299,7 +316,7 @@ export async function exportWorkbook(db: Db): Promise<Buffer> {
   const ws = sheet(wb, "Books");
   for (const b of books) {
     const cat = (k: string) => b.categories.find((c) => c.kind === k)?.name ?? "";
-    ws.addRow({ title: b.title, authors: b.authors ?? "", isbn: b.isbn ?? "", serialNumber: b.serialNumber ?? "", publisher: b.publisher ?? "", publishedYear: b.publishedYear ?? "", subject: cat("SUBJECT"), wattpad: cat("WATTPAD"), genre: cat("GENRE"), description: b.description ?? "", copies: b._count.copies, hidden: b.isHidden ? "Yes" : "No" });
+    ws.addRow({ title: b.title, authors: b.authors ?? "", isbn: b.isbn ?? "", serialNumber: b.serialNumber ?? "", publisher: b.publisher ?? "", publishedYear: b.publishedYear ?? "", bookType: b.bookType ?? "", gradeLevel: b.gradeLevel ?? "", subject: cat("SUBJECT"), wattpad: cat("WATTPAD"), genre: cat("GENRE"), description: b.description ?? "", copies: b._count.copies, hidden: b.isHidden ? "Yes" : "No" });
   }
   return Buffer.from(await wb.xlsx.writeBuffer());
 }

@@ -3,7 +3,8 @@ import { Router } from "express";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { idParamSchema } from "../../common/schemas.js";
-import { bookCopyCreateSchema, bookCopyStatusSchema } from "./bookCopy.schemas.js";
+import { bookCopyCreateSchema, bookCopyDetailsSchema, bookCopyStatusSchema } from "./bookCopy.schemas.js";
+import { phDate } from "../catalog/book.schemas.js";
 import { ok, created, fail } from "../../common/response.js";
 import { writeAuditTx } from "../../common/audit.js";
 import { authenticate, requirePermission } from "../../middleware/auth.js";
@@ -58,7 +59,8 @@ bookCopiesRouter.post("/", authenticate, requirePermission("copies:write"), vali
           if (!(await tx.bookCopy.findUnique({ where: { barcode: code } }))) barcode = code;
         }
       }
-      const createdCopy = await tx.bookCopy.create({ data: { ...req.body, barcode } });
+      const { dateReceived, ...rest } = req.body as { dateReceived?: string | null };
+      const createdCopy = await tx.bookCopy.create({ data: { ...rest, barcode, ...(dateReceived ? { acquiredAt: phDate(dateReceived) } : {}) } as never });
       await writeAuditTx(tx, { actorId: req.user?.id ?? null, action: "bookCopy.create", entityType: "BookCopy", entityId: createdCopy.id, metadata: { barcode: createdCopy.barcode, status: createdCopy.status } });
       return createdCopy;
     });
@@ -80,6 +82,23 @@ bookCopiesRouter.patch("/:id/status", authenticate, requirePermission("copies:wr
     });
     if (copy.status === "AVAILABLE") void notifyWatchers(copy.bookId);
     ok(res, copy);
+  } catch (err) { next(err); }
+});
+
+/** Shelf location, date received and notes of one copy. */
+bookCopiesRouter.patch("/:id", authenticate, requirePermission("copies:write"), validate({ params: idParamSchema, body: bookCopyDetailsSchema }), async (req, res, next) => {
+  try {
+    const { dateReceived, ...rest } = req.body as { location?: string | null; notes?: string | null; dateReceived?: string | null };
+    if (!(await prisma.bookCopy.findUnique({ where: { id: req.params.id as string }, select: { id: true } }))) return fail(res, 404, "Copy not found");
+    const copy = await prisma.$transaction(async (tx) => {
+      const updated = await tx.bookCopy.update({
+        where: { id: req.params.id as string },
+        data: { ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)), ...(dateReceived !== undefined ? { acquiredAt: dateReceived ? phDate(dateReceived) : null } : {}) },
+      });
+      await writeAuditTx(tx, { actorId: req.user?.id ?? null, action: "bookCopy.update", entityType: "BookCopy", entityId: updated.id, metadata: { fields: Object.keys(req.body) } });
+      return updated;
+    });
+    ok(res, copy, "Copy updated");
   } catch (err) { next(err); }
 });
 

@@ -128,7 +128,7 @@ export function Layout() {
         </div>
         <main id="main" className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
           <Suspense fallback={<Skeleton rows={6} />}><div key={location.pathname} className="ak-page"><Outlet /></div></Suspense>
-          {!isDesktop && <IdleLogout onTimeout={() => { logout(true); nav("/login"); }} />}
+          <IdleLogout paused={isDesktop && !online} onTimeout={() => { logout(true); nav("/login"); }} />
         </main>
       </div>
     </div>

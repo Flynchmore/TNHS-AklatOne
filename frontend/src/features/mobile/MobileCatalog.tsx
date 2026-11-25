@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../features/auth/auth";
 import { X, Send, Library, ChevronLeft, ChevronRight, ArrowUp, Star, BookCheck, Eye, SlidersHorizontal, BellRing, BellOff, MessageSquareText, QrCode } from "lucide-react";
 import { Scanner } from "../../components/staff/Scanner";
+import { BOOK_TYPES, GRADE_LEVELS } from "../../lib/bookFields";
 import { Alert, BookCover, CategoryChips, CurvedPanel, FloatingSearch, ListState, PhotoHeader, Spinner, btnPrimary, focusRing, isNewBook, mobileApi, type CategoryLike } from "../../components/mobile/ui";
 import { FavouriteButton } from "../../components/mobile/FavouriteButton";
 import { useToast } from "../../components/Toast";
@@ -14,7 +15,7 @@ interface Book {
   availability?: { total: number; available: number };
   rating?: { average: number; count: number }; myRating?: number | null;
   borrowCount?: number; viewCount?: number; canRate?: boolean; createdAt?: string;
-  categories?: CategoryLike[]; favourite?: boolean; watching?: boolean;
+  categories?: CategoryLike[]; favourite?: boolean; watching?: boolean; bookType?: string | null; gradeLevel?: string | null;
   myReview?: { text: string; status: string | null } | null;
 }
 interface Review { id: string; stars: number; review: string; name: string; updatedAt: string }
@@ -42,8 +43,8 @@ export function pageList(current: number, total: number): (number | "…")[] {
   return out;
 }
 
-interface Filters { categoryId: string; available: boolean; sort: string }
-const NO_FILTERS: Filters = { categoryId: "", available: false, sort: "title:asc" };
+interface Filters { categoryId: string; gradeLevel: string; bookType: string; available: boolean; sort: string }
+const NO_FILTERS: Filters = { categoryId: "", gradeLevel: "", bookType: "", available: false, sort: "title:asc" };
 const SORTS = [
   { value: "title:asc", label: "Title (A to Z)" },
   { value: "createdAt:desc", label: "Newest in the library" },
@@ -74,7 +75,7 @@ export function MobileCatalog() {
     if (!showFilters || categories.length) return;
     mobileApi("/api/v1/categories?limit=100", { token: auth.token }).then(r => { if (r.ok) setCategories(((r.data as { items?: CategoryLike[] } | null)?.items) ?? []); });
   }, [showFilters, categories.length, auth.token]);
-  const activeFilters = Number(!!filters.categoryId) + Number(filters.available) + Number(filters.sort !== NO_FILTERS.sort);
+  const activeFilters = Number(!!filters.categoryId) + Number(!!filters.gradeLevel) + Number(!!filters.bookType) + Number(filters.available) + Number(filters.sort !== NO_FILTERS.sort);
   const changeFilters = (f: Partial<Filters>) => { setFilters(cur => ({ ...cur, ...f })); setPage(1); };
 
   // Wait for typing to pause before searching; a new search starts at page 1.
@@ -87,7 +88,7 @@ export function MobileCatalog() {
     setLoading(true);
     setError("");
     const [sortBy, sortOrder] = filters.sort.split(":");
-    const extra = `${filters.categoryId ? `&categoryId=${filters.categoryId}` : ""}${filters.available ? "&available=1" : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+    const extra = `${filters.categoryId ? `&categoryId=${filters.categoryId}` : ""}${filters.gradeLevel ? `&gradeLevel=${encodeURIComponent(filters.gradeLevel)}` : ""}${filters.bookType ? `&bookType=${encodeURIComponent(filters.bookType)}` : ""}${filters.available ? "&available=1" : ""}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
     mobileApi(`/api/v1/catalog?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}&offset=${(p - 1) * PAGE_SIZE}${extra}`, { token: auth.token }).then(r => {
       if (signal?.cancelled) return;
       if (r.ok) { const d = r.data as { items?: Book[]; total?: number } | null; setBooks(d?.items ?? []); setTotal(d?.total ?? 0); }
@@ -172,6 +173,20 @@ export function MobileCatalog() {
                   return list.length ? <optgroup key={k} label={k === "SUBJECT" ? "Subject" : k === "WATTPAD" ? "Wattpad" : "Genre"}>{list.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
                 })}
               </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="flt-grade" className="block text-sm font-semibold text-ink mb-1">Grade level</label>
+                <select id="flt-grade" value={filters.gradeLevel} onChange={e => changeFilters({ gradeLevel: e.target.value })} className={`ak-select w-full min-h-11 rounded-xl border border-line-strong bg-surface px-3 text-ink ${focusRing}`}>
+                  <option value="">All</option>{GRADE_LEVELS.filter(g => g !== "All grade levels").map(g => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="flt-type" className="block text-sm font-semibold text-ink mb-1">Book type</label>
+                <select id="flt-type" value={filters.bookType} onChange={e => changeFilters({ bookType: e.target.value })} className={`ak-select w-full min-h-11 rounded-xl border border-line-strong bg-surface px-3 text-ink ${focusRing}`}>
+                  <option value="">All</option>{BOOK_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
             </div>
             <div>
               <label htmlFor="flt-sort" className="block text-sm font-semibold text-ink mb-1">Sort by</label>
@@ -376,6 +391,7 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
 
             <dl className="text-sm bg-page rounded-2xl px-4">
               {row("Author", book.authors || "Unknown")}
+              {(book.bookType || book.gradeLevel) && row("Type · Grade level", [book.bookType, book.gradeLevel].filter(Boolean).join(" · "))}
               {row("Published", [book.publishedYear, book.publisher].filter(Boolean).join(" · ") || "N/A")}
               {row("ISBN", <span className="font-mono">{book.isbn || "N/A"}</span>)}
               {row("Serial number", <span className="font-mono">{book.serialNumber || "N/A"}</span>)}

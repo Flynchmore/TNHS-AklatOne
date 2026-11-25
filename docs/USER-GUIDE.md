@@ -12,7 +12,8 @@ Short step-by-step guides for the librarian and for members. Setup and installat
    recovery key** once: print it (or write it down) and give it to the principal or the ICT coordinator. You can make
    a new one any time in **Settings > Emergency recovery key** (the old one stops working).
 2. **Add the books.**
-   - One by one: **Catalog > Add book** (title, author, ISBN or serial number, subject / genre / Wattpad category,
+   - One by one: **Catalog > Add book** (title, author, ISBN or serial number, book type, grade level, date received,
+     shelf location, subject / genre / Wattpad category,
      number of copies). Each copy gets its own code automatically.
    - Many at once: **Catalog > Import Excel** > download the template, fill it in, upload, check the preview
      (New / Changed / Errors), then **Apply**.
