@@ -148,7 +148,7 @@ built and signed on a Mac with an Apple Developer account.
 
 | Application | Users | Runs on |
 |---|---|---|
-| Mobile application | Students, teachers (and the librarian in librarian mode) | Android 7.0 or newer; iOS / iPadOS 15 or newer |
-| Staff Web Portal | Librarian, administrator | Current Chrome, Edge or Firefox |
-| Staff Desktop Application | Librarian (also the Visitor's Log kiosk) | Windows 10 or 11; Linux (64-bit) |
-| Central server | (hosts the system) | Linux server or VPS with Docker, a domain name for HTTPS |
+| Mobile application | Students, teachers (and the librarian in librarian mode) | Android 8.0 or newer (2 GB RAM, rear camera); iOS / iPadOS 16.4 or newer |
+| Staff Web Portal | Librarian, administrator | Chrome or Edge 111+, Firefox 128+, Safari 16.4+ |
+| Staff Desktop Application | Librarian (also the Visitor's Log kiosk) | Windows 10 or 11, Linux 64-bit; dual-core CPU, 4 GB RAM (recommended: Core i3 11th gen, 8 GB RAM, SSD) |
+| Central server | (hosts the system) | One Linux server or VPS with Docker: 2 vCPU / 4 GB RAM / 40 GB SSD minimum, 4 vCPU / 8 GB / 80 GB recommended; a domain name for HTTPS |

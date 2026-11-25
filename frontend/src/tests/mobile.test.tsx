@@ -162,7 +162,7 @@ describe("Member Mobile screens", () => {
     at("/m", <MobileHome />);
     expect(await screen.findByText("No books in the library catalog yet.")).toBeInTheDocument();
     expect(screen.queryByText("4.5")).not.toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(c => String(c[0]).includes("openlibrary.org"))).toBe(false);
+    expect(fetchMock.mock.calls.some(c => /(^|\.)openlibrary\.org$/.test(new URL(String(c[0]), "http://localhost").hostname))).toBe(false);
     expect(screen.queryByRole("link", { name: /borrow|reserve/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Search the library catalog")).toBeInTheDocument();
   });

@@ -203,7 +203,7 @@ export async function requestOtp(input: { email: string }): Promise<{ sent: bool
 
   const sent = await sendOtpEmail(input.email, otp, "reset", user.displayName);
   // Dev only: without an email account the code is printed in the backend terminal (never in production logs).
-  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] ${input.email}: ${otp}`);
+  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] reset ${user.username}: ${otp}`);
   return generic;
 }
 

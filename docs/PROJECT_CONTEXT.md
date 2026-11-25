@@ -225,6 +225,14 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - scripts/dev.mjs reads the DB port from backend/.env (no longer hard-coded 3307).
 - Cleanup: removed ~30 old phase/ui reports, Google OAuth guide, old API contract, AUDIT-2026-11-22, validate-openapi.mjs, Firebase/google-services Android plugin, Google welcome-email preview; .claude/, .opencode/, opencode.json, docs/OPENCODE_SKILLS.md are no longer tracked in Git (kept locally). Fictional test member is "Juan Dela Cruz" (Member ID initials JC).
 
+## Guides, Docker one-command setup, CodeQL fixes (2026-11-25)
+- scripts/docker-setup.sh [domain]: checks Docker, creates .env with random secrets (od /dev/urandom), docker compose up -d --build, waits for /health. CI job `docker` runs it on ubuntu-latest and checks /health, / and /api/v1/setup/status through Caddy.
+- README: Quick start with Docker, Requirements (phones: Android 8.0+, iOS 16.4+, 2 GB RAM, camera; browsers Chrome/Edge 111+, Firefox 128+, Safari 16.4+ = Tailwind 4 targets; computers min dual-core/4 GB, recommended = dev laptop i3-1115G4 / 8 GB / 256 GB NVMe; 1 server 2 vCPU/4 GB/40 GB min, 4 vCPU/8 GB/80 GB recommended), software and tools. docs/USER-GUIDE.md (librarian + members, with/without phone).
+- Android minSdk 26 (was 24); iOS deployment target 16.4 (was 15.0).
+- CodeQL fixes: CORS never `true` (dev = localhost + private LAN regex; test in security.test.ts); startup summary no longer prints the DB name or email; [DEV OTP] reset log uses the username; dev script logs no usernames; PhotoCropper renders only blob:/data:image sources; test checks hostnames. Alerts #10/#11 (password change needs current password only when changing password) are false positives to dismiss; [DEV OTP] logging is dev-only by design.
+- Docker images on node:24-bookworm-slim (LTS); Dependabot groups minor/patch per part and ignores odd Node majors. Do not merge Node 25 PRs.
+- Timing test in auth.test.ts compares against a bcrypt check measured at the same moment (was flaky under full-suite load).
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

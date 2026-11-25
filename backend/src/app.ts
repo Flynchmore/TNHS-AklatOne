@@ -40,6 +40,7 @@ export const MAX_FAILED_SIGNINS = 5;
 const pathOf = (req: { originalUrl: string }) => req.originalUrl.split("?")[0] ?? "";
 
 /** Origins of the packaged Member Mobile (Capacitor) and Staff Desktop (Tauri) apps; always allowed. */
+const DEV_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
 const APP_ORIGINS = ["capacitor://localhost", "https://localhost", "http://localhost", "tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"];
 
 export function createApp() {
@@ -50,8 +51,9 @@ export function createApp() {
   // Expose the rate-limit headers so sign-in screens can show "N attempts left".
   if (env.TRUST_PROXY) app.set("trust proxy", env.TRUST_PROXY);
   app.use(cors({
-    // Production without CORS_ORIGINS: only the phone / desktop apps (the web portal is same-origin behind nginx).
-    origin: env.CORS_ORIGINS.length ? [...env.CORS_ORIGINS, ...APP_ORIGINS] : env.NODE_ENV === "production" ? APP_ORIGINS : true,
+    // Always: the phone / desktop apps and CORS_ORIGINS. Outside production also this computer and the local network
+    // (Vite dev server, phones on the school Wi-Fi). Production behind nginx is same-origin and needs nothing more.
+    origin: [...env.CORS_ORIGINS, ...APP_ORIGINS, ...(env.NODE_ENV === "production" ? [] : [DEV_ORIGIN])],
     exposedHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After"],
   }));
   app.use(express.json({ limit: "1mb" }));

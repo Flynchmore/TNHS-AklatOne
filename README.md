@@ -29,6 +29,119 @@ Loan rules: **7 days per book, up to 8 books per member** (`backend/src/config/l
 
 ---
 
+## Quick start with Docker (one command)
+
+The easiest way to run the whole system (database, API, Staff Web Portal and HTTPS) on any computer or server.
+You only need **Docker** and **Git**; Docker downloads and sets up everything else (Node.js, MariaDB, nginx, Caddy),
+so the system runs the same way on every machine.
+
+1. Install **Docker Desktop** (Windows 10/11 or macOS) or **Docker Engine + Compose plugin** (Linux):
+   <https://docs.docker.com/get-docker/>. On Windows, also install **Git for Windows** (it includes Git Bash).
+2. Open a terminal (Git Bash on Windows) and run:
+
+```bash
+git clone https://github.com/Flynchmore/TNHS-AklatOne.git && cd TNHS-AklatOne
+bash scripts/docker-setup.sh                       # this computer / school network: http://localhost
+# or, on a server with a domain:
+bash scripts/docker-setup.sh library.example.com   # https://library.example.com (free certificate)
+```
+
+The script checks Docker, creates `.env` with **random passwords**, builds and starts everything, and waits until
+the system answers. Then open the address it prints: the first visit asks you to **create the librarian account**.
+
+| Afterwards | Command |
+|---|---|
+| Stop / start again | `docker compose stop` / `docker compose up -d` |
+| Update to the newest version | `git pull && bash scripts/docker-setup.sh` |
+| See what is happening | `docker compose ps`, `docker compose logs -f api` |
+| Sign-in codes by email | put `EMAIL_USER` and `EMAIL_PASS` (Gmail App Password) in `.env`, run the setup again |
+
+Keep `.env` private and copy its `BACKUP_ENCRYPTION_KEY` to a safe place. The Docker setup runs the server side;
+the phone app and the desktop app are installed on the devices (sections 2 and 4).
+
+## Requirements
+
+### Who needs what
+
+| Device | How many | Used for |
+|---|---|---|
+| Server (or one always-on computer) | **1** | Runs the database and API for everyone. A cloud VPS (e.g. Hostinger) or a school PC. |
+| Librarian computer(s) | 1 or more | Staff Web Portal in a browser, or the Staff Desktop app (works offline) |
+| Visitor's Log kiosk | 1 (optional) | A computer near the door running the Desktop app in kiosk mode, with a webcam or USB barcode scanner |
+| Students' and teachers' phones | any | The AklatOne app (optional: members without a phone use their Library ID card) |
+| Backup machine | 1 (recommended) | Another computer, NAS or cloud folder that receives a copy of the daily backup |
+
+### Phones (AklatOne mobile app)
+
+| | Minimum | Recommended |
+|---|---|---|
+| Android | **Android 8.0 (Oreo)** or newer, with *Android System WebView* updated from the Play Store | Android 10 or newer |
+| iPhone / iPad | **iOS / iPadOS 16.4** or newer (iPhone 8 / iPhone X and newer) | iOS 17 or newer |
+| Memory (RAM) | 2 GB | 3 GB or more |
+| Free storage | 150 MB | 300 MB |
+| Camera | Rear camera, for scanning the Visitor's Log QR code (librarian mode: Library ID cards and book labels) | Rear camera with autofocus |
+| Connection | Wi-Fi or mobile data to reach the school server (saved catalog, loans and receipts stay readable offline) | |
+
+### Web browsers (Staff Web Portal, and the app's web view)
+
+| Browser | Minimum version |
+|---|---|
+| Google Chrome / Microsoft Edge | 111 |
+| Mozilla Firefox | 128 |
+| Safari (macOS, iOS) | 16.4 |
+
+Camera scanning in the browser needs HTTPS (or `localhost`). Internet Explorer and very old browsers are not supported.
+
+### Computers (librarian, kiosk, development)
+
+| | Minimum (librarian / kiosk) | Recommended (= the development laptop) |
+|---|---|---|
+| Operating system | Windows 10 (64-bit, 1803 or newer) or Windows 11; Linux 64-bit (Ubuntu 22.04+, Fedora 38+) | Windows 11 or Fedora / Ubuntu |
+| Processor | Dual-core 2 GHz (Intel Core i3 / AMD Ryzen 3 or similar) | Intel Core i3-1115G4 (11th gen, 2 cores / 4 threads, 3.0 GHz) or better |
+| Memory (RAM) | 4 GB | 8 GB (16 GB for building the Android and desktop apps comfortably) |
+| Storage | 500 MB free for the Desktop app | 256 GB SSD (NVMe); 20 GB free for development tools |
+| Screen | 1280 × 800 | 1366 × 768 or larger |
+| Other | Microsoft Edge WebView2 (built into Windows 11; the installer adds it on Windows 10) | USB barcode scanner or webcam (inventory, kiosk), A4 printer (ID cards, labels, reports) |
+
+### Server
+
+| | Minimum | Recommended (about 2,600 students) |
+|---|---|---|
+| CPU | 2 vCPU | 4 vCPU |
+| Memory | 4 GB | 8 GB |
+| Storage | 40 GB SSD | 80 GB SSD (database, 14 daily backups, phone app download) |
+| System | Linux 64-bit (Ubuntu 22.04 / 24.04 LTS) with Docker Engine 24+ and Docker Compose v2 | same |
+| Network | Ports 80 and 443 open; a **domain name** pointing to the server for HTTPS | |
+
+Measured on the 4-thread development laptop: 300 members browsing at the same time answered in under 0.1 s;
+1,000 at the same time in about 1–1.5 s, with no errors (`backend/scripts/load-test.mjs`).
+
+### Software used by the system
+
+| Part | Software |
+|---|---|
+| Server | Node.js 22+ (in Docker: Node 24 LTS), MariaDB 10.11, Redis 7 (optional), nginx, Caddy 2 (HTTPS), Docker |
+| Staff Web Portal | Any supported browser (above); can be installed as a web app (PWA) |
+| Staff Desktop App | Tauri 2 with Microsoft Edge WebView2 (Windows) or WebKitGTK 4.1 (Linux) |
+| Mobile app | Capacitor 8 (Android WebView / iOS WKWebView) |
+| Email | A Gmail account with an App Password (sends sign-in codes and notices) |
+
+### Tools for setting up and building
+
+| Tool | Needed for | Get it |
+|---|---|---|
+| Git | getting and updating the code | <https://git-scm.com> |
+| Docker Desktop / Docker Engine + Compose | running the system with one command | <https://docs.docker.com/get-docker/> |
+| Node.js 22+ (includes npm) | development without Docker, building the apps | <https://nodejs.org> |
+| MariaDB 10.11 | development without Docker | <https://mariadb.org/download/> |
+| Android Studio (Android SDK 36, platform tools / `adb`) + JDK 21 | building and installing the Android app | <https://developer.android.com/studio> |
+| Rust (rustup) + Tauri prerequisites (Windows: Visual Studio C++ Build Tools; Linux: webkit2gtk-4.1) | building the Desktop app | <https://tauri.app/start/prerequisites/> |
+| A Mac with Xcode 16+ and an Apple Developer account | building and publishing the iPhone app | <https://developer.apple.com/xcode/> |
+| A code editor (e.g. Visual Studio Code) | changing settings and code | <https://code.visualstudio.com> |
+| draw.io (optional) | editing the diagrams in `docs/diagrams/` | <https://www.drawio.com> |
+
+---
+
 ## 1. Set up a development computer
 
 **Requirements**
@@ -183,5 +296,6 @@ scripts/                 dev launcher, off-site backup
 docker-compose.yml, Caddyfile, render.yaml   deployment
 ```
 
+How to use the system day to day: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)** (librarian and members).
 Further reading: `docs/ARCHITECTURE.md` (layers), `docs/COMPATIBILITY.md` (devices), `docs/diagrams/`
 (flowcharts, DFD, ERD), `docs/manuscript/` (capstone text), `docs/PROJECT_CONTEXT.md` (decisions and history).

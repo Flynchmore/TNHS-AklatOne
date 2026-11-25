@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import bcrypt from "bcrypt";
+import { env } from "../src/config/env.js";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/config/prisma.js";
 import { adminToken, MEMBER_PASSWORD, newMember } from "./helpers.js";
@@ -134,12 +136,16 @@ describe("auth", () => {
       .send({ username: `hint_${stamp}`, password: MEMBER_PASSWORD, displayName: "Hint Tester", memberType: "Student", email: `hint_${stamp}@example.com` });
     const time = async (username: string, password: string) => { const t = Date.now(); const r = await request(app).post("/api/v1/auth/login").send({ username, password }); return { ms: Date.now() - t, r }; };
     await time(`nobody_${stamp}`, "Wrong-Pass-1!"); // warms the dummy hash
+    // One bcrypt check at the server's cost, measured right now (so a busy test machine slows both equally).
+    const hash = await bcrypt.hash("x", env.BCRYPT_ROUNDS);
+    const t0 = Date.now(); await bcrypt.compare("y", hash); const bcryptMs = Date.now() - t0;
     const unknown = await time(`nobody2_${stamp}`, "Wrong-Pass-1!");
     const wrong = await time(`hint_${stamp}`, "Wrong-Pass-1!");
     expect(unknown.r.status).toBe(401);
     expect(wrong.r.status).toBe(401);
     expect(unknown.r.body.message).toBe(wrong.r.body.message);
-    expect(unknown.ms).toBeGreaterThan(wrong.ms / 3);
+    // An unknown username still pays for a full bcrypt check (without it, it would answer in a few ms).
+    expect(unknown.ms).toBeGreaterThanOrEqual(bcryptMs * 0.5);
     const ok = await request(app).post("/api/v1/auth/login").send({ username: `hint_${stamp}`, password: MEMBER_PASSWORD });
     expect(ok.body.data).toMatchObject({ requiresOtp: true, email: "h***@example.com" });
   });

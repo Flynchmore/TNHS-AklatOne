@@ -100,7 +100,7 @@ export function PhotoCropper({ src, onSave, onCancel, onPickAnother, saving }: {
             role="img"
             aria-label="Photo preview. Drag to move, pinch or use the slider to zoom."
           >
-            {img && <img src={src} alt="" draggable={false} className="absolute top-0 left-0 max-w-none origin-top-left pointer-events-none" style={{ width: img.width, height: img.height, transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})` }} />}
+            {img && /^(blob:|data:image\/)/.test(src) && <img src={src} alt="" draggable={false} className="absolute top-0 left-0 max-w-none origin-top-left pointer-events-none" style={{ width: img.width, height: img.height, transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})` }} />}
             {/* Round mask: everything outside the circle is dimmed. */}
             <span className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 0 999px rgba(11,16,32,.65)" }} aria-hidden="true" />
             <span className="absolute inset-0 rounded-full ring-2 ring-white/80 pointer-events-none" aria-hidden="true" />

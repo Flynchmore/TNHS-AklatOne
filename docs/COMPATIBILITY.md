@@ -7,8 +7,8 @@ verified, and what is still open. Updated 2026-11-24.
 |---|---|---|
 | Staff Web (PWA) | Chrome, Edge, Firefox on Windows / Linux / macOS | Verified in Chrome on Linux (headless screenshots, light + dark). |
 | Staff Desktop (Tauri 2) | Windows 10/11, Linux | Linux: built and run on the dev PC (Fedora). Windows: built by CI (`desktop` job, `windows-latest`); not yet run on a school computer. |
-| Member Mobile (Capacitor 8) | Android 7.0+ (API 24), target API 36 | Debug APK builds (CI `android` job and dev PC). Physical-device test still pending. |
-| Member Mobile on iOS | iOS / iPadOS 15+ (Capacitor 8), camera in the web view | Xcode project added (`frontend/mobile-capacitor/ios`, Swift Package Manager). Compiled by CI (`ios` job, macos-latest, simulator, no signing). Installing on an iPhone needs a Mac with Xcode and an Apple account. |
+| Member Mobile (Capacitor 8) | Android 8.0+ (API 26, raised 2026-11-25), target API 36 | Debug APK builds (CI `android` job and dev PC). Physical-device test still pending. |
+| Member Mobile on iOS | iOS / iPadOS 16.4+ (deployment target raised from 15.0: Tailwind CSS 4 needs Safari 16.4), camera in the web view | Xcode project added (`frontend/mobile-capacitor/ios`, Swift Package Manager). Compiled by CI (`ios` job, macos-latest, simulator, no signing). Installing on an iPhone needs a Mac with Xcode and an Apple account. |
 
 ## Desktop (Windows and Linux)
 - WebView: Windows uses Microsoft Edge WebView2 (preinstalled on Windows 11; the installer adds it on Windows 10).

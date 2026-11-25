@@ -72,7 +72,7 @@ export async function main() {
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
-    console.log(`Skipping existing user: ${username}`);
+    console.log("Skipping: that user already exists.");
     await prisma.$disconnect();
     return;
   }
@@ -80,7 +80,7 @@ export async function main() {
   const hash = await bcrypt.hash(password, rounds);
   await prisma.$transaction(async (tx) => {
     await tx.user.create({ data: { username, passwordHash: hash, roleId: role.id } });
-    console.log(`Created LIBRARIAN account: ${username}`);
+    console.log("Created the LIBRARIAN account.");
   });
 
   await prisma.$disconnect();

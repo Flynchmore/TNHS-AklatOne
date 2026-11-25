@@ -91,4 +91,14 @@ describe("API security", () => {
     expect(res.headers["strict-transport-security"]).toBeDefined();
     expect(res.headers["x-powered-by"]).toBeUndefined();
   });
+
+  it("CORS answers only the apps, CORS_ORIGINS and (outside production) the local network", async () => {
+    const pre = (origin: string) => request(app).options("/api/v1/catalog").set("Origin", origin).set("Access-Control-Request-Method", "GET");
+    for (const ok of ["capacitor://localhost", "http://tauri.localhost", "http://localhost:5173", "http://192.168.1.4:5173"]) {
+      expect((await pre(ok)).headers["access-control-allow-origin"]).toBe(ok);
+    }
+    for (const bad of ["https://evil.example", "http://192.168.1.4.evil.example", "null"]) {
+      expect((await pre(bad)).headers["access-control-allow-origin"]).toBeUndefined();
+    }
+  });
 });

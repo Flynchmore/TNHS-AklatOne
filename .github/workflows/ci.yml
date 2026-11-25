@@ -102,3 +102,18 @@ jobs:
       - run: npm run build && npx cap sync ios
       - run: xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
         working-directory: frontend/mobile-capacitor/ios/App
+
+  # The one-command Docker setup a new school or partner would run (scripts/docker-setup.sh): builds every image,
+  # starts MariaDB + API + Staff Web + Caddy and waits until /health answers through the proxy.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: bash scripts/docker-setup.sh
+      - name: The Staff Web and API answer through the proxy
+        run: |
+          curl -fs http://localhost/health
+          curl -fs http://localhost/ | grep -q "<div id=\"root\">"
+          curl -fs http://localhost/api/v1/setup/status
+      - if: failure()
+        run: docker compose ps && docker compose logs --tail 80
