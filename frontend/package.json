@@ -29,7 +29,7 @@
     "@tanstack/react-query": "^5.107.1",
     "capacitor-secure-storage-plugin": "^0.14.2",
     "jsqr": "1.4.0",
-    "lucide-react": "^1.70.0",
+    "lucide-react": "^1.77.0",
     "qrcode": "1.5.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
