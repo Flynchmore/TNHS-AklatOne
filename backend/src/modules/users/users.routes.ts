@@ -31,7 +31,8 @@ const strongPassword = z.string().min(8).max(128).refine(isStrongPassword, "Use 
 
 const memberBase = {
   displayName: z.string().trim().min(1, "Name is required").max(100),
-  email: z.preprocess(blankToNull, z.string().trim().toLowerCase().email().max(191).nullable().optional()),
+  // Required for every account: sign-in codes (2FA), activation and password codes go there.
+  email: z.string().trim().toLowerCase().email("A valid email is required").max(191),
   memberType: z.enum(["Student", "Teacher"]),
   gradeSection: optText(50),
   department: optText(100),

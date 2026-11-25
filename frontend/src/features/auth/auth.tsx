@@ -8,7 +8,7 @@ import { secretDelete, secretGet, secretSet } from "../../lib/secrets";
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
 interface User { id: string; username: string; role: string; permissions: string[]; displayName?: string | null; email?: string | null; avatarUrl?: string | null; memberType?: string | null; position?: string | null; department?: string | null; }
-interface AuthCtx { user: User | null; token: string | null; ready: boolean; login: (u: string, p: string) => Promise<boolean | { requiresOtp?: true; requiresActivation?: true; email: string }>; verifyLoginOtp: (username: string, otp: string) => Promise<boolean>; activate: (username: string, code: string) => Promise<boolean>; logout: (expired?: boolean) => void; expired: boolean; hasPerm: (p: string) => boolean; updateUser: (u: Partial<User>) => void; replaceToken: (t: string) => void; lastAuthError: () => { status: number; message?: string; remaining?: number } | null; }
+interface AuthCtx { user: User | null; token: string | null; ready: boolean; login: (u: string, p: string) => Promise<boolean | { requiresOtp?: true; requiresActivation?: true; email: string } | { requiresEmail: true; emailToken: string }>; verifyEmail: (emailToken: string, email: string, code: string) => Promise<boolean>; verifyLoginOtp: (username: string, otp: string) => Promise<boolean>; activate: (username: string, code: string) => Promise<boolean>; logout: (expired?: boolean) => void; expired: boolean; hasPerm: (p: string) => boolean; updateUser: (u: Partial<User>) => void; replaceToken: (t: string) => void; lastAuthError: () => { status: number; message?: string; remaining?: number } | null; }
 
 const Ctx = createContext<AuthCtx>({} as AuthCtx);
 const TOKEN_KEY = "aklatone_token";
@@ -100,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       // Self-registered account not activated yet: a new activation code was emailed.
       if (body.data.requiresActivation) return { requiresActivation: true, email: body.data.email } as const;
+      // Older account without an email: it adds and confirms one before signing in.
+      if (body.data.requiresEmail) return { requiresEmail: true, emailToken: body.data.emailToken } as const;
       setUser(body.data.user);
       setToken(body.data.token);
       secureSet(TOKEN_KEY, body.data.token);
@@ -121,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyLoginOtp = (username: string, otp: string) => codeSignIn("/api/v1/auth/verify-login-otp", { username, otp });
   const activate = (username: string, code: string) => codeSignIn("/api/v1/auth/activate", { username, code });
+  const verifyEmail = (emailToken: string, email: string, code: string) => codeSignIn("/api/v1/auth/email/verify", { emailToken, email, code });
   /** Finishes signing in with an emailed code (2-step sign-in or account activation). */
   const codeSignIn = async (path: string, payload: Record<string, string>) => {
     try {
@@ -186,6 +189,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void secureGet(TOKEN_KEY).then(restore);
   }, []);
 
-  return <Ctx.Provider value={{ user, token, ready, login, verifyLoginOtp, activate, logout, expired, hasPerm, updateUser: (u: Partial<User>) => setUser(cur => (cur ? { ...cur, ...u } : cur)), replaceToken, lastAuthError: () => lastError.current }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, ready, login, verifyLoginOtp, activate, verifyEmail, logout, expired, hasPerm, updateUser: (u: Partial<User>) => setUser(cur => (cur ? { ...cur, ...u } : cur)), replaceToken, lastAuthError: () => lastError.current }}>{children}</Ctx.Provider>;
 }
 export const useAuth = () => useContext(Ctx);

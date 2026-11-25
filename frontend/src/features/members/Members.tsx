@@ -190,6 +190,8 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.displayName.trim() || (isNew && !form.username.trim())) { setError("Name and username are required."); return; }
+    // Every account needs an email: sign-in codes (2FA), activation and password codes go there.
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) { setError("A valid email is required for every member."); return; }
     if ((isNew || form.password) && passwordStrength(form.password).score < 3) { setError("Please use a stronger password (12+ characters, mixed case, numbers, symbols)."); return; }
     setSaving(true); setError("");
     const { username, password, studentRowNo, ...rest } = form;
@@ -240,7 +242,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
           {isNew ? field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. juan.cruz" }) : (
             <div><p className={label}>Username</p><p className="min-h-11 flex items-center px-4 rounded-2xl bg-page text-ink-muted text-sm">@{form.username}</p></div>
           )}
-          {field("Email", "email", { type: "email", maxLength: 191, autoComplete: "off" })}
+          {field("Email (required)", "email", { type: "email", maxLength: 191, autoComplete: "off", required: true })}
           <div>
             <label htmlFor="member-gender" className={label}>Gender</label>
             <select id="member-gender" value={form.gender} onChange={set("gender")} className={select}>

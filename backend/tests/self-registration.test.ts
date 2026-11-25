@@ -2,6 +2,7 @@
 // and the emailed code needed to change a password. Fictional records only; tests never send real email.
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/config/prisma.js";
 import { otpHash } from "../src/modules/auth/auth.service.js";
@@ -56,7 +57,7 @@ describe("self-registration", () => {
   it("does not list unactivated sign-ups among the librarian's members", async () => {
     const f = form("c");
     await request(app).post("/api/v1/auth/register").send(f);
-    const admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token as string;
+    const admin = await adminToken(app);
     const list = await request(app).get(`/api/v1/users?q=${f.username}`).set(as(admin));
     expect(list.body.data.total).toBe(0);
   });

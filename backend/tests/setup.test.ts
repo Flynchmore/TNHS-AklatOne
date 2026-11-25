@@ -5,6 +5,7 @@ const db = {
   $queryRaw: vi.fn(),
   user: { count: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
   auditLog: { create: vi.fn() },
+  libraryRecovery: { upsert: vi.fn() },
 };
 const mockPrisma = { ...db, $transaction: vi.fn(async (cb: (d: typeof db) => unknown) => cb(db)) };
 vi.doMock("../src/config/prisma.js", () => ({ prisma: mockPrisma, disconnectPrisma: vi.fn() }));

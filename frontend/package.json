@@ -22,11 +22,14 @@
     "android:share": "bash scripts/lan-apk.sh share"
   },
   "dependencies": {
+    "@capacitor-mlkit/barcode-scanning": "8.2.2",
     "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
+    "@capacitor/camera": "8.2.6",
     "@capacitor/core": "^8.6.2",
     "@capacitor/ios": "^8.6.2",
     "@hookform/resolvers": "^7.0.6",
+    "@pantrist/capacitor-plugin-ml-kit-text-recognition": "8.1.1",
     "@tanstack/react-query": "^5.107.1",
     "capacitor-secure-storage-plugin": "^0.14.2",
     "jsqr": "1.4.0",

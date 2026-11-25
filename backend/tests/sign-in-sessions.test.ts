@@ -13,7 +13,10 @@ const PHONE = "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTM
 const LAPTOP = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 Edg/130.0";
 const as = (t: string) => ({ Authorization: `Bearer ${t}` });
 const signIn = async (username: string, ua: string, app_?: string) => {
-  const r = await request(app).post("/api/v1/auth/login").set("User-Agent", ua).set(app_ ? { "X-AklatOne-App": app_ } : {}).send({ username, password: MEMBER_PASSWORD });
+  const headers = { "User-Agent": ua, ...(app_ ? { "X-AklatOne-App": app_ } : {}) };
+  expect((await request(app).post("/api/v1/auth/login").set(headers).send({ username, password: MEMBER_PASSWORD })).status).toBe(200);
+  await prisma.user.update({ where: { username }, data: { otpCode: otpHash("246810"), otpExpiry: new Date(Date.now() + 60_000) } });
+  const r = await request(app).post("/api/v1/auth/verify-login-otp").set(headers).send({ username, otp: "246810" });
   expect(r.status).toBe(200);
   return r.body.data.token as string;
 };
@@ -43,7 +46,9 @@ describe("sign-in sessions", () => {
 
     expect((await request(app).post("/api/v1/auth/sessions/revoke").set(as(laptop)).send({ sessionId: other.id, password: "Wrong-Pass-1!" })).status).toBe(400);
     expect((await request(app).get("/api/v1/auth/me").set(as(phone))).status).toBe(200);
-    expect((await request(app).post("/api/v1/auth/sessions/revoke").set(as(laptop)).send({ sessionId: other.id, password: MEMBER_PASSWORD })).status).toBe(200);
+    // Every account has an email now, so the emailed code is needed too.
+    await prisma.user.update({ where: { username: `sess_a_${stamp}` }, data: { otpCode: otpHash("112233"), otpExpiry: new Date(Date.now() + 60_000) } });
+    expect((await request(app).post("/api/v1/auth/sessions/revoke").set(as(laptop)).send({ sessionId: other.id, password: MEMBER_PASSWORD, code: "112233" })).status).toBe(200);
     expect((await request(app).get("/api/v1/auth/me").set(as(phone))).status).toBe(401);
     expect((await request(app).get("/api/v1/auth/me").set(as(laptop))).status).toBe(200);
   });

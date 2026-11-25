@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { MAX_BOOKS_PER_MEMBER } from "../src/config/loanPolicy.js";
 import { createApp } from "../src/app.js";
-import { newMember } from "./helpers.js";
+import { newMember, adminToken } from "./helpers.js";
 
 const app = createApp();
 const stamp = Date.now();
@@ -25,9 +25,7 @@ async function newBook(title: string) {
 
 describe("borrow request workflow", () => {
   beforeAll(async () => {
-    const a = await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" });
-    expect(a.status).toBe(200);
-    admin = a.body.data.token;
+    admin = await adminToken(app);
     member = (await newMember(app, `flow_member_${stamp}`, { displayName: "Flow Testcase" })).token;
   });
 

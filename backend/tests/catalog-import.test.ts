@@ -1,6 +1,7 @@
 // Integration test (real database aklatone_e2e, like borrow-flow). Fictional books only.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
 import { parseWorkbook } from "../src/modules/catalog/catalog.import.js";
@@ -20,9 +21,7 @@ const preview = (buf: Buffer) => request(app).post("/api/v1/catalog/import/previ
 
 describe("Excel catalog import", () => {
   beforeAll(async () => {
-    const a = await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" });
-    expect(a.status).toBe(200);
-    admin = a.body.data.token;
+    admin = await adminToken(app);
   });
 
   it("reads header aliases, skips a title row above the header and reports unknown columns", async () => {

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Eye, EyeOff, User, Lock, KeyRound } from "lucide-react";
+import { Eye, EyeOff, User, Lock, KeyRound, GraduationCap, ScanLine } from "lucide-react";
 import { useAuth } from "../../features/auth/auth";
 import { Alert, Field, FieldIconButton, Spinner, btnPrimary, focusRing, linkText, serverReachable, friendlyError } from "../../components/mobile/ui";
 import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
+import { AddEmailForm } from "../../components/mobile/AddEmailForm";
 
 type CodeKind = "otp" | "activate";
 const CODE_TEXT: Record<CodeKind, { title: string; subtitle: (email: string) => string; button: string }> = {
@@ -97,10 +98,24 @@ export function MobileLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [code, setCode] = useState<{ kind: CodeKind; email: string } | null>(null);
+  const [emailToken, setEmailToken] = useState("");
+  // Who is signing in: members and librarians each have their own screens after sign-in.
+  const [as, setAs] = useState<"Member" | "Librarian">("Member");
+  const attempted = useRef(false);
 
   useEffect(() => {
-    if (auth.ready && auth.user) nav(from, { replace: true });
-  }, [auth.ready, auth.user, nav, from]);
+    if (!auth.ready || !auth.user) return;
+    const staff = auth.user.role === "LIBRARIAN" || auth.user.role === "ADMIN";
+    // Signed in here with the wrong choice: sign out again and say which one to pick.
+    if (attempted.current && staff !== (as === "Librarian")) {
+      attempted.current = false;
+      auth.logout();
+      setCode(null);
+      setError(staff ? "This is a librarian account. Choose Librarian, then sign in." : "This is a member account. Choose Member, then sign in.");
+      return;
+    }
+    nav(staff ? "/m/staff" : from, { replace: true });
+  }, [auth, auth.ready, auth.user, nav, from, as]);
 
   // auth.login returns false for every failure; use the recorded status to show the real reason.
   const failureMessage = async (rejected: string) => {
@@ -114,23 +129,48 @@ export function MobileLogin() {
     if (!username || !password) { setError("Please enter your username and password."); return; }
     setLoading(true);
     setError("");
+    attempted.current = true;
     const result = await auth.login(username, password);
     setLoading(false);
-    if (result === true) { nav(from, { replace: true }); return; }
-    if (result && typeof result === "object") { setCode({ kind: result.requiresActivation ? "activate" : "otp", email: result.email }); return; }
+    if (result === true) return; // the effect above opens the right screen
+    if (result && typeof result === "object") {
+      if ("emailToken" in result) setEmailToken(result.emailToken);
+      else setCode({ kind: result.requiresActivation ? "activate" : "otp", email: result.email });
+      return;
+    }
     setError(await failureMessage("Invalid username or password."));
   };
+
+  if (emailToken) {
+    return (
+      <MobileAuthShell title="Add your email" subtitle="One more step before you sign in">
+        <AddEmailForm emailToken={emailToken} onDone={() => setEmailToken("")} onBack={() => { setEmailToken(""); setError(""); }} />
+      </MobileAuthShell>
+    );
+  }
 
   if (code) {
     return (
       <CodeStep kind={code.kind} email={code.email} username={username} password={password} onBack={() => { setCode(null); setError(""); }}
-        onDone={() => { sessionStorage.removeItem("aklatone_welcome_shown"); sessionStorage.removeItem("aklatone_welcome_via"); nav(from, { replace: true }); }} />
+        onDone={() => { sessionStorage.removeItem("aklatone_welcome_shown"); sessionStorage.removeItem("aklatone_welcome_via"); }} />
     );
   }
 
   return (
-    <MobileAuthShell title="Welcome back" subtitle="Sign in to your AklatOne account"
-      footer={<>New here? <Link to="/m/register" className={`font-bold text-accent underline underline-offset-2 rounded ${focusRing}`}>Create an account</Link></>}>
+    <MobileAuthShell title={as === "Librarian" ? "Librarian sign in" : "Welcome back"} subtitle={as === "Librarian" ? "Lend, return and add books with this phone" : "Sign in to your AklatOne account"}
+      footer={as === "Member" ? <>New here? <Link to="/m/register" className={`font-bold text-accent underline underline-offset-2 rounded ${focusRing}`}>Create an account</Link></> : undefined}>
+      <div role="radiogroup" aria-label="I am signing in as" className="grid grid-cols-2 gap-1 p-1 rounded-2xl border border-line-strong bg-page">
+        {(["Member", "Librarian"] as const).map(r => {
+          const Icon = r === "Member" ? GraduationCap : ScanLine;
+          const on = as === r;
+          return (
+            <button key={r} type="button" role="radio" aria-checked={on} onClick={() => { setAs(r); setError(""); }}
+              className={`min-h-11 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold active:scale-95 ${focusRing} ${on ? "bg-gradient-to-br from-primary to-primary-strong text-on-primary shadow-md" : "text-ink"}`}>
+              <Icon size={18} aria-hidden="true" />{r}
+            </button>
+          );
+        })}
+      </div>
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />

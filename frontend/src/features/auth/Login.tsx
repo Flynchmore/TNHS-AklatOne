@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, User, ClipboardCheck, BookCopy, BellRing, MailCheck, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useAuth } from "./auth";
 import { isDesktop } from "../../lib/offline";
 import { apiFetch } from "../../lib/api";
 import { Alert, Field, FieldIconButton, Spinner, btnPrimary, focusRing } from "../../components/mobile/ui";
 import { StaffAuthShell, OtpBoxes } from "./StaffAuthShell";
+import { AddEmailForm } from "../../components/mobile/AddEmailForm";
 import { useToast } from "../../components/Toast";
 
 const MIN_VERIFY_MS = 3000;
@@ -35,6 +36,7 @@ export function Login() {
   const [info, setInfo] = useState("");
   const [otpEmail, setOtpEmail] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
+  const [emailToken, setEmailToken] = useState("");
 
   // First run: no librarian account yet, so go to setup.
   useEffect(() => {
@@ -65,6 +67,7 @@ export function Login() {
     const result = await login(username.trim(), password);
     setLoading(false);
     if (result === true) { welcome(); nav(isDesktop ? "/choose" : "/"); }
+    else if (result && typeof result === "object" && "emailToken" in result) setEmailToken(result.emailToken);
     else if (result && typeof result === "object" && result.requiresOtp) { setOtpEmail(result.email); setOtp(""); setInfo(""); }
     else setError(reason("Invalid username or password."));
   };
@@ -87,9 +90,20 @@ export function Login() {
     setLoading(true);
     const result = await login(username.trim(), password);
     setLoading(false);
-    if (result && typeof result === "object" && result.requiresOtp) setInfo("A new code was sent.");
+    if (result && typeof result === "object" && "requiresOtp" in result) setInfo("A new code was sent.");
     else setError(reason("Could not send a new code."));
   };
+
+  if (emailToken) {
+    return (
+      <StaffAuthShell tagline="One more step to keep the library secure." highlights={otpHighlights}>
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold text-primary-strong">Add your email</h1>
+          <AddEmailForm emailToken={emailToken} onDone={() => { welcome(); nav(isDesktop ? "/choose" : "/"); }} onBack={() => setEmailToken("")} />
+        </div>
+      </StaffAuthShell>
+    );
+  }
 
   if (otpEmail) {
     return (
@@ -139,6 +153,10 @@ export function Login() {
           />
           <button type="submit" className={btnPrimary} disabled={loading}>{loading && <Spinner />}{loading ? "Signing in…" : "Sign in"}</button>
         </form>
+        {/* Emergency only: kept small on purpose. */}
+        <p className="text-center text-xs text-ink-muted">
+          <Link to="/recover" className={`underline underline-offset-2 hover:text-primary rounded ${focusRing}`}>Can't access the librarian account?</Link>
+        </p>
       </div>
     </StaffAuthShell>
   );

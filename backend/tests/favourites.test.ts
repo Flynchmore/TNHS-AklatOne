@@ -1,6 +1,7 @@
 // Integration test (real database: aklatone_e2e, categories seeded by `npm run seed:categories`). All records are fictional.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 import { newMember } from "./helpers.js";
 
@@ -14,7 +15,7 @@ let bookId = "";
 
 describe("favourites and category kinds", () => {
   beforeAll(async () => {
-    admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token;
+    admin = await adminToken(app);
     member = (await newMember(app, `fav_member_${stamp}`)).token;
     other = (await newMember(app, `fav_other_${stamp}`)).token;
   });

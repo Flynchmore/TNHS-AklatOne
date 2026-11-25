@@ -97,6 +97,11 @@ git pull && docker compose up -d --build                 # update to the latest 
 once, then run `scripts/offsite-backup.sh` daily from cron (example inside the script). It copies only new backup
 files. Test a restore at least once each school year (Settings > Backup and Restore, on a test copy).
 
+**Lost librarian account (emergency):** the school's printed recovery key works from the Staff Web
+(*Can't access the librarian account?*). If the key is lost too, only someone with server access can reopen the
+first-time setup: `docker compose exec api node scripts/reopen-librarian-setup.mjs --yes` (turns the current
+librarian account off; members and records are untouched).
+
 **Uptime:** add a free monitor (e.g. UptimeRobot) for `https://library.example.com/health`; it should answer
 `{"status":"ok"}`. Settings > System status shows the database, email, backups and disk space.
 

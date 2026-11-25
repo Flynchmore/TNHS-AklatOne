@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema, registerSchema, activateSchema } from "./auth.schemas.js";
-import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode } from "./auth.service.js";
+import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode, sendEmailCode, confirmEmail } from "./auth.service.js";
 import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
 import { authenticate } from "../../middleware/auth.js";
@@ -44,14 +44,9 @@ const withProfile = async <T extends { user: { id: string } }>(r: T) => ({ ...r,
 authRouter.post("/login", validate({ body: loginSchema }), async (req, res, next) => {
   try {
     const result = await login(req.body.username, req.body.password).catch(failedSignIn(req, "password"));
-    if (result.requiresOtp) {
-      ok(res, { requiresOtp: true, email: result.email }, "OTP required");
-    } else if (result.requiresActivation) {
-      ok(res, { requiresActivation: true, email: result.email }, "Activation code sent");
-    } else {
-      auditAuth(req, "auth.login", result.user.id, { method: "password" });
-      ok(res, await withProfile({ user: result.user, token: await openSession(result.user, req) }), "Authenticated");
-    }
+    if (result.kind === "otp") ok(res, { requiresOtp: true, email: result.email }, "OTP required");
+    else if (result.kind === "activate") ok(res, { requiresActivation: true, email: result.email }, "Activation code sent");
+    else ok(res, { requiresEmail: true, emailToken: result.emailToken }, "Add an email to continue");
   } catch (err) {
     next(err);
   }
@@ -82,6 +77,28 @@ authRouter.post("/activate", validate({ body: activateSchema }), async (req, res
     const user = await activate(req.body.username, req.body.code);
     auditAuth(req, "auth.activate", user.id);
     ok(res, await withProfile({ user, token: await openSession(user, req) }), "Account activated");
+  } catch (err) {
+    next(err);
+  }
+});
+
+const emailStepSchema = z.object({ emailToken: z.string().min(20).max(1000), email: z.string().trim().toLowerCase().email().max(191) });
+
+/** Older account without an email: send a code to the email it adds (token from a correct password). */
+authRouter.post("/email/send", validate({ body: emailStepSchema }), async (req, res, next) => {
+  try {
+    ok(res, await sendEmailCode(req.body.emailToken, req.body.email), "Code sent");
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** The code is right: the email is saved and the account signs in. */
+authRouter.post("/email/verify", validate({ body: emailStepSchema.extend({ code: z.string().length(6) }) }), async (req, res, next) => {
+  try {
+    const user = await confirmEmail(req.body.emailToken, req.body.email, req.body.code);
+    auditAuth(req, "auth.login", user.id, { method: "password+new email" });
+    ok(res, await withProfile({ user, token: await openSession(user, req) }), "Email added");
   } catch (err) {
     next(err);
   }

@@ -71,10 +71,11 @@ export function verifyToken(token: string): AuthUser & { issuedAt?: number | und
   };
 }
 
+/** A correct password never signs in by itself: a code goes to the account's email (or the email is added first). */
 export type LoginResult =
-  | { requiresOtp: true; email: string }
-  | { requiresOtp: false; requiresActivation: true; email: string }
-  | { requiresOtp: false; requiresActivation?: false; user: AuthUser; token: string };
+  | { kind: "otp"; email: string }
+  | { kind: "activate"; email: string }
+  | { kind: "add-email"; emailToken: string };
 
 const CODE_MINUTES = 10;
 const emailHint = (email: string) => email.replace(/^(.)[^@]*(@.*)$/, "$1***$2");
@@ -106,24 +107,57 @@ export async function login(username: string, password: string): Promise<LoginRe
   // A self-registered account that was never activated: send a fresh activation code instead of signing in.
   if (user.activationPending && user.email) {
     await sendCode({ ...user, email: user.email }, "activate");
-    return { requiresOtp: false, requiresActivation: true, email: emailHint(user.email) };
+    return { kind: "activate", email: emailHint(user.email) };
   }
   if (!user.isActive) throw Object.assign(new Error("Invalid credentials"), { status: 401 });
 
   // 2FA: if user has email, require OTP. Only a hint of the address is shown on the code screen (e.g. c***@gmail.com).
   if (user.email) {
     await sendCode({ ...user, email: user.email }, "login");
-    return { requiresOtp: true, email: emailHint(user.email) };
+    return { kind: "otp", email: emailHint(user.email) };
   }
+  // Every account needs an email now: an older account without one adds and confirms it before signing in.
+  return { kind: "add-email", emailToken: jwt.sign({ sub: user.id, purpose: "add-email" }, EMAIL_SECRET(), { expiresIn: "15m" }) };
+}
 
-  // No email: direct login
-  const authUser: AuthUser = {
-    id: user.id,
-    username: user.username,
-    role: user.role.name,
-    permissions: Array.isArray(user.role.permissions) ? (user.role.permissions as string[]) : [],
-  };
-  return { requiresOtp: false, user: authUser, token: signToken(authUser) };
+const EMAIL_SECRET = () => `${env.JWT_SECRET}:add-email`;
+/** The account behind an "add your email" token (from a correct password, valid 15 minutes). */
+function emailTokenUser(token: string): string {
+  try {
+    const p = jwt.verify(token, EMAIL_SECRET(), { algorithms: ["HS256"] }) as { sub: string; purpose?: string };
+    if (p.purpose === "add-email") return p.sub;
+  } catch { /* falls through */ }
+  throw Object.assign(new Error("This step has expired. Please sign in again."), { status: 401 });
+}
+// The code is tied to the address it was sent to, so it cannot confirm a different one.
+const emailCodeHash = (code: string, email: string) => otpHash(`${code}:${email.toLowerCase()}`);
+/** Tests plant a known code for an email (the real one is only ever emailed). */
+export const emailCodeHashForTest = emailCodeHash;
+
+/** Step 1 for an account without an email: send a code to the email the member typed. */
+export async function sendEmailCode(token: string, email: string): Promise<{ email: string }> {
+  const id = emailTokenUser(token);
+  const taken = await prisma.user.findFirst({ where: { email, NOT: { id } }, select: { id: true } });
+  if (taken) throw Object.assign(new Error("Another account already uses this email."), { status: 409 });
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw Object.assign(new Error("This step has expired. Please sign in again."), { status: 401 });
+  const otp = newOtp();
+  await prisma.user.update({ where: { id }, data: { otpCode: emailCodeHash(otp, email), otpExpiry: new Date(Date.now() + CODE_MINUTES * 60 * 1000) } });
+  const sent = await sendOtpEmail(email, otp, "email", user.displayName);
+  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] email ${user.username}: ${otp}`);
+  return { email: emailHint(email) };
+}
+
+/** Step 2: the code is right, so the email is saved and the account signs in (the code was the second factor). */
+export async function confirmEmail(token: string, email: string, code: string): Promise<AuthUser> {
+  const id = emailTokenUser(token);
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user?.otpCode || !user.otpExpiry || new Date() > user.otpExpiry) throw Object.assign(new Error("That code is wrong or has expired. Ask for a new one."), { status: 400 });
+  const a = Buffer.from(user.otpCode), b = Buffer.from(emailCodeHash(code, email));
+  if (a.length !== b.length || !timingSafeEqual(a, b)) throw Object.assign(new Error("That code is wrong or has expired. Ask for a new one."), { status: 400 });
+  if (await prisma.user.findFirst({ where: { email, NOT: { id } }, select: { id: true } })) throw Object.assign(new Error("Another account already uses this email."), { status: 409 });
+  const done = await prisma.user.update({ where: { id }, data: { email, otpCode: null, otpExpiry: null }, include: { role: true } });
+  return asAuthUser(done);
 }
 
 export async function verifyLoginOtp(username: string, otp: string): Promise<{ user: AuthUser; token: string }> {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { Camera, CameraOff, ScanLine } from "lucide-react";
 import { btn, input, label } from "./ui";
+import { nativeQr, scanQr } from "../../lib/phoneCamera";
 
 /**
  * Copy-code entry for scanning: a USB barcode/QR scanner types the code and presses Enter into the field, a code can
@@ -58,8 +59,13 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
         if (video.current) { video.current.srcObject = stream; await video.current.play().catch(() => {}); }
         setCamError("");
         frame = requestAnimationFrame(tick);
-      } catch {
-        setCamError("The camera is not available here (it needs a camera, HTTPS and permission). Type the code or use a USB scanner below.");
+      } catch (err) {
+        const name = (err as { name?: string })?.name;
+        setCamError(
+          !window.isSecureContext ? "The camera works only in the AklatOne app or on an HTTPS address. Type the code or use a USB scanner below."
+          : name === "NotAllowedError" ? "Camera permission was refused. Allow the camera for this app or site in the settings, then try again."
+          : name === "NotFoundError" ? "No camera was found. Type the code or use a USB scanner below."
+          : "The camera could not start. Type the code or use a USB scanner below.");
         setCamera(false);
       }
     })();
@@ -71,7 +77,11 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
   return (
     <div className="space-y-3">
       {/* Camera first (phone or computer camera, developer decision 2026-11-24); typing or a USB scanner second. */}
-      <button type="button" onClick={() => setCamera(c => !c)} disabled={disabled} aria-pressed={camera} className={`${camera ? btn.secondary : btn.primary} w-full sm:w-auto`}>
+      <button type="button" onClick={() => {
+        // Android app: Google's QR scanner screen (no HTTPS or web camera permission needed).
+        if (nativeQr()) { setCamError(""); void scanQr().then(c => { if (c) emit(c); }, (e: Error) => setCamError(e.message)); return; }
+        setCamera(c => !c);
+      }} disabled={disabled} aria-pressed={camera} className={`${camera ? btn.secondary : btn.primary} w-full sm:w-auto`}>
         {camera ? <><CameraOff size={18} aria-hidden="true" />Stop camera</> : <><Camera size={18} aria-hidden="true" />Scan with camera</>}
       </button>
       {camError && <p role="alert" className="text-sm text-warning">{camError}</p>}

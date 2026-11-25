@@ -28,6 +28,8 @@ export const openApiSpec = {
   paths: {
     "/auth/login": { post: pub("/auth", "Sign in; accounts with an email get a 6-digit code first", { "401": "Invalid credentials", "429": "Too many failed attempts" }) },
     "/auth/verify-login-otp": { post: pub("/auth", "Finish sign-in with the emailed code", { "401": "Wrong or expired code", "429": "Too many failed attempts" }) },
+    "/auth/email/send": { post: pub("/auth", "Account without an email: send a code to the email it adds (emailToken from sign-in)", { "401": "Step expired", "409": "Email used by another account" }) },
+    "/auth/email/verify": { post: pub("/auth", "Confirm the added email with its code; saves it and signs in", { "400": "Wrong or expired code", "401": "Step expired" }) },
     "/auth/register": { post: pub("/auth", "Member self-registration (Personal information + email); emails an activation code, the account stays inactive until activated", { "409": "Username or email already used" }) },
     "/auth/activate": { post: pub("/auth", "Enter the emailed activation code (username + code); activates and signs in", { "400": "Wrong or expired code" }) },
     "/auth/password-code": { post: auth("/auth", "Email the code that confirms a password change (accounts with an email)", undefined, { "429": "Sent less than a minute ago" }) },
@@ -41,7 +43,12 @@ export const openApiSpec = {
     "/auth/sessions/revoke": { post: auth("/auth", "Sign out one device (sessionId) or all other devices (others: true); needs password and, with an email, the code") },
 
     "/setup/status": { get: pub("/setup", "Whether the first librarian account still has to be created") },
-    "/setup/librarian": { post: pub("/setup", "Create the first librarian (only while none is active)", { "201": "Created", "409": "A librarian already exists" }) },
+    "/setup/librarian": { post: pub("/setup", "Create the first librarian (only while none is active); answers with the emergency recovery key once", { "201": "Created", "409": "A librarian already exists" }) },
+    "/setup/recover": { post: pub("/setup", "Emergency: the recovery key creates a new librarian (active librarians are turned off) and a new key", { "201": "Created", "400": "Invalid recovery key" }) },
+    "/setup/recovery-key": {
+      get: auth("/setup", "When the current recovery key was made (librarian / admin)"),
+      post: auth("/setup", "Make a new recovery key (asks for the password again; the old key stops working)", undefined, { "400": "Wrong password" }),
+    },
 
     "/users": {
       get: auth("/users", "List members (q, memberType, status, limit, offset)", "users:read"),

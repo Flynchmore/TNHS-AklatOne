@@ -1,30 +1,32 @@
 import { useState } from "react";
-import { BookUp, BookDown, LogOut, UserRound, ScanLine, CheckCircle2 } from "lucide-react";
+import { BookUp, BookDown, BookPlus, LogOut, UserRound, ScanLine, CheckCircle2 } from "lucide-react";
+import { MobileAddBook } from "./MobileAddBook";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { Scanner } from "../../components/staff/Scanner";
 import { phDate } from "../../lib/dates";
 import { Alert, ScreenShell, SlidingTabs, Spinner, btnPrimary, btnSecondary, mobileApi, type TabDef } from "../../components/mobile/ui";
 
-type Tab = "lend" | "return";
+type Tab = "lend" | "return" | "add";
 interface Member { id: string; displayName: string | null; maskedId: string | null; memberType: string | null; gradeSection: string | null; department: string | null; isActive: boolean; activeLoans?: number }
 const MEMBER_ID = /^[A-Z]{2}\d{6}$/;
 const card = "bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4";
 
 /**
  * Librarian mode of the phone app (RBAC: only LIBRARIAN/ADMIN reach /m/staff). The phone camera is the main scanner:
- * Lend = scan the Library ID card, then the book's QR label; Return = scan the book's QR label.
+ * Lend = scan the Library ID card, then the book's QR label; Return = scan the book's QR label; Add book = take a photo
+ * of the book and its details are typed in (Android).
  */
 export function MobileStaff() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPerm } = useAuth();
   const [tab, setTab] = useState<Tab>("lend");
-  const tabs: TabDef<Tab>[] = [{ key: "lend", label: "Lend", icon: BookUp }, { key: "return", label: "Return", icon: BookDown }];
+  const tabs: TabDef<Tab>[] = [{ key: "lend", label: "Lend", icon: BookUp }, { key: "return", label: "Return", icon: BookDown }, ...(hasPerm("catalog:write") ? [{ key: "add" as const, label: "Add book", icon: BookPlus }] : [])];
   return (
     <ScreenShell title="Librarian" subtitle={user?.displayName ?? user?.username ?? ""} icon={ScanLine}
       action={<button type="button" onClick={() => logout()} aria-label="Sign out" className="w-12 h-12 shrink-0 rounded-2xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-on-primary"><LogOut size={22} aria-hidden="true" /></button>}>
       <SlidingTabs label="Desk task" tabs={tabs} active={tab} onChange={setTab} />
-      {tab === "lend" ? <Lend /> : <Return />}
-      <p className="text-xs text-ink-muted text-center px-4">Catalog, members, reports and printing are in the Staff Web or Desktop app.</p>
+      {tab === "lend" ? <Lend /> : tab === "return" ? <Return /> : <MobileAddBook />}
+      <p className="text-xs text-ink-muted text-center px-4">Editing books, members, reports and printing are in the Staff Web or Desktop app.</p>
     </ScreenShell>
   );
 }

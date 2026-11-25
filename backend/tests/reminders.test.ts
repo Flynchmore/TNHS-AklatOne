@@ -1,6 +1,7 @@
 // Integration test (real database aklatone_e2e). Fictional records only.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 import { phDayEnd, sendDueReminders } from "../src/modules/notifications/reminders.service.js";
 import { prisma } from "../src/config/prisma.js";
@@ -13,7 +14,7 @@ const auth = () => ({ Authorization: `Bearer ${admin}` });
 async function loanDue(dueAt: Date, tag: string) {
   const book = await request(app).post("/api/v1/catalog").set(auth()).send({ title: `Reminder ${tag} ${stamp}`, copies: 1 });
   const copy = (await prisma.bookCopy.findFirst({ where: { bookId: book.body.data.id } }))!;
-  const m = await request(app).post("/api/v1/users").set(auth()).send({ username: `rem_${tag}_${stamp}`, password: "Reminder-Pass-2026!", displayName: "Reminder Testcase", memberType: "Student" });
+  const m = await request(app).post("/api/v1/users").set(auth()).send({ username: `rem_${tag}_${stamp}`, password: "Reminder-Pass-2026!", displayName: "Reminder Testcase", memberType: "Student", email: `rem_${tag}_${stamp}@example.test` });
   const loan = await request(app).post("/api/v1/circulation/borrow").set(auth()).send({ bookCopyId: copy.id, borrowerId: m.body.data.id, dueAt: dueAt.toISOString() });
   expect(loan.status).toBe(201);
   return { loanId: loan.body.data.id as string, memberId: m.body.data.id as string };
@@ -21,7 +22,7 @@ async function loanDue(dueAt: Date, tag: string) {
 
 describe("automatic return reminders", () => {
   beforeAll(async () => {
-    admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token;
+    admin = await adminToken(app);
   });
 
   it("phDayEnd is the end of a Philippine day", () => {

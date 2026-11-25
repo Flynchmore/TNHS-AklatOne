@@ -428,3 +428,11 @@ model BookWatch {
   @@unique([userId, bookId])
   @@index([bookId])
 }
+
+/// Emergency recovery key of the library (one row). Shown once to the school (printed and kept safe); only its
+/// SHA-256 hash is stored. Using it replaces the librarian account when nobody can sign in any more.
+model LibraryRecovery {
+  id        Int      @id @default(1)
+  keyHash   String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+}

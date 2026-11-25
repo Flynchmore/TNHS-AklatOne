@@ -4,7 +4,8 @@ import bcrypt from "bcrypt";
 import { env } from "../src/config/env.js";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/config/prisma.js";
-import { adminToken, MEMBER_PASSWORD, newMember } from "./helpers.js";
+import { adminToken, MEMBER_PASSWORD, newMember, signIn, TEST_CODE } from "./helpers.js";
+import { otpHash } from "../src/modules/auth/auth.service.js";
 
 describe("auth", () => {
   const app = createApp();
@@ -16,18 +17,16 @@ describe("auth", () => {
     await newMember(app, username);
   });
 
-  it("logs in", async () => {
-    const res = await request(app).post("/api/v1/auth/login").send({
-      username,
-      password: "Test-Pass-2026!",
-    });
+  it("a correct password alone never signs in: the emailed code does", async () => {
+    const res = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
     expect(res.status).toBe(200);
-    expect(res.body.data.token).toBeTruthy();
+    expect(res.body.data).toMatchObject({ requiresOtp: true });
+    expect(res.body.data.token).toBeUndefined();
+    expect(await signIn(app, username, "Test-Pass-2026!")).toBeTruthy();
   });
 
   it("returns current user with token", async () => {
-    const login = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
-    const token = login.body.data.token;
+    const token = await signIn(app, username, "Test-Pass-2026!");
     const res = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.data.username).toBe(username);
@@ -36,7 +35,7 @@ describe("auth", () => {
   });
 
   it("saves and returns the member's profile details; blank clears a field", async () => {
-    const token = (await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" })).body.data.token;
+    const token = await signIn(app, username, "Test-Pass-2026!");
     const auth = { Authorization: `Bearer ${token}` };
     const upd = await request(app).patch("/api/v1/auth/profile").set(auth).send({ displayName: "Juana Testcase", memberType: "Student", gradeSection: "Grade 10 - Sampaguita", hobbies: "Reading, chess" });
     expect(upd.status).toBe(200);
@@ -56,14 +55,16 @@ describe("auth", () => {
     expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ avatarUrl: photo })).status).toBe(200);
     expect((await request(app).get("/api/v1/auth/me").set(auth)).body.data.avatarUrl).toBe(photo);
     // A fresh sign-in returns the saved photo too (it used to appear only after a refresh).
-    const again = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
+    await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
+    await prisma.user.update({ where: { username }, data: { otpCode: otpHash(TEST_CODE), otpExpiry: new Date(Date.now() + 60_000) } });
+    const again = await request(app).post("/api/v1/auth/verify-login-otp").send({ username, otp: TEST_CODE });
     expect(again.body.data.user).toMatchObject({ avatarUrl: photo, displayName: "Juana Testcase", role: "MEMBER" });
   });
 
   it("does not count /me against the strict sign-in rate limit", async () => {
     const login = await request(app).post("/api/v1/auth/login").send({ username, password: "Test-Pass-2026!" });
     const strict = login.headers["ratelimit-limit"];
-    const me = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${login.body.data.token}`);
+    const me = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${await signIn(app, username, "Test-Pass-2026!")}`);
     expect(me.headers["ratelimit-limit"]).toBeDefined();
     expect(me.headers["ratelimit-limit"]).not.toBe(strict);
   });
@@ -99,7 +100,8 @@ describe("auth", () => {
     expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!" })).status).toBe(400);
     expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!", currentPassword: "wrong-password" })).status).toBe(400);
     expect((await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "weakpass", currentPassword: "Test-Pass-2026!" })).status).toBe(400);
-    const changed = await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!", currentPassword: "Test-Pass-2026!" });
+    await prisma.user.update({ where: { username: user }, data: { otpCode: otpHash(TEST_CODE), otpExpiry: new Date(Date.now() + 60_000) } }); // emailed password change code
+    const changed = await request(app).patch("/api/v1/auth/profile").set(auth).send({ password: "New-Pass-2026!!", currentPassword: "Test-Pass-2026!", code: TEST_CODE });
     expect(changed.status).toBe(200);
     // The old token is revoked by the change; the response carries a new one.
     expect((await request(app).get("/api/v1/auth/me").set(auth)).status).toBe(401);
@@ -159,5 +161,32 @@ describe("auth", () => {
     expect(change.status).toBe(409);
     expect(change.body.message).toMatch(/can only be set once/);
     expect((await prisma.user.findUnique({ where: { id: m.id } }))!.memberType).toBe("Student");
+  });
+
+  it("every account needs an email: members cannot be added without one, and an old account adds and confirms one at sign-in", async () => {
+    const app = createApp();
+    const stamp = Date.now();
+    const admin = await adminToken(app);
+    const noEmail = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`).send({ username: `noemail_${stamp}`, password: MEMBER_PASSWORD, displayName: "No Email", memberType: "Student" });
+    expect(noEmail.status).toBe(400);
+
+    // An account from before the rule (no email): the password gives only a short "add your email" token.
+    const m = await newMember(app, `legacy_${stamp}`);
+    await prisma.user.update({ where: { id: m.id }, data: { email: null } });
+    const step1 = await request(app).post("/api/v1/auth/login").send({ username: `legacy_${stamp}`, password: MEMBER_PASSWORD });
+    expect(step1.body.data.requiresEmail).toBe(true);
+    expect(step1.body.data.token).toBeUndefined();
+    const emailToken = step1.body.data.emailToken as string;
+    const email = `legacy_${stamp}@example.test`;
+    expect((await request(app).post("/api/v1/auth/email/send").send({ emailToken, email })).body.data).toEqual({ email: "l***@example.test" });
+    // The code only confirms the address it was sent to.
+    const { emailCodeHashForTest } = await import("../src/modules/auth/auth.service.js");
+    await prisma.user.update({ where: { id: m.id }, data: { otpCode: emailCodeHashForTest("135790", email), otpExpiry: new Date(Date.now() + 60_000) } });
+    expect((await request(app).post("/api/v1/auth/email/verify").send({ emailToken, email: `other_${stamp}@example.test`, code: "135790" })).status).toBe(400);
+    expect((await request(app).post("/api/v1/auth/email/verify").send({ emailToken: "x".repeat(40), email, code: "135790" })).status).toBe(401);
+    const done = await request(app).post("/api/v1/auth/email/verify").send({ emailToken, email, code: "135790" });
+    expect(done.status).toBe(200);
+    expect(done.body.data.token).toBeTruthy();
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: m.id } })).email).toBe(email);
   });
 });

@@ -1,6 +1,7 @@
 // Integration test (real database aklatone_e2e): what keeps Desktop offline uploads safe. Fictional records only.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 
 const app = createApp();
@@ -10,7 +11,7 @@ const auth = () => ({ Authorization: `Bearer ${admin}` });
 
 describe("offline upload safety", () => {
   beforeAll(async () => {
-    admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token;
+    admin = await adminToken(app);
   });
 
   it("a retried upload with the same Idempotency-Key runs once and gets the first answer", async () => {
@@ -39,7 +40,7 @@ describe("offline upload safety", () => {
     expect(stale.status).toBe(409);
     expect(stale.body.message).toMatch(/changed this record/);
 
-    const m = await request(app).post("/api/v1/users").set(auth()).send({ username: `conf_${stamp}`, password: "Conflict-Pass-2026!", displayName: "Conflict Testcase", memberType: "Student" });
+    const m = await request(app).post("/api/v1/users").set(auth()).send({ username: `conf_${stamp}`, password: "Conflict-Pass-2026!", displayName: "Conflict Testcase", memberType: "Student", email: `conf_${stamp}@example.test` });
     const mSeen = m.body.data.updatedAt as string;
     expect(mSeen).toBeTruthy();
     await new Promise((r) => setTimeout(r, 20));

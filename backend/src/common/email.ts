@@ -151,7 +151,7 @@ const phDay = (d: Date) => d.toLocaleDateString("en-PH", { timeZone: "Asia/Manil
 
 const when = () => new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 
-export type OtpPurpose = "login" | "reset" | "session" | "activate" | "password";
+export type OtpPurpose = "login" | "reset" | "session" | "activate" | "password" | "email";
 
 const CODE_NOTE = "This code expires in 10 minutes and works only once. The library staff will never ask you for it.";
 
@@ -178,6 +178,11 @@ export function otpEmail(otp: string, purpose: OtpPurpose, name?: string | null)
       subject: "Your AklatOne password change code", badge: "Password change", tone: "warning" as Tone, title: "Confirm your new password",
       intro: "You asked to change your AklatOne password. To confirm the change, enter this code in the app:",
       security: "If you did not ask to change your password, someone may be using your account: do not share this code, sign out other devices in <strong>Settings &gt; Sign-in devices</strong> and tell the librarian.",
+    },
+    email: {
+      subject: "Confirm your email for AklatOne", badge: "Confirm email", tone: "primary" as Tone, title: "Confirm your email address",
+      intro: "Your AklatOne account now needs an email address for sign-in codes. To confirm that this email is yours, enter this code in the app:",
+      security: "If you did not sign in to AklatOne, you can ignore this email: it will not be added to any account without this code.",
     },
     session: {
       subject: "Confirm signing out a device", badge: "Device sign-out", tone: "warning" as Tone, title: "Confirm signing out a device",
@@ -251,6 +256,21 @@ export function passwordChangedEmail(name?: string | null) {
       title: "Your password was changed",
       body: hello(name) + p(`The password for your AklatOne account was changed on <strong>${esc(when())}</strong> (Philippine time).`) + p("If this was you, no action is needed."),
       security: "If you did not change your password, reset it now with <strong>Forgot password</strong> and tell the librarian.",
+    }),
+  };
+}
+
+/** Sent to a replaced librarian account when the school used the emergency recovery key. */
+export function librarianReplacedEmail(name: string | null | undefined, newName: string) {
+  return {
+    subject: "Your AklatOne librarian account was replaced",
+    html: emailLayout({
+      preheader: "The library's emergency recovery key was used.",
+      badge: "Security alert",
+      tone: "danger",
+      title: "The librarian account was replaced",
+      body: hello(name) + p(`On <strong>${esc(when())}</strong> (Philippine time) the library's emergency recovery key was used to create a new librarian account for <strong>${esc(newName)}</strong>. Your librarian account was signed out and turned off.`),
+      security: "If the school did not do this, tell the principal and the ICT coordinator right away: someone may have the recovery key.",
     }),
   };
 }

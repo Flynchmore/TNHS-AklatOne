@@ -22,6 +22,7 @@
     "reset:e2e": "node scripts/reset-e2e.mjs",
     "provision-dev-accounts": "node scripts/provision-dev-accounts.mjs",
     "provision-dev-librarian": "node scripts/provision-dev-librarian.mjs",
+    "librarian:reopen-setup": "node scripts/reopen-librarian-setup.mjs",
     "seed:demo-books": "node scripts/seed-demo-books.mjs",
     "seed:categories": "node scripts/seed-categories.mjs",
     "prisma:studio": "prisma studio",

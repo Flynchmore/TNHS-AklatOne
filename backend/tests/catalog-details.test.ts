@@ -1,6 +1,7 @@
 // Integration test (real database: aklatone_e2e). All records are fictional.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 import { newMember } from "./helpers.js";
 
@@ -12,7 +13,7 @@ const members: string[] = [];
 
 describe("catalog details, serial numbers and ratings", () => {
   beforeAll(async () => {
-    admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token;
+    admin = await adminToken(app);
     for (const n of [1, 2]) {
       members.push((await newMember(app, `rate_member_${n}_${stamp}`)).token);
     }

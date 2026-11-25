@@ -1,6 +1,7 @@
 // Integration test (real database aklatone_e2e). Fictional records only.
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import { adminToken } from "./helpers.js";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/config/prisma.js";
 
@@ -11,7 +12,7 @@ const auth = () => ({ Authorization: `Bearer ${admin}` });
 
 describe("inventory audit", () => {
   beforeAll(async () => {
-    admin = (await request(app).post("/api/v1/auth/login").send({ username: "e2e_admin", password: "TestPass123!" })).body.data.token;
+    admin = await adminToken(app);
     // A run that stopped half-way may have left an audit open on the E2E database.
     await prisma.inventoryAudit.updateMany({ where: { closedAt: null }, data: { closedAt: new Date() } });
   });

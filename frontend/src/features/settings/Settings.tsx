@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { apiFetch } from "../../lib/api";
@@ -8,11 +8,13 @@ import { PageHeader, Panel, btn, input, label } from "../../components/staff/ui"
 import { StrengthMeter, focusRing, passwordStrength } from "../../components/mobile/ui";
 import { setTheme, useTheme, type Theme } from "../../components/mobile/theme";
 import { BackupPanel } from "./BackupPanel";
+import { RecoveryKeyCard } from "../../components/RecoveryKey";
+import { phDateTime } from "../../lib/dates";
 import { SystemPanel } from "./SystemPanel";
 
 /** Staff "Settings": librarian profile, theme, password and About. */
 export function Settings() {
-  const { hasPerm } = useAuth();
+  const { hasPerm, user } = useAuth();
   return (
     <div className="space-y-6">
       <PageHeader icon={SettingsIcon} title="Settings" subtitle="Your profile, the look of AklatOne, your password, database backups and app information." />
@@ -20,6 +22,7 @@ export function Settings() {
         <ProfilePanel />
         <PasswordPanel />
         <Panel title="Sign-in devices" icon={MonitorSmartphone} delay={0.12}><SignInSessions /></Panel>
+        {(user?.role === "LIBRARIAN" || user?.role === "ADMIN") && <RecoveryKeyPanel />}
         <ThemePanel />
         <AboutPanel />
         {hasPerm("backup:manage") && <SystemPanel />}
@@ -190,6 +193,46 @@ function AboutPanel() {
         ))}
       </dl>
       <p className="text-xs text-ink-muted mt-4">Staff portal for managing the school library catalog, borrowing and members. Members use the AklatOne mobile app.</p>
+    </Panel>
+  );
+}
+
+/** The library's emergency recovery key: when it was made, and making a new one (the old one stops working). */
+function RecoveryKeyPanel() {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [createdAt, setCreatedAt] = useState<string | null | undefined>(undefined);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [key, setKey] = useState("");
+  useEffect(() => {
+    void apiFetch("/api/v1/setup/recovery-key", { token }).then(r => setCreatedAt(r.ok ? (r.data as { createdAt: string | null }).createdAt : null));
+  }, [token]);
+  const make = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const r = await apiFetch("/api/v1/setup/recovery-key", { method: "POST", token, body: JSON.stringify({ currentPassword: password }) });
+    setBusy(false);
+    if (!r.ok) { toast({ tone: "error", title: "No new key", message: r.message ?? "Please try again." }); return; }
+    setKey((r.data as { recoveryKey: string }).recoveryKey);
+    setCreatedAt(new Date().toISOString());
+    setPassword("");
+  };
+  return (
+    <Panel title="Emergency recovery key" icon={KeyRound} delay={0.14}>
+      <div className="space-y-4">
+        <p className="text-sm text-ink-muted">If nobody can sign in to the librarian account (password and email both lost), this key creates a new librarian account from <b>Can't access the librarian account?</b> on the sign-in page. Keep it printed with the principal or the ICT coordinator.</p>
+        <p className="text-sm text-ink">{createdAt === undefined ? "Checking…" : createdAt ? <>Current key made on <b>{phDateTime(createdAt)}</b>.</> : <b className="text-danger">No recovery key yet. Make one now.</b>}</p>
+        {key ? <RecoveryKeyCard recoveryKey={key} onSaved={saved => { if (saved) toast({ tone: "success", title: "Keep it safe", message: "The old key no longer works." }); }} /> : (
+          <form onSubmit={make} className="flex flex-wrap items-end gap-3" noValidate>
+            <div className="flex-1 min-w-[14rem]">
+              <label htmlFor="rk-password" className={label}>Your password</label>
+              <input id="rk-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={input} />
+            </div>
+            <button type="submit" disabled={busy || !password} className={btn.secondary}>{busy ? "Making…" : createdAt ? "Make a new key" : "Make the recovery key"}</button>
+          </form>
+        )}
+      </div>
     </Panel>
   );
 }

@@ -122,6 +122,7 @@ function AppRoutes() {
           <>
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<LibrarianSetup />} />
+            <Route path="/recover" element={<LibrarianSetup recover />} />
             <Route element={<Protected><Layout /></Protected>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/catalog" element={<Catalog />} />

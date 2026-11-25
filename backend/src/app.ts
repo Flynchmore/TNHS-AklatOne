@@ -121,7 +121,7 @@ export function createApp() {
     legacyHeaders: false,
     keyGenerator: (req) => `reset:${String(req.body?.email ?? req.body?.username ?? "").trim().toLowerCase()}`,
     message: { success: false, message: "Too many wrong codes for this account. Please wait a few minutes, then ask for a new code." },
-    skip: (req) => !/^\/api\/v1\/auth\/(verify-otp|reset-password|activate)$/.test(pathOf(req)),
+    skip: (req) => !/^\/api\/v1\/auth\/(verify-otp|reset-password|activate|email\/verify)$/.test(pathOf(req)),
     ...store("rl:reset:"),
   });
 
