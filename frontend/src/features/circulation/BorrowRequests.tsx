@@ -69,7 +69,7 @@ export function BorrowRequests() {
       {data && data.length === 0 && <EmptyState icon={ClipboardList} text={`No ${tabs.find(t => t.key === tab)?.label.toLowerCase()} requests.`} />}
 
       {data && data.length > 0 && (
-        <div key={tab} className={`${table.wrap} ak-slide`}>
+        <div key={tab} className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}>
               <tr><th className={table.th}>Member</th><th className={table.th}>Book</th><th className={table.th}>Requested</th><th className={table.th}>{tab === "PENDING" ? "Available copies" : "Decision"}</th><th className={`${table.th} text-right`}>Actions</th></tr>

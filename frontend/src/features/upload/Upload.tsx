@@ -40,7 +40,7 @@ export function Upload() {
       <PageHeader icon={UploadCloud} title="Upload" subtitle="Changes saved on this computer while there was no internet. Send them to the web when you're back online."
         actions={<button type="button" onClick={upload} disabled={!online || busy || items.length === 0} className={btn.primary}><UploadCloud size={18} aria-hidden="true" />{busy ? "Uploading…" : `Upload ${items.length || ""}`.trim()}</button>} />
 
-      <div className={`${card} p-6 sm:p-7 flex flex-wrap items-center gap-5 ak-slide`}>
+      <div className={`${card} p-6 sm:p-7 flex flex-wrap items-center gap-5`}>
         <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${online ? "bg-gradient-to-br from-success to-success-strong" : "bg-gradient-to-br from-warning to-[#7A3A06]"}`} aria-hidden="true">{online ? <Wifi size={22} /> : <WifiOff size={22} />}</span>
         <div className="flex-1 min-w-48">
           <p className="font-bold text-ink">{online ? "Connected to the internet" : "No internet connection"}</p>

@@ -21,8 +21,8 @@ export function ChooseApp() {
 
   return (
     <div className="relative min-h-[calc(100dvh-var(--ak-titlebar,0px))] flex items-center justify-center p-6 overflow-hidden bg-primary-strong">
-      <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: "url('/tnhs-background.webp')" }} aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-strong/70 via-primary/40 to-primary-strong/80" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary via-primary-strong to-primary-strong" aria-hidden="true" />
+      <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="ak-watermark absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[44rem] max-w-[120vw] opacity-[0.16] pointer-events-none" />
       <main className="relative w-full max-w-4xl space-y-8">
         <header className="flex items-center gap-4 text-white">
           <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className="w-16 h-16 rounded-full bg-white p-0.5" />

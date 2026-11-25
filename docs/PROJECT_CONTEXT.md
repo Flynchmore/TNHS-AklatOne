@@ -291,6 +291,13 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - Tests: helpers.signIn plants a known code (TEST_CODE) and verifies; adminToken is signed directly (parallel test files raced on e2e_admin's code). Backend 162 passed + 1 opt-in skipped (38 files); frontend 134 (26 files).
 - Diagrams: Flowchart 1 (Member choice, add email), 2 (recovery key at setup / emergency), 4 (Librarian choice, Add book with photo), DFD 1.7 + store D17 Recovery Key, ERD LibraryRecovery; parts re-cut.
 
+## Staff Web / Desktop: one look with the phone app (2026-11-25)
+- Shared design language (developer request: uniform, but each app keeps its own layout): every sign-in-type screen (phone sign-in/sign-up, staff sign-in/setup/recover/forgot password, Desktop app chooser) and the staff side nav use navy (primary -> primary-strong) with the school seal as a low-opacity watermark; the photo banner tnhs-background.webp was removed (backup ~/aklatone-backups/images-2026-11-25). Unique per app: phone = bottom nav + curved photo headers; Web = split sign-in card + side nav; Desktop = Web + own title bar, offline Upload, Visitor's Log chooser.
+- Staff pages appear at once: removed per-panel / per-tile staggered entrance animations (Panel/StatTile delay props gone) and fade each page as one piece (.ak-page keyed by path in Layout), same as the phone.
+- Staff Forgot password (was missing): /forgot-password reuses MobileForgotPassword with staff (StaffAuthShell); link on the staff sign-in. After a reset it no longer signs in by itself (that sent an extra sign-in code email).
+- Security: every API answer carries Cache-Control: no-store (covers keep their 30-day cache), so a shared library computer's browser keeps no member records (test in security.test.ts).
+- Small UI: staff Badge px-3, catalog "Not set" serial muted (was red), "No ratings yet" on one line.
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

@@ -90,6 +90,8 @@ describe("API security", () => {
     expect(res.headers["x-frame-options"]).toBeDefined();
     expect(res.headers["strict-transport-security"]).toBeDefined();
     expect(res.headers["x-powered-by"]).toBeUndefined();
+    // API answers (personal records) are never cached by a browser on a shared computer.
+    expect((await request(app).get("/api/v1/auth/me")).headers["cache-control"]).toBe("no-store");
   });
 
   it("CORS answers only the apps, CORS_ORIGINS and (outside production) the local network", async () => {

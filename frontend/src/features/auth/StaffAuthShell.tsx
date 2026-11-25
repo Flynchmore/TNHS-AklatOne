@@ -9,12 +9,15 @@ export function StaffAuthShell({ highlights, tagline, children }: { highlights: 
   return (
     <div className="relative min-h-[calc(100vh-var(--ak-titlebar,0px))] flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-primary-strong">
       {/* Background: school banner at lower opacity over navy (no blur), with a light navy tint for contrast. */}
-      <div className="absolute inset-0 bg-cover bg-center ak-bg-drift opacity-60" style={{ backgroundImage: "url('/tnhs-background.webp')" }} aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-strong/55 via-primary/30 to-primary-strong/60" aria-hidden="true" />
+      {/* Same background as the phone app's sign-in screens: navy with the school seal large in the middle. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary via-primary-strong to-primary-strong" aria-hidden="true" />
+      <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="ak-watermark absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[44rem] max-w-[120vw] opacity-[0.16] pointer-events-none" />
+      <span className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-white/[0.05] ak-float-slow" aria-hidden="true" />
+      <span className="absolute -bottom-28 -left-24 w-96 h-96 rounded-full bg-accent/[0.07] ak-float" aria-hidden="true" />
 
       <main className="relative w-full max-w-5xl grid md:grid-cols-[1.15fr_1fr] rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/20 bg-surface">
         {/* Left half: branding and information. */}
-        <section aria-label="About AklatOne" className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-strong text-on-primary p-6 sm:p-10 flex flex-col justify-between gap-6 md:gap-8 ak-from-left">
+        <section aria-label="About AklatOne" className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-strong text-on-primary p-6 sm:p-10 flex flex-col justify-between gap-6 md:gap-8">
           <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-white/[0.07] ak-float-slow" aria-hidden="true" />
           <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-white/[0.05] ak-float" aria-hidden="true" />
 
@@ -39,7 +42,7 @@ export function StaffAuthShell({ highlights, tagline, children }: { highlights: 
             {/* Hidden on phones so the form is visible without scrolling past the branding. */}
             <ul className="hidden md:block space-y-3">
               {highlights.map(({ icon: Icon, text }, i) => (
-                <li key={text} className="flex items-center gap-3 ak-from-left" style={{ animationDelay: `${0.15 + i * 0.1}s` }}>
+                <li key={text} className="flex items-center gap-3" style={{ animationDelay: `${0.15 + i * 0.1}s` }}>
                   <span className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0" aria-hidden="true"><Icon size={20} /></span>
                   <span className="text-sm text-white/95">{text}</span>
                 </li>

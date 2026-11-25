@@ -151,6 +151,7 @@ export function Login() {
             onChange={e => setPassword(e.target.value)}
             trailing={<FieldIconButton label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</FieldIconButton>}
           />
+          <div className="flex justify-end -mt-1"><Link to="/forgot-password" className={`text-sm font-medium text-primary hover:underline rounded py-1 ${focusRing}`}>Forgot password?</Link></div>
           <button type="submit" className={btnPrimary} disabled={loading}>{loading && <Spinner />}{loading ? "Signing in…" : "Sign in"}</button>
         </form>
         {/* Emergency only: kept small on purpose. */}

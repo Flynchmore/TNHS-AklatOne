@@ -111,7 +111,7 @@ export function Catalog() {
       />
 
       {copies.data?.byStatus && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 ak-slide">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <div className={`${card} p-4`}>
             <p className="flex items-center gap-2 text-xs font-semibold text-ink-muted"><Copy size={14} aria-hidden="true" />All copies</p>
             <p className="text-2xl font-bold text-ink mt-1 tabular-nums">{copies.data.total}</p>
@@ -125,7 +125,7 @@ export function Catalog() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-4 ak-slide">
+      <div className="flex flex-wrap items-center gap-4">
       <div className="relative flex-1 min-w-[16rem] max-w-lg">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
         <label htmlFor="books-search" className="sr-only">Search books</label>
@@ -144,7 +144,7 @@ export function Catalog() {
       {data && data.items.length === 0 && <EmptyState icon={BookOpen} text={hiddenOnly ? "No hidden books." : search ? `No books match "${search}".` : "No books yet. Add the first one."} />}
 
       {data && data.items.length > 0 && (
-        <div className={`${table.wrap} ak-slide`}>
+        <div className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}>
               <tr>{["Serial", "Title / Author", "Published", "ISBN", "Copies", "Borrowed", "Views", "Rating"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr>
@@ -152,7 +152,7 @@ export function Catalog() {
             <tbody>
               {data.items.map(b => (
                 <tr key={b.id} className={table.row}>
-                  <td className={`${table.td} font-mono text-xs text-ink`}>{b.serialNumber ?? <span className="text-danger font-sans">Not set</span>}</td>
+                  <td className={`${table.td} font-mono text-xs text-ink`}>{b.serialNumber ?? <span className="text-ink-muted font-sans italic">Not set</span>}</td>
                   <td className={table.td}><div className="flex items-center gap-3"><BookCover isbn={b.isbn} coverUrl={b.coverUrl} title={b.title} className="w-10 h-14 rounded-lg shrink-0 shadow-sm" /><div className="min-w-0"><div className="font-semibold text-ink">{b.title} {b.isHidden && <Badge tone="warning"><EyeOff size={12} aria-hidden="true" />Hidden</Badge>}</div><div className="text-xs text-ink-muted">{b.authors || "Unknown author"}</div></div></div></td>
                   <td className={`${table.td} text-ink-muted`}>{[b.publishedYear, b.publisher].filter(Boolean).join(" · ") || "—"}</td>
                   <td className={`${table.td} text-ink-muted font-mono text-xs`}>{b.isbn ?? "N/A"}</td>

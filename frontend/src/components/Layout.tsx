@@ -1,6 +1,6 @@
 import { Suspense, useState } from "react";
 import { Skeleton } from "./staff/ui";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, X, LogOut, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
 import { useAuth } from "../features/auth/auth";
@@ -30,6 +30,7 @@ export const navLinks = (desktop = isDesktop) => (desktop ? desktopLinks : webLi
 
 export function Layout() {
   const { user, token, logout, hasPerm } = useAuth();
+  const location = useLocation();
   // Librarian's app time (Time Spent), like the members'.
   useScreenTimeTracker(user?.id, token, isDesktop ? "desktop" : "web");
   const nav = useNavigate();
@@ -59,8 +60,9 @@ export function Layout() {
 
       {/* Fixed sidebar: never scrolls with the page, so the menu and Logout stay in place. */}
       <aside className={`ak-no-print fixed top-[var(--ak-titlebar,0px)] bottom-0 left-0 z-40 w-72 text-white flex flex-col overflow-hidden bg-primary-strong motion-safe:transition-transform motion-safe:duration-300 md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="absolute inset-0 bg-cover bg-center opacity-25" style={{ backgroundImage: "url('/tnhs-background.webp')" }} aria-hidden="true" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-strong/80 via-primary/60 to-primary-strong/90" aria-hidden="true" />
+        {/* Same look as the phone app's sign-in: navy with the school seal low in the background (menu text stays clear). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary via-primary-strong to-primary-strong" aria-hidden="true" />
+        <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="ak-watermark absolute left-1/2 top-[62%] -translate-x-1/2 -translate-y-1/2 w-[26rem] max-w-none opacity-[0.10] pointer-events-none" />
 
         {/* Short windows (e.g. the 800 px desktop window) get a compact sidebar so every item stays visible. */}
         <div className="relative flex flex-col items-center text-center px-5 pt-7 pb-5 [@media(max-height:880px)]:pt-4 [@media(max-height:880px)]:pb-3 border-b border-white/15">
@@ -125,7 +127,7 @@ export function Layout() {
           <span className="font-bold">AklatOne</span>
         </div>
         <main id="main" className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
-          <Suspense fallback={<Skeleton rows={6} />}><Outlet /></Suspense>
+          <Suspense fallback={<Skeleton rows={6} />}><div key={location.pathname} className="ak-page"><Outlet /></div></Suspense>
           {!isDesktop && <IdleLogout onTimeout={() => { logout(true); nav("/login"); }} />}
         </main>
       </div>

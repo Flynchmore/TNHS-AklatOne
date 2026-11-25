@@ -87,7 +87,7 @@ export function Members() {
         </>}
       />
 
-      <div className="flex flex-wrap items-center gap-3 ak-slide">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-60 max-w-lg">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
           <label htmlFor="members-search" className="sr-only">Search members</label>
@@ -107,7 +107,7 @@ export function Members() {
       {list.data && list.data.items.length === 0 && <EmptyState icon={Users} text={search ? `No members match "${search}".` : "No members here yet."} action={canWrite ? <button type="button" onClick={() => setEditing("new")} className={btn.primary}><UserPlus size={16} aria-hidden="true" />Add member</button> : undefined} />}
 
       {list.data && list.data.items.length > 0 && (
-        <div className={`${table.wrap} ak-slide`}>
+        <div className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}><tr>{["Member", "Role", "Email", "Borrowed", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr></thead>
             <tbody>

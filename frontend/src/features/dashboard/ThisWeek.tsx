@@ -25,7 +25,7 @@ export function ThisWeek() {
   const w = q.data;
   const max = Math.max(1, ...(w?.days.map(d => Math.max(d.borrowed, d.returned)) ?? [1]));
   return (
-    <Panel title="Books used this week" icon={CalendarDays} delay={0.22} action={w ? <span className="text-sm text-ink-muted">{label(w.from, { month: "short", day: "numeric" })} – {label(w.to, { month: "short", day: "numeric" })} (Mon–Fri)</span> : undefined}>
+    <Panel title="Books used this week" icon={CalendarDays} action={w ? <span className="text-sm text-ink-muted">{label(w.from, { month: "short", day: "numeric" })} – {label(w.to, { month: "short", day: "numeric" })} (Mon–Fri)</span> : undefined}>
       {q.isLoading ? <Skeleton rows={2} className="h-24" /> : q.isError || !w ? <p role="alert" className="text-sm text-danger">Could not load this week.</p> : (
         <div className="grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
           <div className="space-y-4">

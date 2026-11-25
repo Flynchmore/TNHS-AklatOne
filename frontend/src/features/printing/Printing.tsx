@@ -179,7 +179,7 @@ export function Printing() {
             <button type="button" onClick={() => setEditing(true)} className={btn.secondary}><PenLine size={16} aria-hidden="true" />Edit names &amp; signatures</button>
             <button type="button" onClick={print} disabled={!sheet.data} className={btn.primary}><Printer size={18} aria-hidden="true" />Print</button>
           </>} />
-        <div role="radiogroup" aria-label="List to print" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 ak-slide">
+        <div role="radiogroup" aria-label="List to print" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
           {kinds.map(k => {
             const o = SHEETS[k];
             const on = k === kind;
@@ -216,7 +216,7 @@ export function Printing() {
       </div>
 
       {/* The printable sheet: on paper only this part shows (see .ak-no-print / @page in index.css). */}
-      <article aria-label={`${s.title} preview`} className={`ak-print-sheet ${card} p-6 sm:p-10 ak-slide`}>
+      <article aria-label={`${s.title} preview`} className={`ak-print-sheet ${card} p-6 sm:p-10`}>
         {!cards && <><header className="flex items-center gap-4 border-b-2 border-primary-strong pb-4 mb-5">
           <img src="/tnhs-logo.png" alt="" className="w-20 h-20 object-contain" />
           <div className="flex-1 text-center">

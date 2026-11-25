@@ -138,6 +138,9 @@ export function createApp() {
   app.use("/api/v1", (_req, res, next) => (isRestoring() ? fail(res, 503, "The library database is being restored. Please try again in a minute.") : next()));
 
   const api = express.Router();
+  // API answers hold personal records: never kept in a browser or proxy cache (a shared library computer must not
+  // show the last user's data from cache). Book covers set their own long cache.
+  api.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
   api.use(idempotency);
   // Signed-in devices: per-account limits only (see SESSION_PATHS); mounted before /auth so the sign-in limiters skip it.
   api.use("/auth/sessions", sessionsRouter);

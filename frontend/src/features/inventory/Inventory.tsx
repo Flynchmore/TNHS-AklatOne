@@ -97,9 +97,9 @@ export function Inventory() {
       {r && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatTile icon={CheckCircle2} label="Scanned" value={r.totals.scanned} hint={isOpen ? "So far" : `Audit closed ${phDateTime(r.audit.closedAt!)}`} delay={0.05} />
-            <StatTile icon={SearchX} label="Not found" value={r.totals.notFound} hint="Should be on the shelf" delay={0.1} />
-            <StatTile icon={AlertTriangle} label="Records to check" value={r.mismatched.length} hint="Scanned, but recorded as out or lost" delay={0.15} />
+            <StatTile icon={CheckCircle2} label="Scanned" value={r.totals.scanned} hint={isOpen ? "So far" : `Audit closed ${phDateTime(r.audit.closedAt!)}`} />
+            <StatTile icon={SearchX} label="Not found" value={r.totals.notFound} hint="Should be on the shelf" />
+            <StatTile icon={AlertTriangle} label="Records to check" value={r.mismatched.length} hint="Scanned, but recorded as out or lost" />
           </div>
 
           {isOpen && canWrite && (

@@ -1,10 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, KeyRound } from "lucide-react";
-import { useAuth } from "../../features/auth/auth";
+import { Eye, EyeOff, Mail, Lock, KeyRound, MailCheck, ShieldCheck } from "lucide-react";
 import { useToast } from "../../components/Toast";
 import { Alert, Field, FieldIconButton, Spinner, StrengthMeter, btnPrimary, focusRing, linkText, mobileApi, passwordStrength } from "../../components/mobile/ui";
 import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
+import { StaffAuthShell } from "../auth/StaffAuthShell";
+
+/** The phone app and the Staff Web / Desktop use the same steps, each inside its own sign-in look. */
+function Shell({ staff, title, subtitle, children }: { staff: boolean; title: string; subtitle: string; children: React.ReactNode }) {
+  if (!staff) return <MobileAuthShell title={title} subtitle={subtitle}>{children}</MobileAuthShell>;
+  return (
+    <StaffAuthShell tagline="Reset your password with a code sent to your email." highlights={[{ icon: MailCheck, text: "A 6-digit code goes to your email" }, { icon: ShieldCheck, text: "Codes expire after 10 minutes" }]}>
+      <div className="space-y-4">
+        <div><h1 className="text-2xl font-bold text-primary-strong">{title}</h1><p className="text-sm text-ink-muted mt-1">{subtitle}</p></div>
+        {children}
+      </div>
+    </StaffAuthShell>
+  );
+}
 
 type Step = "email" | "otp" | "reset" | "done";
 
@@ -14,9 +27,9 @@ const titles: Record<Exclude<Step, "done">, [string, string]> = {
   reset: ["New Password", "Create a new password"],
 };
 
-export function MobileForgotPassword() {
+export function MobileForgotPassword({ staff = false }: { staff?: boolean }) {
+  const signIn = staff ? "/login" : "/m/login";
   const nav = useNavigate();
-  const auth = useAuth();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -77,7 +90,6 @@ export function MobileForgotPassword() {
     const r = await mobileApi("/api/v1/auth/reset-password", { method: "POST", body: JSON.stringify({ ...target(), otp, newPassword }) });
     setLoading(false);
     if (r.ok) {
-      if ((r.data as { token?: string } | null)?.token) auth.login(email, newPassword).catch(() => {});
       setStep("done");
     } else {
       setError(r.message ?? "Failed to reset password.");
@@ -86,12 +98,12 @@ export function MobileForgotPassword() {
 
   if (step === "done") {
     return (
-      <MobileAuthShell title="Password changed" subtitle="Your password has been updated. You can now sign in with your new password.">
+      <Shell staff={staff} title="Password changed" subtitle="Your password has been updated. You can now sign in with your new password.">
         <div role="status" className="w-20 h-20 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
         </div>
-        <button onClick={() => nav("/m/login")} className={btnPrimary}>Go to Sign In</button>
-      </MobileAuthShell>
+        <button onClick={() => nav(signIn)} className={btnPrimary}>Go to Sign In</button>
+      </Shell>
     );
   }
 
@@ -103,7 +115,7 @@ export function MobileForgotPassword() {
   );
 
   return (
-    <MobileAuthShell title={title} subtitle={subtitle}>
+    <Shell staff={staff} title={title} subtitle={subtitle}>
           {error && <Alert>{error}</Alert>}
           {info && <Alert tone="info">{info}</Alert>}
 
@@ -148,8 +160,8 @@ export function MobileForgotPassword() {
           )}
 
           <p className="text-center text-sm pt-2">
-            <Link to="/m/login" className={`${linkText} inline-block py-1`}>Back to Sign In</Link>
+            <Link to={signIn} className={`${linkText} inline-block py-1`}>Back to Sign In</Link>
           </p>
-    </MobileAuthShell>
+    </Shell>
   );
 }

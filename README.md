@@ -226,7 +226,7 @@ and the phones to the same Wi-Fi, open port 3000 in the laptop's firewall once
 | Loan period and book limit | `backend/src/config/loanPolicy.ts` |
 | School ID and default signatories on printouts | `frontend/src/features/printing/Printing.tsx` (`SCHOOL_ID`, `DEFAULT_SIGNATORIES`); signatories can also be edited on screen |
 | School newspaper links (The Victor, Masid) | `frontend/src/components/SchoolNewspaper.tsx` |
-| Logos and photos | `frontend/public/` (`tnhs-logo.png`, `aklatone-icon.png`, `tnhs-background.webp`, `tnhs-facade*.webp`); email logos in `backend/assets/email/` |
+| Logos and photos | `frontend/public/` (`tnhs-logo.png`, `aklatone-icon.png`, `tnhs-facade*.webp`); email logos in `backend/assets/email/` |
 | Colors (light and dark theme) | `frontend/src/index.css` (`--color-*` tokens) |
 | Privacy Policy and Terms (shown in the app) | `frontend/src/features/mobile/MobileSettings.tsx` (`PrivacyText`, `TermsText`); then raise `CONSENT_VERSION` in `frontend/src/features/mobile/MobileWelcome.tsx` so members accept the new text |
 | Email wording | `backend/src/common/email.ts` (preview: `cd backend && npm run email:preview`) |

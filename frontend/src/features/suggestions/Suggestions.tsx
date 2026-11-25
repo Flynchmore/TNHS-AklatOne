@@ -39,7 +39,7 @@ export function Suggestions() {
   return (
     <div className="space-y-6">
       <PageHeader icon={Lightbulb} title="Suggestions" subtitle="Books members want in the library, and their feedback. Only librarians see these." />
-      <div className="flex flex-wrap items-center gap-3 ak-slide">
+      <div className="flex flex-wrap items-center gap-3">
         <Segmented<Filter> label="Status" value={filter} onChange={setFilter} options={[
           { key: "NEW", label: "New", count: q.data?.waiting }, { key: "PLANNED", label: "Planned" }, { key: "DONE", label: "Added / Done" }, { key: "DECLINED", label: "Declined" }, { key: "ALL", label: "All" },
         ]} />
@@ -51,7 +51,7 @@ export function Suggestions() {
       {q.isLoading ? <Skeleton rows={4} /> : q.isError ? <p role="alert" className="text-danger">Could not load suggestions.</p> : !q.data?.items.length ? <EmptyState icon={Lightbulb} text={filter === "NEW" ? "No new suggestions." : "Nothing here."} /> : (
         <ul className="grid lg:grid-cols-2 gap-4">
           {q.data.items.map(s => (
-            <li key={s.id} className={`${card} p-5 space-y-2 ak-slide`}>
+            <li key={s.id} className={`${card} p-5 space-y-2`}>
               <div className="flex items-start justify-between gap-3">
                 <p className="font-bold text-ink">{s.kind === "BOOK" ? <BookPlus size={16} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" /> : <MessageSquareText size={16} className="inline -mt-0.5 mr-1 text-primary" aria-hidden="true" />}{s.title}{s.author && <span className="font-normal text-ink-muted"> · {s.author}</span>}</p>
                 <Badge tone={STATUS[s.status]?.tone ?? "primary"}>{STATUS[s.status]?.label ?? s.status}</Badge>
@@ -108,7 +108,7 @@ function ReviewsPanel() {
       {q.isLoading ? <Skeleton rows={2} /> : q.isError ? <p role="alert" className="text-danger">Could not load reviews.</p> : !q.data?.items.length ? <EmptyState icon={Star} text={status === "PENDING" ? "No reviews waiting." : "No reviews here."} /> : (
         <ul className="grid lg:grid-cols-2 gap-4">
           {q.data.items.map(r => (
-            <li key={r.id} className={`${card} p-5 space-y-2 ak-slide`}>
+            <li key={r.id} className={`${card} p-5 space-y-2`}>
               <div className="flex items-start justify-between gap-3">
                 <p className="font-bold text-ink">{r.book.title}</p>
                 <span className="text-warning font-bold shrink-0" aria-label={`${r.stars} of 5 stars`}>{"★".repeat(r.stars)}</span>

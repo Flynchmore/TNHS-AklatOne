@@ -36,7 +36,7 @@ export const table = {
 
 export function PageHeader({ icon: Icon, title, subtitle, actions }: { icon: LucideIcon; title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 ak-slide">
+    <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-4 min-w-0">
         <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-on-primary flex items-center justify-center shadow-lg shadow-primary/25 shrink-0" aria-hidden="true"><Icon size={26} /></span>
         <div className="min-w-0">
@@ -57,7 +57,7 @@ const tileTone = {
 };
 
 /** Big number tile (Dashboard, Reports). A link when `to` is given. */
-export function StatTile({ icon: Icon, label: text, value, hint, tone = "primary", to, delay = 0 }: { icon: LucideIcon; label: string; value: ReactNode; hint?: string; tone?: keyof typeof tileTone; to?: string; delay?: number }) {
+export function StatTile({ icon: Icon, label: text, value, hint, tone = "primary", to }: { icon: LucideIcon; label: string; value: ReactNode; hint?: string; tone?: keyof typeof tileTone; to?: string }) {
   const body = (
     <>
       <span className={`absolute -right-6 -top-6 w-28 h-28 rounded-full bg-gradient-to-br ${tileTone[tone]} opacity-10 motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-150`} aria-hidden="true" />
@@ -67,15 +67,15 @@ export function StatTile({ icon: Icon, label: text, value, hint, tone = "primary
       {hint && <span className="relative block text-xs text-ink-muted mt-1">{hint}</span>}
     </>
   );
-  const cls = `group relative overflow-hidden block p-5 ${card} ${cardHover} ak-slide active:scale-[0.98] ${focusRing}`;
+  const cls = `group relative overflow-hidden block p-5 ${card} ${cardHover} active:scale-[0.98] ${focusRing}`;
   return to
-    ? <Link to={to} className={cls} style={{ animationDelay: `${delay}s` }}>{body}</Link>
-    : <div className={cls} style={{ animationDelay: `${delay}s` }}>{body}</div>;
+    ? <Link to={to} className={cls}>{body}</Link>
+    : <div className={cls}>{body}</div>;
 }
 
-export function Panel({ title, icon: Icon, action, children, className = "", delay = 0 }: { title: string; icon?: LucideIcon; action?: ReactNode; children: ReactNode; className?: string; delay?: number }) {
+export function Panel({ title, icon: Icon, action, children, className = "" }: { title: string; icon?: LucideIcon; action?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section aria-label={title} className={`${card} p-5 sm:p-6 flex flex-col ak-slide ${className}`} style={{ animationDelay: `${delay}s` }}>
+    <section aria-label={title} className={`${card} p-5 sm:p-6 flex flex-col ${className}`}>
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="flex items-center gap-2 text-lg font-bold text-primary-strong">
           {Icon && <span className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true"><Icon size={18} /></span>}
@@ -106,7 +106,7 @@ export const badgeTone = {
   muted: "bg-slate-100 text-ink-muted",
 };
 export function Badge({ tone = "primary", children }: { tone?: keyof typeof badgeTone; children: ReactNode }) {
-  return <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${badgeTone[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 leading-tight rounded-full whitespace-nowrap ${badgeTone[tone]}`}>{children}</span>;
 }
 
 /** Modal built on <dialog> (focus trap and Esc for free). Branded header with icon, subtitle and a faint school seal. */

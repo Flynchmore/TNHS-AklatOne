@@ -2,7 +2,7 @@ import { Star } from "lucide-react";
 
 /** Read-only average rating, e.g. ★★★★☆ 4.5 (12). */
 export function Stars({ average, count, size = 16 }: { average: number; count: number; size?: number }) {
-  if (!count) return <span className="text-sm text-ink-muted">No ratings yet</span>;
+  if (!count) return <span className="text-sm text-ink-muted whitespace-nowrap">No ratings yet</span>;
   return (
     <span className="inline-flex items-center gap-1.5" aria-label={`Rated ${average} out of 5 by ${count} member${count === 1 ? "" : "s"}`}>
       <span className="inline-flex" aria-hidden="true">

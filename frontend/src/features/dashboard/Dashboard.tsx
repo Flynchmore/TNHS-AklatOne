@@ -69,7 +69,7 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome banner over the school photo. */}
-      <section aria-label="Welcome" className="relative overflow-hidden rounded-3xl shadow-xl ak-slide">
+      <section aria-label="Welcome" className="relative overflow-hidden rounded-3xl shadow-xl">
         <div className="absolute inset-0 bg-cover bg-center ak-bg-drift" style={{ backgroundImage: "url('/tnhs-facade.webp')" }} aria-hidden="true" />
         <div className="absolute inset-0 bg-gradient-to-r from-primary-strong/95 via-primary/80 to-primary/35" aria-hidden="true" />
         <div className="relative flex flex-wrap items-end justify-between gap-4 p-6 sm:p-10 text-white min-h-52">
@@ -90,10 +90,10 @@ export function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {summary.isLoading ? <div className="col-span-full"><Skeleton rows={1} className="h-36" /></div> : (
           <>
-            <StatTile icon={BookOpen} label="Total Books" value={s?.titles ?? 0} hint={`${s?.copies ?? 0} copies on the shelves`} to="/catalog" delay={0.05} />
-            <StatTile icon={Users} label="Total Members" value={s?.members ?? 0} hint="Active students and teachers" tone="success" to="/members" delay={0.1} />
-            <StatTile icon={BookUp} label="Currently Borrowed" value={s?.activeLoans ?? 0} hint={s?.overdueLoans ? `${s.overdueLoans} overdue` : "None overdue"} tone={s?.overdueLoans ? "danger" : "primary"} to={`${txPath}?tab=borrowed`} delay={0.15} />
-            <StatTile icon={CalendarClock} label="Due This Week" value={s?.dueThisWeek ?? 0} hint="Due in the next 7 days" tone="warning" to={`${txPath}?tab=borrowed`} delay={0.2} />
+            <StatTile icon={BookOpen} label="Total Books" value={s?.titles ?? 0} hint={`${s?.copies ?? 0} copies on the shelves`} to="/catalog" />
+            <StatTile icon={Users} label="Total Members" value={s?.members ?? 0} hint="Active students and teachers" tone="success" to="/members" />
+            <StatTile icon={BookUp} label="Currently Borrowed" value={s?.activeLoans ?? 0} hint={s?.overdueLoans ? `${s.overdueLoans} overdue` : "None overdue"} tone={s?.overdueLoans ? "danger" : "primary"} to={`${txPath}?tab=borrowed`} />
+            <StatTile icon={CalendarClock} label="Due This Week" value={s?.dueThisWeek ?? 0} hint="Due in the next 7 days" tone="warning" to={`${txPath}?tab=borrowed`} />
           </>
         )}
       </div>
@@ -101,13 +101,13 @@ export function Dashboard() {
       {hasPerm("reports:read") && <ThisWeek />}
 
       <div className="grid lg:grid-cols-2 gap-6 items-stretch">
-        <Panel title="Recent Activities" icon={History} delay={0.25} action={<Link to="/reports" className={`${btn.ghost} ${btnSm}`}>Reports<ChevronRight size={14} aria-hidden="true" /></Link>}>
+        <Panel title="Recent Activities" icon={History} action={<Link to="/reports" className={`${btn.ghost} ${btnSm}`}>Reports<ChevronRight size={14} aria-hidden="true" /></Link>}>
           {activity.isLoading ? <Skeleton rows={5} className="h-12" /> : activity.isError ? <p role="alert" className="text-danger text-sm">Could not load recent activities.</p> : !activity.data?.length ? <p className="text-ink-muted text-sm py-6 text-center">No activity yet.</p> : (
             <ol className="relative space-y-1 before:absolute before:left-5 before:top-3 before:bottom-3 before:w-px before:bg-line">
               {activity.data.map((a, i) => {
                 const Icon = ENTITY_ICON[a.entityType] ?? ShieldCheck;
                 return (
-                  <li key={a.id} className="relative flex items-start gap-3 p-2 rounded-2xl motion-safe:transition-colors hover:bg-primary-soft/50 ak-slide" style={{ animationDelay: `${0.3 + i * 0.04}s` }}>
+                  <li key={a.id} className="relative flex items-start gap-3 p-2 rounded-2xl motion-safe:transition-colors hover:bg-primary-soft/50" style={{ animationDelay: `${0.3 + i * 0.04}s` }}>
                     <span className="relative z-10 w-10 h-10 rounded-xl bg-surface border border-line text-primary flex items-center justify-center shrink-0 shadow-sm" aria-hidden="true"><Icon size={18} /></span>
                     <div className="min-w-0 flex-1 pt-0.5">
                       <p className="text-sm text-ink"><strong className="font-semibold">{a.actor?.displayName || a.actor?.username || "System"}</strong> {ACTIVITY[a.action] ?? a.action}</p>
@@ -120,10 +120,10 @@ export function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="Quick Actions" icon={Zap} delay={0.3}>
+        <Panel title="Quick Actions" icon={Zap}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 content-start">
             {actions.map((a, i) => (
-              <Link key={a.label} to={a.to} className={`group relative overflow-hidden flex items-center gap-3 p-4 ${card} motion-safe:transition-all motion-safe:duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 active:scale-[0.97] ak-slide ${focusRing}`} style={{ animationDelay: `${0.35 + i * 0.05}s` }}>
+              <Link key={a.label} to={a.to} className={`group relative overflow-hidden flex items-center gap-3 p-4 ${card} motion-safe:transition-all motion-safe:duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 active:scale-[0.97] ${focusRing}`} style={{ animationDelay: `${0.35 + i * 0.05}s` }}>
                 <span className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.cls} text-white flex items-center justify-center shrink-0 shadow-md motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-110 group-hover:rotate-6`} aria-hidden="true"><a.icon size={22} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-ink group-hover:text-primary">{a.label}</span>

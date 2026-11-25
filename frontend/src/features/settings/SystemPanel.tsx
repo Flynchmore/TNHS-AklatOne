@@ -50,7 +50,7 @@ export function SystemPanel() {
   const lastAgeH = s && b?.lastAutomatic ? (Date.parse(s.serverTime) - Date.parse(b.lastAutomatic.createdAt)) / 3_600_000 : null;
   const diskLow = b?.disk ? b.disk.freeBytes < 2 * 1024 ** 3 : false;
   return (
-    <Panel title="System status" icon={Activity} delay={0.22} className="lg:col-span-2">
+    <Panel title="System status" icon={Activity} className="lg:col-span-2">
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-ink-muted">{s ? `Checked ${phDateTime(s.serverTime)} · server running since ${phDateTime(s.startedAt)}` : "Checking the library server…"}</p>
         <button type="button" onClick={() => q.refetch()} disabled={q.isFetching} className={`${btn.secondary} ${btnSm}`}><RefreshCw size={14} className={q.isFetching ? "animate-spin" : ""} aria-hidden="true" />Check again</button>

@@ -21,7 +21,7 @@ export function Settings() {
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <ProfilePanel />
         <PasswordPanel />
-        <Panel title="Sign-in devices" icon={MonitorSmartphone} delay={0.12}><SignInSessions /></Panel>
+        <Panel title="Sign-in devices" icon={MonitorSmartphone}><SignInSessions /></Panel>
         {(user?.role === "LIBRARIAN" || user?.role === "ADMIN") && <RecoveryKeyPanel />}
         <ThemePanel />
         <AboutPanel />
@@ -59,7 +59,7 @@ function ProfilePanel() {
   );
 
   return (
-    <Panel title="Librarian profile" icon={UserCog} delay={0.05}>
+    <Panel title="Librarian profile" icon={UserCog}>
       <form onSubmit={save} className="space-y-4" noValidate>
         <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary-soft to-transparent">
           <span className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-strong text-on-primary text-xl font-bold flex items-center justify-center" aria-hidden="true">{(user?.displayName || user?.username || "L").charAt(0).toUpperCase()}</span>
@@ -116,7 +116,7 @@ function PasswordPanel() {
   const eye = <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? "Hide passwords" : "Show passwords"} className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center text-ink-muted hover:text-primary hover:bg-primary-soft ${focusRing}`}>{show ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button>;
 
   return (
-    <Panel title="Change password" icon={KeyRound} delay={0.1}>
+    <Panel title="Change password" icon={KeyRound}>
       <form onSubmit={save} className="space-y-4" noValidate>
         <div>
           <label htmlFor="current-password" className={label}>Current password</label>
@@ -158,7 +158,7 @@ function ThemePanel() {
     toast({ tone: "success", title: `${t === "dark" ? "Dark" : "Light"} theme on`, message: "Saved on this computer." });
   };
   return (
-    <Panel title="Theme" icon={Palette} delay={0.15}>
+    <Panel title="Theme" icon={Palette}>
       <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-3">
         {options.map(o => {
           const on = theme === o.key;
@@ -179,7 +179,7 @@ function ThemePanel() {
 
 function AboutPanel() {
   return (
-    <Panel title="About AklatOne" icon={Info} delay={0.2}>
+    <Panel title="About AklatOne" icon={Info}>
       <div className="flex items-center gap-4 mb-4">
         <img src="/aklatone-icon.png" alt="" className="w-16 h-16 rounded-2xl shadow-md bg-white p-1" />
         <div>
@@ -219,7 +219,7 @@ function RecoveryKeyPanel() {
     setPassword("");
   };
   return (
-    <Panel title="Emergency recovery key" icon={KeyRound} delay={0.14}>
+    <Panel title="Emergency recovery key" icon={KeyRound}>
       <div className="space-y-4">
         <p className="text-sm text-ink-muted">If nobody can sign in to the librarian account (password and email both lost), this key creates a new librarian account from <b>Can't access the librarian account?</b> on the sign-in page. Keep it printed with the principal or the ICT coordinator.</p>
         <p className="text-sm text-ink">{createdAt === undefined ? "Checking…" : createdAt ? <>Current key made on <b>{phDateTime(createdAt)}</b>.</> : <b className="text-danger">No recovery key yet. Make one now.</b>}</p>

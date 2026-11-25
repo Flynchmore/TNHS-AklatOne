@@ -83,7 +83,7 @@ export function Loans() {
       {data && data.length === 0 && <EmptyState icon={BookCheck} text={view === "ACTIVE" ? "No books are borrowed right now." : "No returned books yet."} />}
 
       {data && data.length > 0 && (
-        <div key={view} className={`${table.wrap} ak-slide`}>
+        <div key={view} className={`${table.wrap}`}>
           <table className={table.table}>
             <thead className={table.head}>
               <tr>{["Book", "Member", "Borrowed", "Due", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr>

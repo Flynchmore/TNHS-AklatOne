@@ -27,7 +27,7 @@ export function Borrowing() {
     <div className="space-y-6">
       <PageHeader icon={ArrowLeftRight} title="Borrowing" subtitle="Lend books at the desk, approve member requests, track borrowed books, record returns and send notices."
         actions={hasPerm("circulation:write") ? <button type="button" onClick={() => setLending(true)} className={btn.success}><BookUp size={18} aria-hidden="true" />Lend a book</button> : undefined} />
-      <div className="max-w-xl ak-slide"><SlidingTabs label="Borrowing" tabs={tabs} active={tab} onChange={k => setParams(k === "borrowed" ? { tab: k } : {}, { replace: true })} /></div>
+      <div className="max-w-xl"><SlidingTabs label="Borrowing" tabs={tabs} active={tab} onChange={k => setParams(k === "borrowed" ? { tab: k } : {}, { replace: true })} /></div>
       <div key={tab} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className={direction}>
         {tab === "requests" ? <BorrowRequests /> : <Loans />}
       </div>

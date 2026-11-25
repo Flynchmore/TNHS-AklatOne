@@ -84,7 +84,7 @@ export function BackupPanel() {
 
   const disabled = !online;
   return (
-    <Panel title="Backup and Restore" icon={DatabaseBackup} delay={0.25} className="lg:col-span-2">
+    <Panel title="Backup and Restore" icon={DatabaseBackup} className="lg:col-span-2">
       {disabled && <p role="status" className="flex items-center gap-2 text-sm font-semibold text-warning bg-warning-soft rounded-2xl p-3 mb-4"><WifiOff size={16} aria-hidden="true" />Backup and restore need a connection to the library server.</p>}
       <div className="space-y-5">
         <div className="max-w-md">

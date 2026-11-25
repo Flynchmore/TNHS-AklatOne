@@ -48,6 +48,7 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 - **Settings > System status** shows whether the database, email and automatic backups are working.
 - **Settings > Sign-in devices** lists every device signed in to your account; sign out one you do not know
   (your password and an emailed code are asked). You also get an email when your account is used on a new device.
+- Forgot only the password? Staff sign-in > **Forgot password?** sends a code to the librarian email.
 - Never share the librarian password or the recovery key. If something looks wrong, follow [SECURITY.md](../SECURITY.md).
 - Every account needs an email (sign-in codes go there). An older account without one is asked to add and confirm
   an email at its next sign-in. Changing a password also asks for a code sent to the email.
