@@ -77,6 +77,22 @@ describe("staff portal pages", () => {
 });
 
 describe("staff search", () => {
+  it("Members: select all on the page, then deactivate them together after confirming", async () => {
+    const patches: string[] = [];
+    const row = (id: string, code: string) => ({ id, username: id, maskedId: code, memberType: "Student", gradeSection: "10 - Rizal", isActive: true, createdAt: new Date().toISOString() });
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      if (init?.method === "PATCH") { patches.push(String(input)); return json({}); }
+      return json({ items: [row("m1", "JT123456"), row("m2", "MS654321")], total: 2 });
+    });
+    wrap(<Members />);
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select all members on this page" }));
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Deactivate$/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(await screen.findByText("Members deactivated")).toBeInTheDocument();
+    expect(patches.sort()).toEqual(["http://localhost:3000/api/v1/users/m1/status", "http://localhost:3000/api/v1/users/m2/status"].map(u => expect.stringContaining(u.replace("http://localhost:3000", ""))) as unknown as string[]);
+  });
+
   it("Ctrl+K opens one search for pages, books, members and borrowed books, with a filter per kind", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
       const url = String(input);

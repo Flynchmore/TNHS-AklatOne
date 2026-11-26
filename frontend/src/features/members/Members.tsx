@@ -4,7 +4,7 @@ import { MemberIdPreview, useMemberIdPreview } from "../../components/MemberIdPr
 import { withRule, type Rule } from "../../lib/inputRules";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, UserPlus, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRight, GraduationCap, Briefcase, Mail, Eye as EyeIcon, EyeOff, IdCard, KeyRound, Printer, Timer } from "lucide-react";
 import { apiFetch } from "../../lib/api";
@@ -58,6 +58,11 @@ export function Members() {
   const [editing, setEditing] = useState<Member | "new" | null>(null);
   const [viewing, setViewing] = useState<Member | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
+  // Select / Select all (this page): print their Library ID cards, or activate / deactivate them together.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulk, setBulk] = useState<"activate" | "deactivate" | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const nav = useNavigate();
 
   useEffect(() => { const t = setTimeout(() => { setSearch(q.trim()); setPage(0); }, 300); return () => clearTimeout(t); }, [q]);
   useEffect(() => { if (params.get("new") === "1" && canWrite) { setEditing("new"); setParams({}, { replace: true }); } }, [params, setParams, canWrite]);
@@ -75,6 +80,23 @@ export function Members() {
     enabled: !!token,
   });
   const pages = Math.max(1, Math.ceil((list.data?.total ?? 0) / PAGE));
+  const shown = list.data?.items ?? [];
+  const chosen = shown.filter(m => selected.has(m.id));
+  const allOn = shown.length > 0 && chosen.length === shown.length;
+  const flip = (id: string) => setSelected(cur => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  useEffect(() => { setSelected(new Set()); setBulk(null); }, [search, type, status, page]);
+  const runBulk = async (to: "activate" | "deactivate") => {
+    const targets = chosen.filter(m => m.isActive !== (to === "activate"));
+    setBulkBusy(true);
+    let done = 0, failed = 0;
+    for (const m of targets) {
+      const r = await apiFetch(`/api/v1/users/${m.id}/status`, { method: "PATCH", body: JSON.stringify({ isActive: to === "activate" }), token, ...(m.updatedAt ? { headers: { "X-Expected-Updated-At": m.updatedAt } } : {}), offline: { kind: "member", label: `${to === "activate" ? "Activate" : "Deactivate"} ${memberId(m)}` } });
+      if (r.ok) done++; else failed++;
+    }
+    setBulkBusy(false); setBulk(null); setSelected(new Set());
+    toast(failed ? { tone: "error", title: `${done} changed, ${failed} not changed`, message: "Try the others again one by one." } : { tone: "success", title: to === "activate" ? "Members activated" : "Members deactivated", message: `${done} member(s) ${to === "activate" ? "can sign in again" : "can no longer sign in"}.${targets.length < chosen.length ? ` ${chosen.length - targets.length} already were.` : ""}` });
+    ["members", "summary", "recent-activity"].forEach(k => qc.invalidateQueries({ queryKey: [k] }));
+  };
 
   const toggle = useMutation({
     mutationFn: async (m: Member) => {
@@ -116,13 +138,37 @@ export function Members() {
       {list.isError && <p role="alert" className="text-danger">Could not load members. <button className="underline" onClick={() => list.refetch()}>Try again</button></p>}
       {list.data && list.data.items.length === 0 && <EmptyState icon={Users} text={search ? `No members match "${search}".` : "No members here yet."} action={canWrite ? <button type="button" onClick={() => setEditing("new")} className={btn.primary}><UserPlus size={16} aria-hidden="true" />Add member</button> : undefined} />}
 
+      {chosen.length > 0 && (
+        <div role="region" aria-label="Selected members" className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft px-4 py-3 shadow-md ak-fade">
+          <span className="text-sm font-bold text-primary-strong">{chosen.length} selected</span>
+          {bulk ? (
+            <>
+              <span className="text-sm text-ink">{bulk === "activate" ? "Activate" : "Deactivate"} {chosen.length} member(s)?</span>
+              <button type="button" className={`${bulk === "activate" ? btn.success : btn.danger} ${btnSm}`} disabled={bulkBusy} onClick={() => void runBulk(bulk)}>{bulkBusy ? "Working…" : "Yes"}</button>
+              <button type="button" className={`${btn.ghost} ${btnSm}`} disabled={bulkBusy} onClick={() => setBulk(null)}>No</button>
+            </>
+          ) : (
+            <>
+              {hasPerm("reports:read") && <button type="button" className={`${btn.secondary} ${btnSm}`} onClick={() => nav(`/printing?card=${chosen.filter(m => m.maskedId).map(m => m.id).join(",")}`)}><Printer size={14} aria-hidden="true" />Print Library ID cards</button>}
+              {canWrite && <button type="button" className={`${btn.secondary} ${btnSm} !text-success`} onClick={() => setBulk("activate")}><UserCheck size={14} aria-hidden="true" />Activate</button>}
+              {canWrite && <button type="button" className={`${btn.secondary} ${btnSm} !text-danger`} onClick={() => setBulk("deactivate")}><UserX size={14} aria-hidden="true" />Deactivate</button>}
+            </>
+          )}
+          <button type="button" className={`${btn.ghost} ${btnSm} ml-auto`} onClick={() => setSelected(new Set())}>Clear selection</button>
+        </div>
+      )}
+
       {list.data && list.data.items.length > 0 && (
         <div className={`${table.wrap}`}>
           <table className={table.table}>
-            <thead className={table.head}><tr>{["Member", "Role", "Email", "Borrowed", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th></tr></thead>
+            <thead className={table.head}><tr>
+              <th className={`${table.th} w-10`}><input type="checkbox" aria-label="Select all members on this page" checked={allOn} ref={el => { if (el) el.indeterminate = chosen.length > 0 && !allOn; }} onChange={() => setSelected(allOn ? new Set() : new Set(shown.map(m => m.id)))} className="w-5 h-5 accent-primary" /></th>
+              {["Member", "Role", "Email", "Borrowed", "Status"].map(h => <th key={h} className={table.th}>{h}</th>)}<th className={`${table.th} text-right`}>Actions</th>
+            </tr></thead>
             <tbody>
               {list.data.items.map(m => (
-                <tr key={m.id} className={table.row}>
+                <tr key={m.id} className={`${table.row} ${selected.has(m.id) ? "bg-primary-soft/40" : ""}`}>
+                  <td className={table.td}><input type="checkbox" aria-label={`Select ${memberId(m)}`} checked={selected.has(m.id)} onChange={() => flip(m.id)} className="w-5 h-5 accent-primary" /></td>
                   <td className={table.td}>
                     <div className="flex items-center gap-3">
                       <MemberAvatar m={m} />

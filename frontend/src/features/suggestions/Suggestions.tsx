@@ -99,6 +99,22 @@ function ReviewsPanel() {
     void qc.invalidateQueries({ queryKey: ["reviews"] });
     void qc.invalidateQueries({ queryKey: ["summary"] });
   };
+  // Select / Select all: approve or hide several reviews at once.
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const items = q.data?.items ?? [];
+  const chosen = items.filter(r => picked.has(r.id));
+  const allOn = items.length > 0 && chosen.length === items.length;
+  const decideMany = async (next: "APPROVED" | "HIDDEN") => {
+    let done = 0;
+    for (const r of chosen.filter(x => x.reviewStatus !== next)) {
+      const res = await apiFetch(`/api/v1/catalog/reviews/${r.id}`, { method: "PATCH", token, body: JSON.stringify({ status: next }) });
+      if (res.ok) done++;
+    }
+    setPicked(new Set());
+    toast({ tone: done ? "success" : "error", title: next === "APPROVED" ? `${done} review(s) shown` : `${done} review(s) hidden`, message: done === chosen.length ? "" : "Some were already in that state or could not be saved." });
+    void qc.invalidateQueries({ queryKey: ["reviews"] });
+    void qc.invalidateQueries({ queryKey: ["summary"] });
+  };
   return (
     <section aria-labelledby="reviews-title" className="space-y-4 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -106,14 +122,24 @@ function ReviewsPanel() {
           <h2 id="reviews-title" className="text-lg font-bold text-primary-strong flex items-center gap-2"><Star size={18} aria-hidden="true" />Book reviews</h2>
           <p className="text-sm text-ink-muted">Members see a review only after you approve it. Hide anything rude, personal or off-topic.</p>
         </div>
-        <Segmented<typeof status> label="Review status" value={status} onChange={setStatus} options={[{ key: "PENDING", label: "Waiting", count: q.data?.pending }, { key: "APPROVED", label: "Shown" }, { key: "HIDDEN", label: "Hidden" }]} />
+        <Segmented<typeof status> label="Review status" value={status} onChange={v => { setStatus(v); setPicked(new Set()); }} options={[{ key: "PENDING", label: "Waiting", count: q.data?.pending }, { key: "APPROVED", label: "Shown" }, { key: "HIDDEN", label: "Hidden" }]} />
       </div>
+      {items.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-2.5">
+          <label className="flex items-center gap-2 text-sm font-semibold text-ink"><input type="checkbox" checked={allOn} ref={el => { if (el) el.indeterminate = chosen.length > 0 && !allOn; }} onChange={() => setPicked(allOn ? new Set() : new Set(items.map(r => r.id)))} className="w-5 h-5 accent-primary" />Select all ({items.length})</label>
+          {chosen.length > 0 && <>
+            <span className="text-sm text-ink-muted">{chosen.length} selected</span>
+            {status !== "APPROVED" && <button type="button" onClick={() => void decideMany("APPROVED")} className={`${btn.success} ${btnSm}`}><Check size={14} aria-hidden="true" />Approve selected</button>}
+            {status !== "HIDDEN" && <button type="button" onClick={() => void decideMany("HIDDEN")} className={`${btn.secondary} ${btnSm}`}><EyeOff size={14} aria-hidden="true" />Hide selected</button>}
+          </>}
+        </div>
+      )}
       {q.isLoading ? <Skeleton rows={2} /> : q.isError ? <p role="alert" className="text-danger">Could not load reviews.</p> : !q.data?.items.length ? <EmptyState icon={Star} text={status === "PENDING" ? "No reviews waiting." : "No reviews here."} /> : (
         <ul className="grid lg:grid-cols-2 gap-4">
           {q.data.items.map(r => (
-            <li key={r.id} className={`${card} p-5 space-y-2`}>
+            <li key={r.id} className={`${card} p-5 space-y-2 ${picked.has(r.id) ? "!border-primary ring-2 ring-primary/20" : ""}`}>
               <div className="flex items-start justify-between gap-3">
-                <p className="font-bold text-ink">{r.book.title}</p>
+                <label className="flex items-start gap-2 font-bold text-ink"><input type="checkbox" checked={picked.has(r.id)} onChange={() => setPicked(cur => { const n = new Set(cur); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })} aria-label={`Select the review of ${r.book.title}`} className="w-5 h-5 mt-0.5 accent-primary shrink-0" />{r.book.title}</label>
                 <span className="text-warning font-bold shrink-0" aria-label={`${r.stars} of 5 stars`}>{"★".repeat(r.stars)}</span>
               </div>
               <p className="text-sm text-ink whitespace-pre-line break-words">{r.review}</p>

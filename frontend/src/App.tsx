@@ -141,6 +141,7 @@ function AppRoutes() {
               <Route path="/suggestions" element={<Suggestions />} />
               <Route path="/newspaper" element={<Newspaper />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/settings/:section" element={<Settings />} />
               {/* Old addresses (before Catalog/Borrowing were merged). */}
               <Route path="/copies" element={<Navigate to="/catalog" replace />} />
               <Route path="/requests" element={<Navigate to="/borrowing" replace />} />

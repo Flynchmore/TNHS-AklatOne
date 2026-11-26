@@ -50,22 +50,31 @@ export function SystemPanel() {
   // Measured against the server clock, so the panel stays the same on every render.
   const lastAgeH = s && b?.lastAutomatic ? (Date.parse(s.serverTime) - Date.parse(b.lastAutomatic.createdAt)) / 3_600_000 : null;
   const diskLow = b?.disk ? b.disk.freeBytes < 2 * 1024 ** 3 : false;
+  // Plain words for the librarian / authorised staff: what works, what needs attention, what to do.
+  const checks: { icon: LucideIcon; label: string; value: string; tone: Tone }[] = s && b ? [
+    { icon: Database, label: "Library records", tone: s.database.ok ? "ok" : "warn", value: s.database.ok ? "Working. Books, members and borrowing records are safe and reachable." : "Not answering. AklatOne cannot read or save records; ask the ICT coordinator to check the server." },
+    { icon: Zap, label: "Sign-in protection", tone: s.redis.startsWith("unavailable") ? "warn" : "ok", value: s.redis.startsWith("unavailable") ? "Working with a backup method on this server (limits on wrong passwords still apply)." : "Working. Too many wrong passwords are blocked for a while." },
+    { icon: Mail, label: "Email (codes and notices)", tone: s.email ? "ok" : "warn", value: s.email ? "Working. Sign-in codes, activation codes and notices are emailed." : "Not set up. Members cannot receive sign-in or activation codes by email; ask the ICT coordinator." },
+    { icon: DatabaseBackup, label: "Automatic daily copy", tone: !b.automatic || (lastAgeH !== null && lastAgeH > 30) ? "warn" : "ok",
+      value: !b.automatic ? "Turned off. Download a backup yourself (Backup and Restore) until it is turned on." : `${b.lastAutomatic ? `Last copy ${phDateTime(b.lastAutomatic.createdAt)}` : "No copy made yet"}${b.nextAutomatic ? `; next ${phDateTime(b.nextAutomatic)}` : ""}. ${b.encrypted ? "Protected with a password." : "Not password-protected."}` },
+    { icon: HardDrive, label: "Space for backups", tone: b.disk ? (diskLow ? "warn" : "ok") : "off", value: b.disk ? `${b.count} saved cop${b.count === 1 ? "y" : "ies"} (${mb(b.totalBytes)}). ${gb(b.disk.freeBytes)} free${diskLow ? ": almost full, ask the ICT coordinator to free space." : "."}` : "No backups saved on the server yet." },
+  ] : [];
+  const issues = checks.filter(c => c.tone === "warn").length;
   return (
     <Panel title="System status" icon={Activity} className="lg:col-span-2">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <p className="text-sm text-ink-muted">{s ? `Checked ${phDateTime(s.serverTime)} · server running since ${phDateTime(s.startedAt)}` : "Checking the library server…"}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <p className="text-sm text-ink-muted">{s ? `Last checked ${phDateTime(s.serverTime)}. Checks again every minute.` : "Checking the library server…"}</p>
         <RefreshButton onRefresh={() => q.refetch()} what="system status" label="Check again" />
       </div>
-      {q.isError && <p role="alert" className="text-sm text-danger">Could not reach the library server. Backups and sign-in need it.</p>}
+      {q.isError && <p role="alert" className="rounded-2xl bg-danger-soft text-danger p-4 font-semibold">The library server cannot be reached. Check the internet connection of this computer; if others have the same problem, contact the ICT coordinator.</p>}
       {s && b && (
-        <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          <Row icon={Database} label="Database" tone={s.database.ok ? "ok" : "warn"} value={s.database.ok ? `${s.database.version ?? "MariaDB"} · ${s.database.lastMigration ?? "no migrations"}` : s.database.error ?? "Not answering"} />
-          <Row icon={Zap} label="Redis (sign-in limits)" tone={s.redis === "connected" ? "ok" : s.redis === "not configured" ? "off" : "warn"} value={s.redis === "connected" ? "Connected" : s.redis === "not configured" ? "Not set up (limits kept in server memory)" : "Unavailable, using server memory"} />
-          <Row icon={Mail} label="Email (codes and notices)" tone={s.email ? "ok" : "warn"} value={s.email ? "Configured" : "Not configured: sign-in codes and notices are not emailed"} />
-          <Row icon={DatabaseBackup} label="Automatic backups" tone={!b.automatic ? "warn" : lastAgeH !== null && lastAgeH > 30 ? "warn" : "ok"}
-            value={!b.automatic ? "Turned off" : `${b.lastAutomatic ? `Last ${phDateTime(b.lastAutomatic.createdAt)}` : "None yet"}${b.nextAutomatic ? ` · next ${phDateTime(b.nextAutomatic)}` : ""}${b.encrypted ? " · encrypted" : " · not encrypted"}`} />
-          <Row icon={HardDrive} label="Backup storage" tone={b.disk ? (diskLow ? "warn" : "ok") : "off"} value={`${b.count} file${b.count === 1 ? "" : "s"}, ${mb(b.totalBytes)}${b.disk ? ` · ${gb(b.disk.freeBytes)} free of ${gb(b.disk.totalBytes)}` : " · folder not created yet"}`} />
-        </ul>
+        <>
+          <div role="status" className={`flex items-center gap-3 rounded-2xl p-4 mb-4 ${issues ? "bg-warning-soft text-warning" : "bg-success-soft text-success"}`}>
+            {issues ? <AlertTriangle size={28} aria-hidden="true" /> : <CheckCircle2 size={28} aria-hidden="true" />}
+            <div><p className="text-lg font-extrabold">{issues ? `${issues} thing${issues === 1 ? " needs" : "s need"} attention` : "Everything is working"}</p><p className="text-sm text-ink">{issues ? "See the items marked Check below and what to do." : "AklatOne is healthy: records, sign-in, email and backups are all fine."}</p></div>
+          </div>
+          <ul className="grid sm:grid-cols-2 gap-3">{checks.map(c => <Row key={c.label} {...c} />)}</ul>
+        </>
       )}
     </Panel>
   );

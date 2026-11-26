@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { rules } from "../../lib/inputRules";
-import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone } from "lucide-react";
+import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone, Activity, DatabaseBackup, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { PageHeader, Panel, btn, input, label } from "../../components/staff/ui";
+import { PageHeader, Panel, btn, card, input, label } from "../../components/staff/ui";
 import { StrengthMeter, focusRing, passwordStrength } from "../../components/mobile/ui";
 import { setTheme, useTheme, type Theme } from "../../components/mobile/theme";
 import { BackupPanel } from "./BackupPanel";
@@ -13,22 +14,48 @@ import { RecoveryKeyCard } from "../../components/RecoveryKey";
 import { phDateTime } from "../../lib/dates";
 import { SystemPanel } from "./SystemPanel";
 
-/** Staff "Settings": librarian profile, theme, password and About. */
+type Section = { key: string; title: string; text: string; icon: LucideIcon; tone: string; show: boolean; panel: () => ReactNode };
+
+/**
+ * Staff "Settings": a card for each part (developer request 2026-11-26); clicking one opens it on its own page
+ * (/settings/<part>), with a way back to the cards.
+ */
 export function Settings() {
   const { hasPerm, user } = useAuth();
+  const { section } = useParams();
+  const staff = user?.role === "LIBRARIAN" || user?.role === "ADMIN";
+  const sections: Section[] = [
+    { key: "profile", title: "Librarian profile", text: "Your name, position and department.", icon: UserCog, tone: "from-primary to-primary-strong", show: true, panel: () => <ProfilePanel /> },
+    { key: "password", title: "Change password", text: "A new password, confirmed with an emailed code.", icon: KeyRound, tone: "from-[#6D28D9] to-[#3B0F86]", show: true, panel: () => <PasswordPanel /> },
+    { key: "devices", title: "Sign-in devices", text: "Computers and phones signed in to your account.", icon: MonitorSmartphone, tone: "from-[#0E7490] to-[#0B3F52]", show: true, panel: () => <Panel title="Sign-in devices" icon={MonitorSmartphone}><SignInSessions /></Panel> },
+    { key: "recovery", title: "Emergency recovery key", text: "Make a new key if the printed one is lost.", icon: KeyRound, tone: "from-warning to-[#7A3A06]", show: staff, panel: () => <RecoveryKeyPanel /> },
+    { key: "theme", title: "Theme", text: "Light or dark look for this computer.", icon: Palette, tone: "from-[#DB2777] to-[#831843]", show: true, panel: () => <ThemePanel /> },
+    { key: "status", title: "System status", text: "Is everything working? Database, email, backups, storage.", icon: Activity, tone: "from-success to-success-strong", show: hasPerm("backup:manage"), panel: () => <SystemPanel /> },
+    { key: "backup", title: "Backup and Restore", text: "Download a copy of all records, or bring one back.", icon: DatabaseBackup, tone: "from-danger to-danger-strong", show: hasPerm("backup:manage"), panel: () => <BackupPanel /> },
+    { key: "about", title: "About AklatOne", text: "Version, build date and who made it.", icon: Info, tone: "from-[#475569] to-[#1E293B]", show: true, panel: () => <AboutPanel /> },
+  ].filter(x => x.show);
+  const open = sections.find(x => x.key === section);
+  if (section && !open) return <Navigate to="/settings" replace />;
+  if (open) return (
+    <div className="space-y-6">
+      <Link to="/settings" className={`inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline rounded ${focusRing}`}><ChevronLeft size={16} aria-hidden="true" />All settings</Link>
+      <div className="max-w-4xl">{open.panel()}</div>
+    </div>
+  );
   return (
     <div className="space-y-6">
-      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Your profile, the look of AklatOne, your password, database backups and app information." />
-      <div className="grid lg:grid-cols-2 gap-6 items-start">
-        <ProfilePanel />
-        <PasswordPanel />
-        <Panel title="Sign-in devices" icon={MonitorSmartphone}><SignInSessions /></Panel>
-        {(user?.role === "LIBRARIAN" || user?.role === "ADMIN") && <RecoveryKeyPanel />}
-        <ThemePanel />
-        <AboutPanel />
-        {hasPerm("backup:manage") && <SystemPanel />}
-        {hasPerm("backup:manage") && <BackupPanel />}
-      </div>
+      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Choose what you want to change." />
+      <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {sections.map(x => (
+          <li key={x.key}>
+            <Link to={`/settings/${x.key}`} className={`group h-full flex items-start gap-4 ${card} p-5 hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/40 motion-safe:transition ${focusRing}`}>
+              <span className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${x.tone} text-white flex items-center justify-center shrink-0 shadow-md motion-safe:transition-transform group-hover:scale-110`} aria-hidden="true"><x.icon size={22} /></span>
+              <span className="flex-1 min-w-0"><span className="block font-bold text-ink">{x.title}</span><span className="block text-sm text-ink-muted mt-0.5">{x.text}</span></span>
+              <ChevronRight size={18} className="text-ink-muted group-hover:text-primary mt-1 shrink-0" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

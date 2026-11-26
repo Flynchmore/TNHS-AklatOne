@@ -85,10 +85,15 @@ const SHEETS: Record<Kind, { title: string; paper: string; hint: string; icon: L
   cards: {
     title: "Library ID cards", paper: "Library ID cards", hint: "New members waiting for a card", icon: IdCard,
     load: async (t, cardOf) => {
-      // Reprint of one member's card (from Members), or every card not yet marked as printed.
-      const r = await apiFetch(cardOf ? `/api/v1/users/${cardOf}` : "/api/v1/users/cards", { token: t });
+      // Reprint of chosen members' cards (from Members: ?card=id or id1,id2,...), or every card not yet marked as printed.
+      if (cardOf) {
+        const got = await Promise.all(cardOf.split(",").filter(Boolean).slice(0, 200).map(id => apiFetch(`/api/v1/users/${id}`, { token: t })));
+        const bad = got.find(g => !g.ok);
+        if (bad) throw new Error(bad.message);
+        return { columns: [], rows: [], cards: got.map(g => g.data as IdCardRow) };
+      }
+      const r = await apiFetch("/api/v1/users/cards", { token: t });
       if (!r.ok) throw new Error(r.message);
-      if (cardOf) return { columns: [], rows: [], cards: [r.data as IdCardRow] };
       const d = r.data as { items: IdCardRow[]; total: number };
       return { columns: [], rows: [], cards: d.items, cardsWaiting: d.total };
     },
@@ -260,7 +265,7 @@ export function Printing() {
           </label>
         )}
         <div className="ml-auto"><Pager page={page} total={pages} onPage={setPage} /></div>
-        {cards && <p className="w-full text-sm text-ink-muted">{reprint ? "Reprint of one member's card." : `Cards of new members${(sheet.data?.cardsWaiting ?? 0) > cards.length ? ` (${cards.length} of ${sheet.data!.cardsWaiting} waiting; the next batch shows after these are marked as printed)` : ""}. Cut along the dashed lines; laminate them so they last.`}</p>}
+        {cards && <p className="w-full text-sm text-ink-muted">{reprint ? `Reprint of ${cards.length} chosen member card${cards.length === 1 ? "" : "s"}.` : `Cards of new members${(sheet.data?.cardsWaiting ?? 0) > cards.length ? ` (${cards.length} of ${sheet.data!.cardsWaiting} waiting; the next batch shows after these are marked as printed)` : ""}. Cut along the dashed lines; laminate them so they last.`}</p>}
       </div>
 
       {/* The printable pages: on paper only these show (see .ak-no-print / .ak-sheet-page in index.css). */}
