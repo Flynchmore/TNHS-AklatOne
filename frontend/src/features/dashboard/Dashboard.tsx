@@ -23,7 +23,7 @@ const ACTIVITY: Record<string, string> = {
   "notification.overdue": "sent an overdue notice", "notification.reminder": "sent a return reminder",
   "category.create": "added a category", "category.update": "updated a category", "category.delete": "deleted a category",
   "setup.librarian": "set up the librarian account", "user.register": "registered in the mobile app",
-  "user.create": "added a member", "user.update": "updated a member", "user.activate": "activated a member", "user.deactivate": "deactivated a member",
+  "user.create": "added a member", "user.update": "updated a member", "user.delete": "deleted a member account", "user.activate": "activated a member", "user.deactivate": "deactivated a member",
   "bookCopy.update": "updated a copy's location or date received", "book.import": "imported books from Excel",
   "backup.download": "downloaded a database backup", "backup.restore": "restored a database backup",
   "inventory.start": "started an inventory audit", "inventory.close": "closed an inventory audit",

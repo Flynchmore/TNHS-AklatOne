@@ -1,3 +1,4 @@
+import { devOtp } from "../../common/devOtp.js";
 import bcrypt from "bcrypt";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
@@ -84,8 +85,8 @@ const emailHint = (email: string) => email.replace(/^(.)[^@]*(@.*)$/, "$1***$2")
 async function sendCode(user: { id: string; username: string; email: string; displayName: string | null }, purpose: OtpPurpose) {
   const otp = newOtp();
   await prisma.user.update({ where: { id: user.id }, data: { otpCode: otpHash(otp), otpExpiry: new Date(Date.now() + CODE_MINUTES * 60 * 1000) } });
-  const sent = await sendOtpEmail(user.email, otp, purpose, user.displayName);
-  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] ${purpose} ${user.username}: ${otp}`);
+  await sendOtpEmail(user.email, otp, purpose, user.displayName);
+  devOtp(purpose, user.username, otp);
 }
 
 /** Throws 400 unless the code matches the account's current code and has not expired. */
@@ -143,8 +144,8 @@ export async function sendEmailCode(token: string, email: string): Promise<{ ema
   if (!user) throw Object.assign(new Error("This step has expired. Please sign in again."), { status: 401 });
   const otp = newOtp();
   await prisma.user.update({ where: { id }, data: { otpCode: emailCodeHash(otp, email), otpExpiry: new Date(Date.now() + CODE_MINUTES * 60 * 1000) } });
-  const sent = await sendOtpEmail(email, otp, "email", user.displayName);
-  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] email ${user.username}: ${otp}`);
+  await sendOtpEmail(email, otp, "email", user.displayName);
+  devOtp("add email", user.username, otp);
   return { email: emailHint(email) };
 }
 
@@ -267,9 +268,9 @@ export async function requestOtp(input: { email: string }): Promise<{ sent: bool
     data: { otpCode: otpHash(otp), otpExpiry: expiry },
   });
 
-  const sent = await sendOtpEmail(input.email, otp, "reset", user.displayName);
+  await sendOtpEmail(input.email, otp, "reset", user.displayName);
   // Dev only: without an email account the code is printed in the backend terminal (never in production logs).
-  if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] reset ${user.username}: ${otp}`);
+  devOtp("password reset", user.username, otp);
   return generic;
 }
 

@@ -69,8 +69,9 @@ usersRouter.get("/", authenticate, requirePermission("users:read"), async (req, 
     const status = req.query.status === "active" ? true : req.query.status === "inactive" ? false : undefined;
     const where: Prisma.UserWhereInput = {
       role: { name: "MEMBER" },
-      // Self-registered accounts appear once they are activated by their emailed code.
+      // Self-registered accounts appear once they are activated by their emailed code; deleted accounts never come back.
       activationPending: false,
+      NOT: { username: { startsWith: DELETED_PREFIX } },
       ...(type ? { memberType: type } : {}),
       ...(status !== undefined ? { isActive: status } : {}),
       ...(q ? { OR: [{ username: { contains: q } }, { displayName: { contains: q } }, { email: { contains: q } }, { gradeSection: { contains: q } }, { maskedId: { contains: q } }] } : {}),
@@ -176,6 +177,37 @@ usersRouter.patch("/:id", authenticate, requirePermission("users:write"), valida
       return u;
     });
     ok(res, user, "Member updated");
+  } catch (err) {
+    next(err);
+  }
+});
+
+const DELETED_PREFIX = "deleted-member-";
+
+/**
+ * Delete a member's account: the personal data is removed and the email and username become free again (the person
+ * can sign up again with the same Gmail). Borrowing history stays, counted under the old Member ID only.
+ * Not while the member still has borrowed books.
+ */
+usersRouter.delete("/:id", authenticate, requirePermission("users:write"), validate({ params: idParamSchema }), async (req, res, next) => {
+  try {
+    const member = await findMember(req.params.id as string);
+    if (!member || member.username.startsWith(DELETED_PREFIX)) return fail(res, 404, "Member not found");
+    const out = await prisma.borrowingTransaction.count({ where: { borrowerId: member.id, status: "ACTIVE" } });
+    if (out) return fail(res, 409, `This member still has ${out} borrowed book(s). Record the return first.`);
+    await prisma.$transaction(async (db) => {
+      await db.user.update({
+        where: { id: member.id },
+        data: {
+          username: `${DELETED_PREFIX}${new Date().toISOString().slice(0, 10)}-${member.id}`, email: null, displayName: "Deleted member",
+          avatarUrl: null, hobbies: null, gender: null, otpCode: null, otpExpiry: null, isActive: false, activationPending: false, sessionsRevokedAt: new Date(),
+        },
+      });
+      await db.borrowRequest.updateMany({ where: { memberId: member.id, status: "PENDING" }, data: { status: "CANCELLED" } });
+      await db.bookWatch.deleteMany({ where: { userId: member.id } });
+      await writeAuditTx(db, { actorId: req.user!.id, action: "user.delete", entityType: "User", entityId: member.id });
+    });
+    ok(res, { deleted: true }, "Member account deleted");
   } catch (err) {
     next(err);
   }

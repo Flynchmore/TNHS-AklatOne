@@ -12,7 +12,7 @@ export interface ReceiptData {
   dueAt?: string | null;
   returnedAt?: string | null;
   bookCopy?: { barcode?: string; book?: { title: string; authors?: string | null; isbn?: string | null; coverUrl?: string | null; serialNumber?: string | null; publisher?: string | null; publishedYear?: number | null } };
-  borrower?: { username: string; displayName?: string | null; memberType?: string | null };
+  borrower?: { username: string; displayName?: string | null; memberType?: string | null; maskedId?: string | null };
   request?: { createdAt: string; reviewedAt?: string | null; reviewedBy?: { username: string; displayName?: string | null } | null } | null;
 }
 
@@ -84,7 +84,7 @@ export function Receipt({ data, className = "" }: { data: ReceiptData; className
       <dl className="px-5 pt-4 grid grid-cols-2 gap-x-4 gap-y-3">
         <Field label="ISBN" mono>{book?.isbn || "N/A"}</Field>
         <Field label="Serial number" mono>{book?.serialNumber || "N/A"}</Field>
-        <Field label="Borrower">{data.borrower?.displayName || data.borrower?.username || "—"}</Field>
+        <Field label="Member ID" mono>{data.borrower?.maskedId || "—"}</Field>
         <Field label="Member type">{data.borrower?.memberType ? titleCase(data.borrower.memberType) : "—"}</Field>
         {data.request?.reviewedBy && <Field label="Approved by">{data.request.reviewedBy.displayName || data.request.reviewedBy.username}</Field>}
       </dl>

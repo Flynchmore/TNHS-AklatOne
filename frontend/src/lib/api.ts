@@ -2,7 +2,8 @@ import { Capacitor } from "@capacitor/core";
 import { cacheGet, cacheSet, enqueue, isDesktop, isPhone, type OutboxKind } from "./offline";
 
 /** Tells the server which app sends a request, so Settings > Sign-in devices can name the device (web, desktop, android, ios). */
-export const appHeader = { "X-AklatOne-App": isDesktop ? "desktop" : isPhone ? Capacitor.getPlatform() : "web" };
+// A getter, read at every request: the member app opened in a browser (/m) says so, for the [DEV OTP · ...] label.
+export const appHeader = { get "X-AklatOne-App"() { return isDesktop ? "desktop" : isPhone ? Capacitor.getPlatform() : location.pathname.startsWith("/m") ? "web-mobile" : "web"; } };
 
 /** Window event fired when the server rejects the saved token (handled by the auth provider). */
 export const SESSION_ENDED = "aklatone:session-ended";

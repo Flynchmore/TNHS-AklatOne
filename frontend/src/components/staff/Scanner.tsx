@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { Camera, CameraOff, ScanLine } from "lucide-react";
+import { Camera, CameraOff, Flashlight, ScanLine } from "lucide-react";
 import { btn, input, label } from "./ui";
 import { nativeQr, scanQr } from "../../lib/phoneCamera";
 
@@ -29,50 +29,82 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
     onCodeRef.current(c);
   };
 
+  // Web camera (computers, iPhones, the Web/Desktop apps). Faster native BarcodeDetector when the browser has it,
+  // otherwise jsQR; about 12 reads a second so slower computers stay smooth.
+  const [torch, setTorch] = useState<boolean | null>(null); // null = this camera has no flashlight
+  const [seen, setSeen] = useState("");
+  const track = useRef<MediaStreamTrack | null>(null);
   useEffect(() => {
     if (!camera) return;
     let stream: MediaStream | null = null;
-    let frame = 0;
+    let timer = 0;
     let stopped = false;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    const tick = () => {
+    type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
+    const Native = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
+    const detector = Native ? new Native({ formats: ["qr_code"] }) : null;
+    const found = (text: string) => {
+      const c = text.trim();
+      if (!c) return;
+      emit(c);
+      setSeen(c);
+      navigator.vibrate?.(60);
+      window.setTimeout(() => setSeen(cur => (cur === c ? "" : cur)), 1500);
+    };
+    const tick = async () => {
       const v = video.current;
-      if (stopped || !v || !ctx) return;
+      if (stopped || !v) return;
       if (v.readyState >= 2 && v.videoWidth) {
-        // A smaller frame decodes faster and is enough for a printed label.
-        const scale = Math.min(1, 640 / v.videoWidth);
-        canvas.width = Math.round(v.videoWidth * scale);
-        canvas.height = Math.round(v.videoHeight * scale);
-        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const qr = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
-        if (qr?.data) emit(qr.data);
+        try {
+          if (detector) { const r = await detector.detect(v); if (r[0]?.rawValue) found(r[0].rawValue); }
+          else if (ctx) {
+            // A smaller frame decodes faster and is enough for a printed label; both light and dark labels are tried.
+            const scale = Math.min(1, 720 / v.videoWidth);
+            canvas.width = Math.round(v.videoWidth * scale);
+            canvas.height = Math.round(v.videoHeight * scale);
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const qr = jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+            if (qr?.data) found(qr.data);
+          }
+        } catch { /* a frame that cannot be read: try the next one */ }
       }
-      frame = requestAnimationFrame(tick);
+      if (!stopped) timer = window.setTimeout(() => void tick(), 80);
     };
     (async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
         if (stopped) { stream.getTracks().forEach(t => t.stop()); return; }
+        const t = stream.getVideoTracks()[0] ?? null;
+        track.current = t;
+        const caps = (t?.getCapabilities?.() ?? {}) as { torch?: boolean; focusMode?: string[] };
+        setTorch(caps.torch ? false : null);
+        if (caps.focusMode?.includes("continuous")) await t?.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] }).catch(() => {});
         if (video.current) { video.current.srcObject = stream; await video.current.play().catch(() => {}); }
         setCamError("");
-        frame = requestAnimationFrame(tick);
+        void tick();
       } catch (err) {
         const name = (err as { name?: string })?.name;
         setCamError(
           !window.isSecureContext ? "The camera works only in the AklatOne app or on an HTTPS address. Type the code or use a USB scanner below."
           : name === "NotAllowedError" ? "Camera permission was refused. Allow the camera for this app or site in the settings, then try again."
           : name === "NotFoundError" ? "No camera was found. Type the code or use a USB scanner below."
+          : name === "NotReadableError" ? "Another app is using the camera. Close it, then try again."
           : "The camera could not start. Type the code or use a USB scanner below.");
         setCamera(false);
       }
     })();
-    return () => { stopped = true; cancelAnimationFrame(frame); stream?.getTracks().forEach(t => t.stop()); };
+    return () => { stopped = true; window.clearTimeout(timer); stream?.getTracks().forEach(t => t.stop()); track.current = null; setTorch(null); setSeen(""); };
     // emit only reads refs, so the camera does not restart on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [camera]);
+  const flipTorch = () => {
+    const on = !torch;
+    void track.current?.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] }).then(() => setTorch(on), () => setTorch(null));
+  };
+  const [nativeStatus, setNativeStatus] = useState("");
 
   return (
     <div className="space-y-3">
@@ -80,16 +112,23 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
           The Visitor's Log has no camera button (the librarian scans cards with the phone; a USB scanner types here). */}
       {withCamera && <button type="button" onClick={() => {
         // Android app: Google's QR scanner screen (no HTTPS or web camera permission needed).
-        if (nativeQr()) { setCamError(""); void scanQr().then(c => { if (c) emit(c); }, (e: Error) => setCamError(e.message)); return; }
+        if (nativeQr()) { setCamError(""); void scanQr(setNativeStatus).then(c => { setNativeStatus(""); if (c) emit(c); }, (e: Error) => { setNativeStatus(""); setCamError(e.message); }); return; }
         setCamera(c => !c);
       }} disabled={disabled} aria-pressed={camera} className={`${camera ? btn.secondary : btn.primary} w-full sm:w-auto`}>
         {camera ? <><CameraOff size={18} aria-hidden="true" />Stop camera</> : <><Camera size={18} aria-hidden="true" />Scan with camera</>}
       </button>}
+      {nativeStatus && <p role="status" className="text-sm text-primary font-semibold">{nativeStatus}</p>}
       {camError && <p role="alert" className="text-sm text-warning">{camError}</p>}
       {camera && (
-        <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden bg-black">
+        <div className={`relative w-full max-w-md aspect-video rounded-2xl overflow-hidden bg-black ring-4 motion-safe:transition ${seen ? "ring-success" : "ring-transparent"}`}>
           <video ref={video} muted playsInline className="w-full h-full object-cover" aria-label="Camera view: hold the QR code inside the frame" />
-          <span className="absolute inset-[18%] border-2 border-white/80 rounded-xl pointer-events-none" aria-hidden="true" />
+          {/* Aim frame: corner marks and a moving line, so it is clear where to hold the code. */}
+          <span className="absolute inset-[16%] pointer-events-none" aria-hidden="true">
+            {["top-0 left-0 border-t-4 border-l-4 rounded-tl-xl", "top-0 right-0 border-t-4 border-r-4 rounded-tr-xl", "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl", "bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl"].map(c => <span key={c} className={`absolute w-8 h-8 drop-shadow ${seen ? "border-success" : "border-accent"} ${c}`} />)}
+            {!seen && <span className="absolute left-2 right-2 h-0.5 bg-accent shadow-[0_0_8px_2px] shadow-accent/70 ak-scanline" />}
+          </span>
+          <p aria-live="polite" className={`absolute bottom-2 left-2 right-2 text-center text-sm font-semibold rounded-xl px-3 py-1.5 ${seen ? "bg-success text-white" : "bg-black/55 text-white"}`}>{seen ? `Scanned: ${seen}` : "Hold the QR code inside the frame"}</p>
+          {torch !== null && <button type="button" onClick={flipTorch} aria-pressed={torch} className="absolute top-2 right-2 min-h-10 px-3 rounded-xl bg-black/55 text-white text-xs font-semibold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Flashlight size={16} aria-hidden="true" />{torch ? "Light off" : "Light on"}</button>}
         </div>
       )}
       {/* No <form> here: the scanner is often placed inside a dialog's form, and forms cannot be nested. */}

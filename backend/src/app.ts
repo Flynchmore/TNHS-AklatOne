@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { trackRequestApp } from "./common/devOtp.js";
 import { FallbackStore } from "./config/redis.js";
 import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.js";
@@ -143,6 +144,7 @@ export function createApp() {
   // show the last user's data from cache). Book covers set their own long cache.
   api.use((_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
   api.use(idempotency);
+  api.use(trackRequestApp);
   // Signed-in devices: per-account limits only (see SESSION_PATHS); mounted before /auth so the sign-in limiters skip it.
   api.use("/auth/sessions", sessionsRouter);
   api.use("/auth", authLimiter, loginLimiter, resetCodeLimiter, authRouter);

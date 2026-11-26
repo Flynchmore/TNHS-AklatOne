@@ -347,7 +347,22 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
 interface Detail extends Member { borrowed: { id: string; status: string; outcome?: string | null; receiptNo?: string | null; borrowedAt: string; dueAt?: string | null; returnedAt?: string | null; bookCopy: { book: { title: string } } }[] }
 
 function MemberDetails({ member, onClose }: { member: Member | null; onClose: () => void }) {
-  const { token } = useAuth();
+  const { token, hasPerm } = useAuth();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [deleting, setDeleting] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [removing, setRemoving] = useState(false);
+  useEffect(() => { setDeleting(false); setTyped(""); }, [member]);
+  const remove = async () => {
+    setRemoving(true);
+    const r = await apiFetch(`/api/v1/users/${member!.id}`, { method: "DELETE", token });
+    setRemoving(false);
+    if (!r.ok) { toast({ tone: "error", title: "Not deleted", message: r.message ?? "Please try again." }); return; }
+    toast({ tone: "success", title: "Account deleted", message: `${memberId(member!)} was deleted. Its email can be used again.` });
+    ["members", "summary", "recent-activity"].forEach(k => qc.invalidateQueries({ queryKey: [k] }));
+    onClose();
+  };
   const time = useQuery({
     queryKey: ["member-time", member?.id],
     queryFn: async () => { const r = await apiFetch(`/api/v1/time/members/${member!.id}`, { token }); if (!r.ok) throw new Error(r.message); return r.data as { app: { totalSeconds: number; days: { seconds: number }[] }; library: { visits: number; seconds: number; averageSeconds: number | null; insideNow: boolean }; loans: { returned: number; averageDays: number | null } }; },
@@ -400,6 +415,18 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
               </ul>
             )}
           </div>
+          {hasPerm("users:write") && (
+            <FormSection title="Delete this account" icon={UserX}>
+              <p className="text-sm text-ink">Removes the member's name, email, photo and sign-in. The email and username can be used again (for example, to sign up again with the same Gmail). Borrowing history stays, under the Member ID only. Books still borrowed must be returned first.</p>
+              {!deleting ? <button type="button" onClick={() => { setDeleting(true); setTyped(""); }} className={`${btn.secondary} ${btnSm} w-fit !text-danger hover:!border-danger hover:!bg-danger-soft`}><UserX size={14} aria-hidden="true" />Delete account</button> : (
+                <div className="flex flex-wrap items-end gap-2">
+                  <div><label htmlFor="del-confirm" className={label}>Type {memberId(m)} to confirm</label><input id="del-confirm" value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} maxLength={8} className={`${input} !w-48 font-mono`} autoComplete="off" /></div>
+                  <button type="button" disabled={typed !== m.maskedId || removing} onClick={() => void remove()} className={`${btn.danger} ${btnSm}`}>{removing ? "Deleting…" : "Delete for good"}</button>
+                  <button type="button" onClick={() => setDeleting(false)} className={`${btn.ghost} ${btnSm}`}>Cancel</button>
+                </div>
+              )}
+            </FormSection>
+          )}
         </>
       )}
     </StaffDialog>

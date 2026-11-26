@@ -15,7 +15,7 @@ type Status = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 interface Req {
   id: string; status: Status; createdAt: string; updatedAt?: string; takenNow?: boolean; reviewedAt?: string | null; decisionNote?: string | null; availableCopies: number;
   book: { title: string; authors?: string | null };
-  member: { username: string; displayName?: string | null; memberType?: string | null; maskedId?: string | null };
+  member: { username: string; displayName?: string | null; memberType?: string | null; maskedId?: string | null; gradeSection?: string | null; department?: string | null };
   reviewedBy?: { username: string; displayName?: string | null } | null;
   transaction?: { id: string; receiptNo?: string | null; dueAt?: string | null } | null;
 }
@@ -62,7 +62,7 @@ export function BorrowRequests() {
     onError: (e) => toast({ tone: "error", title: "Action failed", message: (e as Error).message }),
   });
 
-  const rows = data?.filter(r => (!who || r.member.memberType === who) && matches(q, r.member.displayName, r.member.username, r.book.title, r.book.authors, r.transaction?.receiptNo, r.decisionNote));
+  const rows = data?.filter(r => (!who || r.member.memberType === who) && matches(q, r.member.maskedId, r.member.gradeSection, r.member.displayName, r.member.username, r.book.title, r.book.authors, r.transaction?.receiptNo, r.decisionNote));
 
   return (
     <div className="space-y-4">
@@ -72,7 +72,7 @@ export function BorrowRequests() {
       </div>
       <p className="text-sm text-ink-muted">Review member requests. Approving lends an available copy for 7 days and issues a receipt.</p>
       <div className="flex flex-wrap items-start gap-3">
-        <SearchField id="requests-search" label="Search borrow requests" value={q} onChange={setQ} placeholder="Search member, book, author or receipt no." shown={rows?.length} total={data?.length} />
+        <SearchField id="requests-search" label="Search borrow requests" value={q} onChange={setQ} placeholder="Search Member ID, section, book, author or receipt no." shown={rows?.length} total={data?.length} />
         <label htmlFor="requests-who" className="sr-only">Member type</label>
         <select id="requests-who" value={who} onChange={e => setWho(e.target.value as typeof who)} className={`${select} !w-auto !rounded-full`}><option value="">Students and teachers</option><option value="Student">Students only</option><option value="Teacher">Teachers only</option></select>
       </div>
@@ -91,7 +91,7 @@ export function BorrowRequests() {
             <tbody>
               {rows.map(r => (
                 <tr key={r.id} className={table.row}>
-                  <td className={table.td}><div className="font-semibold text-ink">{r.member.displayName || r.member.username}</div><div className="text-xs text-ink-muted">{r.member.username}{r.member.memberType ? ` · ${r.member.memberType}` : ""}</div></td>
+                  <td className={table.td}><div className="font-mono font-bold text-primary-strong">{r.member.maskedId ?? "—"}</div><div className="text-xs text-ink-muted">{(r.member.memberType === "Teacher" ? r.member.department : r.member.gradeSection) || r.member.memberType || ""}</div></td>
                   <td className={table.td}><div className="font-semibold text-ink">{r.book.title}</div><div className="text-xs text-ink-muted">{r.book.authors}</div>{r.takenNow && <div className="mt-1"><Badge tone="warning">Taken while you were away</Badge></div>}</td>
                   <td className={`${table.td} text-ink-muted`}>{phDateTime(r.createdAt)}</td>
                   <td className={`${table.td} text-ink-muted`}>

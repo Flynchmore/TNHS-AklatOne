@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone, Backpack, FileWarning } from "lucide-react";
+import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone, Backpack, FileWarning, HelpCircle } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
+import { HelpGuide } from "../../components/HelpGuide";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
 import { Alert, Field, ScreenShell, Spinner, StrengthMeter, btnPrimary, focusRing, mobileApi, passwordStrength } from "../../components/mobile/ui";
@@ -94,6 +95,7 @@ function SettingsHome() {
           <Row to="/m/newspaper" icon={Newspaper} label="School Newspaper" hint="The Victor and Masid" />
           <Row to="/m/school-books" icon={Backpack} label="Books from the school" hint="Textbooks you keep this school year" />
           <Row to="/m/lost-report" icon={FileWarning} label="Lost a book?" hint="Send your apology letter or report" />
+          <Row to="/m/settings/help" icon={HelpCircle} label="Help" hint="How to borrow, time in, reset a password and more" tone="bg-success-soft text-success" />
         </ul>
       </section>
       <section aria-labelledby="set-about">
@@ -277,5 +279,6 @@ export function MobileSettings() {
   if (page === "privacy") return <Privacy />;
   if (page === "terms") return <Terms />;
   if (page === "about") return <About />;
+  if (page === "help") return <ScreenShell title="Help" subtitle="How to use AklatOne" back="/m/settings"><HelpGuide audience="member" /></ScreenShell>;
   return <SettingsHome />;
 }

@@ -46,7 +46,7 @@ function Lend() {
     const r = await mobileApi(`/api/v1/users?q=${encodeURIComponent(code)}&limit=5`, { token });
     const m = r.ok ? (r.data as { items: Member[] }).items.find(u => u.maskedId === code) : undefined;
     if (!m) { setError(r.ok ? `No member has the Member ID ${code}.` : r.message ?? "Could not check the card."); return; }
-    if (!m.isActive) { setError(`${m.displayName ?? code}'s account is deactivated.`); return; }
+    if (!m.isActive) { setError(`${code}'s account is deactivated.`); return; }
     setMember(m);
   };
 
@@ -67,7 +67,7 @@ function Lend() {
     setBusy(false);
     if (!r.ok) { setError(r.message ?? "Not lent. Please try again."); return; }
     const tx = r.data as { receiptNo: string; dueAt: string; bookCopy: { book: { title: string } } };
-    const text = `"${tx.bookCopy.book.title}" lent to ${member.displayName ?? member.maskedId}, due ${phDate(tx.dueAt)}. Receipt ${tx.receiptNo}.`;
+    const text = `"${tx.bookCopy.book.title}" lent to ${member.maskedId}, due ${phDate(tx.dueAt)}. Receipt ${tx.receiptNo}.`;
     toast({ tone: "success", title: "Book lent", message: text });
     setDone(text); setMember(null); setQ(""); setFound(null);
   };
@@ -84,7 +84,7 @@ function Lend() {
       ) : (
         <>
           <div className="rounded-2xl bg-page p-4">
-            <p className="font-bold text-ink">{member.displayName ?? "Member"} <span className="font-mono text-sm text-ink-muted">{member.maskedId}</span></p>
+            <p className="font-mono text-lg font-extrabold text-primary-strong">{member.maskedId}</p>
             <p className="text-sm text-ink-muted">{(member.memberType === "Teacher" ? member.department : member.gradeSection) ?? member.memberType ?? ""} · {member.activeLoans ?? 0} book(s) borrowed now</p>
           </div>
           <h2 className="font-semibold text-primary-strong flex items-center gap-2"><BookUp size={18} aria-hidden="true" />2. Scan the book's QR label</h2>

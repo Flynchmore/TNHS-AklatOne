@@ -207,3 +207,8 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
 @keyframes akCountdown { from { width: 100%; } to { width: 0%; } }
 .ak-countdown { animation: akCountdown 30s linear forwards; }
 @media (prefers-reduced-motion: reduce) { .ak-countdown { animation: none; } }
+
+/* Camera scanner: a line that moves up and down inside the aim frame. */
+@keyframes akScanline { 0%, 100% { top: 8%; } 50% { top: 92%; } }
+.ak-scanline { animation: akScanline 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ak-scanline { animation: none; top: 50%; } }

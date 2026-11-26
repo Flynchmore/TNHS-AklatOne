@@ -190,13 +190,13 @@ npm run dev
 The terminal checks the database and Redis, starts the API and the Staff Web, then prints one summary with every
 address (and `/setup` while no librarian exists). Open **http://localhost:5173**. The first time, the system asks
 you to create the **librarian account** (`/setup`) and then shows the **emergency recovery key once**: print it and
-keep it with the principal or the ICT coordinator. Sign-in codes are emailed; without email settings they appear in
-the `[api]` lines as `[DEV OTP]`. In development the seed also makes a test admin `e2e_admin` / `TestPass123!`
+keep it with the principal or the ICT coordinator. Sign-in codes are emailed; in development every code is also printed in
+the `[api]` lines as `[DEV OTP · MOBILE APP]`, `[DEV OTP · WEB APP]` or `[DEV OTP · DESKTOP APP]` (works without internet). In development the seed also makes a test admin `e2e_admin` / `TestPass123!`
 (never in production).
 
 **Email (sign-in codes).** Accounts with an email get a 6-digit code at every sign-in. Set `EMAIL_USER` to a Gmail
 address and `EMAIL_PASS` to a Gmail **App Password** (Google Account > Security > 2-Step Verification > App
-passwords). Without it, in development the code is printed in the backend terminal as `[DEV OTP]`.
+passwords). In development every code is also printed in the backend terminal as `[DEV OTP · <app>]` (never in production).
 
 ## 2. Running the apps
 

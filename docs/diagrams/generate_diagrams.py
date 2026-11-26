@@ -114,7 +114,7 @@ def flowchart_member():
     f.node("walk", "io", "6 tutorial slides; accept Terms,\nPrivacy Policy and on-device storage", 2, 2)
     f.node("sess", "decision", "Has an account?", 1, 3)
     f.node("login", "io", "Choose Member, then sign in with username\nand password (every time the app opens)", 2, 3)
-    f.node("reg", "io", "Create an account: Personal information\n+ email; Student / Teacher set once", 0, 3)
+    f.node("reg", "io", "Create an account: Personal information,\nemail; Member ID shown as the name is typed", 0, 3)
     f.node("act", "io", "Enter the activation code\nsent to the email", 0, 4)
     f.node("code", "io", "Enter the 6-digit email code (an old\naccount without email adds one first)", 2, 4)
     f.node("ok", "decision", "Signed in?", 2, 5)
@@ -126,12 +126,12 @@ def flowchart_member():
     f.node("home", "process", "Home: featured books, due dates,\nquick menu", 1, 8)
     f.node("menu", "decision", "Choose", 1, 9)
     f.node("cat", "process", "Catalog: search, scan book QR; heart\n(hold: folder / Wishlist), reviews", 0, 9)
-    f.node("req", "io", "Request to borrow\n(max 8 books*)", 0, 10)
+    f.node("req", "io", "Request to borrow (max 8*); a teacher\nwho timed in may mark \"I took it\"", 0, 10)
     f.node("pend", "process", "Librarian approves or declines;\napp alert + email with receipt", 0, 11)
     f.node("books", "process", "My Books: borrowed, requests,\nfavourites, history, receipts", 1, 10)
     f.node("visit", "io", "Visit Log: scan the kiosk QR or\ntype its 6-digit code", 2, 10)
     f.node("tin", "process", "First scan today = Time In,\nnext scan = Time Out", 2, 11)
-    f.node("other", "process", "Alerts, Suggestion Box, School\nNewspaper, Profile and Settings", 3, 9)
+    f.node("other", "process", "Top readers, My activity, Books from\nthe school, Lost a book?, Suggestions,\nAlerts, Newspaper, Profile, Settings", 3, 9)
     f.node("more", "decision", "More to do?", 1, 13)
     f.node("out", "process", "Sign out or close the app (sign in\nagain next time; saved data cleared)", 1, 14)
     f.node("end", "terminal", "End", 1, 15)
@@ -176,17 +176,16 @@ def flowchart_staff():
     f.node("desk", "decision", "Desktop app?", 2, 6)
     f.node("choose", "decision", "Choose app", 3, 6)
     f.node("kiosk", "ref", "Visitor's Log kiosk\n(see Flowchart 5)", 4, 6)
-    f.node("dash", "process", "Dashboard: totals, books used this\nweek, recent activity, quick actions", 2, 7)
+    f.node("dash", "process", "Dashboard: Continue where you left off,\ntotals, books used this week", 2, 7)
     f.node("mod", "decision", "Choose module", 2, 8)
     f.node("cat", "process", "Catalog: books, copies, Excel import /\nexport, QR labels, inventory audit", 1, 8)
-    f.node("mem", "process", "Members: add / edit / deactivate;\nMember ID and Library ID cards", 3, 8)
-    f.node("oth", "process", "Suggestions, Reports (time spent, Excel),\nPrinting, School Newspaper, Settings\n(backup / restore, system status)", 4, 9)
-    f.node("how", "decision", "Lend at the desk or\na member's request?", 2, 9)
-    f.node("scan", "io", "Scan Library ID card (camera first),\nthen the copy QR label or search", 1, 10)
-    f.node("incat", "decision", "Book in AklatOne?", 1, 11)
-    f.node("add", "process", "Add the book in\nCatalog first", 0, 11)
-    f.node("lend", "process", "Lend for 7 days*: receipt,\napp alert + email", 1, 12)
-    f.node("appr", "decision", "Approve?\n(copy available)", 2, 10)
+    f.node("mem", "process", "Members (by Member ID): add, edit,\nselect all, deactivate, delete (email free)", 3, 8)
+    f.node("oth", "process", "Suggestions, Reports (charts, top members,\nExcel), Printing (paper size, pages),\nSettings cards (status, backup)", 4, 9)
+    f.node("how", "decision", "Borrowing tab", 2, 9)
+    f.node("phone", "ref", "Lending at the desk: librarian's\nphone (see Flowchart 4)", 0, 9)
+    f.node("issued", "process", "School-issued: check books members\ntyped; end of school year = returned", 1, 10)
+    f.node("lost", "process", "Lost book reports: download the\ndocument; accept or ask for more", 1, 11)
+    f.node("appr", "decision", "Approve? (incl. books a\nteacher took while away)", 2, 10)
     f.node("decl", "process", "Decline with optional reason;\nmember is alerted", 3, 10)
     f.node("aok", "process", "Approve: lend a copy for 7 days*,\nreceipt, app alert + email", 2, 11)
     f.node("track", "process", "Track borrowed books (automatic\nreminder the day before due)", 2, 13)
@@ -196,7 +195,7 @@ def flowchart_staff():
     f.node("outc", "io", "Scan the copy QR (or pick the loan);\noutcome: on time, late, torn, missing", 2, 16)
     f.node("upd", "process", "Update copy status, close loan,\nalert member, write audit log", 2, 17)
     f.node("more", "decision", "More work?", 2, 18)
-    f.node("out", "process", "Logout (Web: automatic after\n30 idle minutes)", 2, 19)
+    f.node("out", "process", "Logout (automatic after\n30 idle minutes)", 2, 19)
     f.node("end", "terminal", "End", 2, 20)
     e = f.edge
     e("start", "open"); e("open", "lib")
@@ -213,11 +212,11 @@ def flowchart_staff():
     e("dash", "mod")
     e("mod", "cat", "Catalog"); e("mod", "mem", "Members"); e("mod", "how", "Borrowing")
     e("mod", "oth", "Others", exit=(0.75, 0.75), entry=(0.5, 0), points=[(f.cx(2) + 53, f.cy(8) + 60), (f.cx(4), f.cy(8) + 60)])
-    e("how", "scan", "At the desk"); e("how", "appr", "Request")
-    e("scan", "incat")
-    e("incat", "add", "No"); e("add", "scan", exit=(0.5, 0), entry=(0, 0.5), points=[(f.cx(0), f.cy(10))])
-    e("incat", "lend", "Yes")
-    e("lend", "track", exit=(0.5, 1), entry=(0, 0.5), points=[(f.cx(1), f.cy(13))])
+    e("how", "appr", "Requests")
+    e("how", "phone", "Lend at the desk", exit=(0, 0.5), entry=(1, 0.5))
+    e("how", "issued", "School-issued", exit=(0, 0.75), entry=(0.5, 0), points=[(f.cx(1), f.cy(9) + 23)])
+    e("issued", "lost", "Lost book reports")
+    f.lane("lost", "more", f.cx(0) - 170)
     e("appr", "decl", "No"); e("appr", "aok", "Yes"); e("aok", "track")
     e("track", "over")
     e("over", "notice", "Yes"); e("over", "ret", "No")
@@ -245,10 +244,10 @@ def flowchart_offline():
     f.node("offm", "process", "Offline Mode: lists from this\ncomputer, \"System Offline\" shown", 1, 4)
     f.node("chg", "decision", "Make a change?", 1, 5)
     f.node("view", "process", "Read only: browse saved\nlists and printouts", 2, 5)
-    f.node("queue", "process", "Save to the Upload outbox: books, copies,\nmembers, lends, returns, notices", 1, 6)
+    f.node("queue", "process", "Save to the Upload outbox: books, copies,\nmembers, returns, notices", 1, 6)
     f.node("secret", "process", "Member passwords go to the OS\ncredential store, not the outbox", 0, 6)
     f.node("back", "decision", "Back online?", 1, 7)
-    f.node("upl", "process", "Upload: send items in order, each\nwith its Idempotency-Key", 1, 8)
+    f.node("upl", "process", "Upload by itself (or press Upload): items\nin order, each with its Idempotency-Key", 1, 8)
     f.node("res", "decision", "Server answer?", 1, 9)
     f.node("done", "process", "Accepted: remove item\n(a retry never adds twice)", 1, 10)
     f.node("skip", "process", "409 changed by someone else or\nrejected: skipped, reason shown", 2, 9)
@@ -284,7 +283,7 @@ def flowchart_phone_librarian():
     f.node("signin", "io", "Choose Librarian, then sign in\n(password + email code)", 1, 1)
     f.node("role", "decision", "Librarian or Admin\naccount?", 1, 2)
     f.node("mem", "ref", "Signed out: \"choose Member\"\n(see Flowchart 1)", 0, 2)
-    f.node("scr", "process", "Librarian screen\n(phone camera is the scanner)", 1, 3)
+    f.node("scr", "process", "Librarian screen (phone camera is the\nscanner; the only place to lend at the desk)", 1, 3)
     f.node("task", "decision", "Lend, Return or\nAdd book?", 1, 4)
     f.node("photo", "io", "Take a photo of the cover / title\npage, then the copyright page", 4, 5)
     f.node("ocr", "process", "Text read on the phone (ML Kit):\ntitle, author, publisher, year, ISBN", 4, 6)
@@ -292,11 +291,11 @@ def flowchart_phone_librarian():
     f.node("card", "io", "Scan the Library ID card\n(or type the Member ID)", 0, 5)
     f.node("found", "decision", "Active member\nfound?", 0, 6)
     f.node("cerr", "process", "Show why (not a Member ID,\nnot found, deactivated)", 0, 7)
-    f.node("show", "process", "Show name, grade / section\nand books borrowed now", 1, 6)
-    f.node("copy", "io", "Scan the book's QR label", 1, 7)
+    f.node("show", "process", "Show Member ID, grade / section\nand books borrowed now", 1, 6)
+    f.node("copy", "io", "Scan the book's QR label, or\nsearch the title / serial number", 1, 7)
     f.node("can", "decision", "Copy on the shelf and\nunder the limit (8*)?", 1, 8)
     f.node("lerr", "process", "Show the reason;\nnothing is lent", 0, 8)
-    f.node("lent", "process", "Lent: receipt no., due date\n(7 days*), app alert + email", 1, 9)
+    f.node("lent", "process", "Lent and approved at once: receipt,\ndue date (7 days*), alert + email", 1, 9)
     f.node("rcopy", "io", "Scan the returned book's\nQR label", 2, 5)
     f.node("cond", "io", "Choose condition: good,\ndamaged / torn, missing", 2, 6)
     f.node("isb", "decision", "Copy borrowed\nright now?", 2, 7)
@@ -336,9 +335,9 @@ def flowchart_kiosk():
     f.node("st", "process", "Librarian starts the Visitor's Log\n(Desktop chooser or side menu)", 1, 1)
     f.node("srv", "decision", "Server reachable?", 1, 2)
     f.node("nost", "process", "Cannot start: starting\nneeds the server", 0, 2)
-    f.node("ks", "process", "Kiosk screen: phone QR + 6-digit code\n(new every 30 s) and Member ID field", 1, 3)
+    f.node("ks", "process", "Kiosk: phone QR + 6-digit code (new every\n30 s) and the Library ID card field", 1, 3)
     f.node("how", "decision", "How does the\nmember check in?", 1, 4)
-    f.node("cardin", "io", "Scan Library ID card or\ntype the Member ID", 0, 5)
+    f.node("cardin", "io", "Scan the Library ID card (USB\nscanner) or type the Member ID", 0, 5)
     f.node("phone", "io", "Member app: scan the QR or\ntype the 6-digit code", 2, 5)
     f.node("valid", "decision", "Valid Member ID /\nfresh code?", 1, 6)
     f.node("msg", "process", "Show the reason\n(nothing recorded)", 0, 6)
@@ -349,7 +348,7 @@ def flowchart_kiosk():
     f.node("rep", "decision", "Within 60 s of\nthe last scan?", 1, 9)
     f.node("ign", "process", "Ignored (scanned twice)", 2, 9)
     f.node("tout", "process", "Time Out", 1, 10)
-    f.node("ban", "process", "Show the big Time In / Time Out\nbanner and update today's list", 1, 11)
+    f.node("ban", "process", "Time In / Out banner; today's table (Member ID,\ntimes, books borrowed today) scrolls by itself", 1, 11)
     f.node("close", "decision", "Librarian closes\nthe kiosk?", 1, 12)
     f.node("pw", "io", "Enter the librarian password", 1, 13)
     f.node("pwok", "decision", "Correct?", 1, 14)
@@ -390,6 +389,7 @@ STORES = {
     "D5": "Borrowing Transactions", "D6": "Notifications", "D7": "Audit Log", "D8": "Favourites, Wishlist, Ratings, Reviews and Views",
     "D9": "Library Visits", "D10": "App Usage", "D11": "Suggestions", "D12": "Inventory Audits",
     "D13": "Device Cache and Outbox (local)", "D14": "Idempotency Keys", "D15": "Backup Files", "D16": "Sign-in Sessions", "D17": "Recovery Key",
+    "D18": "School-issued Books", "D19": "Lost-book Documents (files)",
 }
 EXTERNAL = {"Email Service", "Open Library (covers)"}
 
@@ -443,10 +443,13 @@ def dfd_level0():
         ("Member", ">", "Registration, activation / sign-in codes, credentials"),
         ("Member", ">", "Borrow requests, favourites, Wishlist, ratings, reviews"),
         ("Member", ">", "Visit check-in (kiosk QR / code), suggestions, app time"),
+        ("Member", ">", "School-issued books, lost-book documents (PDF / Word / photo)"),
+        ("Member", "<", "Top readers, my activity, document status"),
         ("Member", "<", "Catalog, loans, receipts, alerts, Time In / Out, statistics"),
         ("Librarian / Admin", ">", "Credentials, books, copies, Excel catalog, members"),
         ("Librarian / Admin", ">", "Desk lending, approvals, returns, notices, kiosk scans"),
         ("Librarian / Admin", ">", "Backup / restore requests, suggestion replies"),
+        ("Librarian / Admin", ">", "School-issued checks, lost-book answers, member deletion"),
         ("Librarian / Admin", "<", "Dashboard, reports, Excel exports, printouts, ID cards, QR labels"),
         ("Librarian / Admin", "<", "Suggestions, backup files, system status"),
     ]
@@ -456,7 +459,7 @@ def dfd_level0():
     ]
     y, _ = dfd_rows(p, [("", "0\nAklatOne Library\nManagement System", left, right)], x_ent=80, x_proc=760, x_store=1300, ent_w=200, proc_w=300, store_w=220)
     p.box("t", "title", "AklatOne: Data Flow Diagram, Level 0 (Context Diagram)", 80, y + 10, 1200, 34)
-    p.box("n", "note", "Members create their own account (active only after the emailed activation code) or the librarian adds them. Google sign-in is not used.", 80, y + 50, 1300, 24)
+    p.box("n", "note", "Members create their own account (active only after the emailed activation code) or the librarian adds them. Lending at the desk is done on the librarian's phone. Google sign-in is not used.", 80, y + 50, 1300, 24)
     return p
 
 
@@ -465,7 +468,7 @@ L1 = [
      [("Member", ">", "Registration, activation code, credentials, email code, profile"), ("Member", "<", "Session, profile, Member ID"),
       ("Librarian / Admin", ">", "Recovery key (emergency)"), ("Librarian / Admin", "<", "New recovery key (shown once)"),
       ("Member", ">", "Sign out a device (password + code)"),
-      ("Librarian / Admin", ">", "Credentials, member details"), ("Librarian / Admin", "<", "Member list, Library ID cards")],
+      ("Librarian / Admin", ">", "Credentials, member details, delete account"), ("Librarian / Admin", "<", "Member list (Member ID), Library ID cards")],
      [("D1", ">", "Account data, card printed"), ("D1", "<", "Accounts, permissions"),
       ("Email Service", ">", "Codes, new-device and security emails"), ("D7", ">", "Sign-in and account audit"),
       ("D16", ">", "Session (device, network)"), ("D16", "<", "Signed-in devices"),
@@ -479,10 +482,10 @@ L1 = [
       ("Open Library (covers)", ">", "Cover images")],
      [("D2", "<", "Books (not hidden)"), ("D3", "<", "Copy counts"), ("D8", ">", "Views, ratings, reviews, favourites, notify-me"), ("D8", "<", "Favourites, approved reviews")]),
     ("4.0", "Process Borrow\nRequests",
-     [("Member", ">", "Borrow request / cancel"), ("Member", "<", "Request status"), ("Librarian / Admin", ">", "Approve / decline")],
-     [("D4", ">", "Request records"), ("D4", "<", "Requests"), ("D3", "<", "Available copy")]),
+     [("Member", ">", "Borrow request / cancel / \"I took it\" (teacher)"), ("Member", "<", "Request status"), ("Librarian / Admin", ">", "Approve / decline")],
+     [("D4", ">", "Request records"), ("D4", "<", "Requests"), ("D3", "<", "Available copy"), ("D9", "<", "Teacher timed in today")]),
     ("5.0", "Record Circulation\n(Desk Lending and Returns)",
-     [("Librarian / Admin", ">", "Member ID + copy QR (lend)"), ("Librarian / Admin", ">", "Copy QR + outcome (return)"),
+     [("Librarian / Admin", ">", "Phone: Member ID + copy QR or title (lend)"), ("Librarian / Admin", ">", "Copy QR + outcome (return)"),
       ("Member", "<", "Receipt, due date, history")],
      [("D1", "<", "Member by Member ID"), ("D5", ">", "Loan and return records"), ("D5", "<", "Loans"), ("D3", ">", "Copy status")]),
     ("6.0", "Send Notifications\nand Reminders",
@@ -498,7 +501,7 @@ L1 = [
       ("Librarian / Admin", ">", "Status and reply"), ("Librarian / Admin", "<", "Suggestions, NEW count")],
      [("D11", ">", "Suggestions, replies"), ("D11", "<", "Suggestions"), ("D6", ">", "Suggestion alert")]),
     ("9.0", "Generate Reports,\nTime Spent and Printouts",
-     [("Member", ">", "App time (seconds per day)"), ("Member", "<", "My statistics"),
+     [("Member", ">", "App time (seconds per day)"), ("Member", "<", "My statistics, activity, top readers"),
       ("Librarian / Admin", ">", "Date range, list to print"), ("Librarian / Admin", "<", "Reports, Excel, printouts")],
      [("D10", ">", "App usage"), ("D10", "<", "App time"), ("D5", "<", "Transactions"), ("D9", "<", "Visits"), ("D1", "<", "Members"), ("D7", "<", "Recent activity")]),
     ("10.0", "Synchronize Offline\nData",
@@ -508,37 +511,42 @@ L1 = [
     ("11.0", "Back Up and\nRestore Database",
      [("Librarian / Admin", ">", "Password, backup password, RESTORE"), ("Librarian / Admin", "<", "Backup file")],
      [("D15", ">", "Backups (daily + on request)"), ("D15", "<", "Backup to restore"), ("D7", ">", "Backup / restore audit")]),
+    ("12.0", "Manage School-issued\nBooks and Lost-book\nDocuments",
+     [("Member", ">", "Books received (typed one by one)"), ("Member", ">", "Apology letter / report file"), ("Member", "<", "Checked / returned, document answer"),
+      ("Librarian / Admin", ">", "Check, end of school year, accept / ask more"), ("Librarian / Admin", "<", "Lists, downloaded documents")],
+     [("D18", ">", "School-issued books"), ("D18", "<", "Books per member"), ("D19", ">", "Document file (checked type, 10 MB)"), ("D19", "<", "File to download"), ("D6", ">", "Answer alert")]),
 ]
 
 
 def dfd_level1():
-    p = Page("DFD Level 1", 1700, 3600)
+    p = Page("DFD Level 1", 1700, 4000)
     y, tops = dfd_rows(p, L1)
     # 4.0 hands an approved request to 5.0 (the next row).
     p.edge("p3", "p4", "Approved loan", style=DFDEDGE, exit=(0.5, 1), entry=(0.5, 0))
     p.box("t", "title", "AklatOne: Data Flow Diagram, Level 1", 200, y, 1200, 34)
-    p.box("n", "note", "* = the same external entity or data store repeated to keep the flows readable. D13 lives on the device (Desktop outbox and cache, kiosk queue, phone cache); D1 to D12, D14, D16 and D17 are tables in the central MariaDB database; D15 is the backup folder on the server.", 200, y + 40, 1340, 40)
+    p.box("n", "note", "* = the same external entity or data store repeated to keep the flows readable. D13 lives on the device (Desktop outbox and cache, kiosk queue, phone cache); D1 to D12, D14, D16 to D18 are tables in the central MariaDB database; D15 is the backup folder and D19 the uploads folder on the server.", 200, y + 40, 1340, 40)
     p.height = int(y + 120)
     return p
 
 
 L2 = [
-    ("1.0 Authenticate and\nManage Accounts", [("1.1", "Check username /\nemail and password", "D1"), ("1.2", "Email codes: sign-in,\nactivation, password change", "Email Service"), ("1.3", "Issue session token;\nwrite sign-in audit", "D7"), ("1.4", "Register (member) or add\n(librarian); make Member ID", "D1"), ("1.5", "Print Library ID\ncards, mark printed", "D1"), ("1.6", "Record devices; sign\none out (password + code)", "D16"), ("1.7", "Emergency: recovery key\nreplaces the librarian", "D17")]),
+    ("1.0 Authenticate and\nManage Accounts", [("1.1", "Check username /\nemail and password", "D1"), ("1.2", "Email codes: sign-in,\nactivation, password change", "Email Service"), ("1.3", "Issue session token;\nwrite sign-in audit", "D7"), ("1.4", "Register or add; Member ID\nshown as the name is typed", "D1"), ("1.5", "Print Library ID\ncards, mark printed", "D1"), ("1.6", "Record devices; sign\none out (password + code)", "D16"), ("1.7", "Emergency: recovery key\nreplaces the librarian", "D17")]),
     ("2.0 Manage Catalog,\nCopies and Inventory", [("2.1", "Add / edit / hide books\n(type, grade level)", "D2"), ("2.2", "Add copies: codes,\nlocation, date received", "D3"), ("2.3", "Excel import:\npreview, then apply", "D2"), ("2.4", "Print copy\nQR labels", "D3"), ("2.5", "Inventory audit:\nscan copies, report", "D12")]),
     ("3.0 Search Catalog and\nTrack Engagement", [("3.1", "Search, filter\nand sort", "D2"), ("3.2", "Show availability\nand cover", "D3"), ("3.3", "Favourite, rate, review,\nnotify me, count views", "D8")]),
-    ("4.0 Process Borrow\nRequests", [("4.1", "Check limit (8*)\nand free copy", "D5"), ("4.2", "Save pending\nrequest", "D4"), ("4.3", "Approve or decline;\nalert member", "D4"), ("4.4", "Approved: lend\n(goes to 5.3)", None)]),
-    ("5.0 Record\nCirculation", [("5.1", "Find member by\nMember ID card", "D1"), ("5.2", "Find copy by\nQR label code", "D3"), ("5.3", "Lend: loan, receipt,\ndue date (7 days*)", "D5"), ("5.4", "Return: outcome,\ncopy status", "D5")]),
+    ("4.0 Process Borrow\nRequests", [("4.1", "Check limit (8*)\nand free copy", "D5"), ("4.2", "Save request (teacher who\ntimed in: \"I took it\")", "D4"), ("4.3", "Approve or decline;\nalert member", "D4"), ("4.4", "Approved: lend\n(goes to 5.3)", None)]),
+    ("5.0 Record\nCirculation", [("5.1", "Phone: find member\nby Member ID card", "D1"), ("5.2", "Find copy by QR label\nor title / serial", "D3"), ("5.3", "Lend: loan, receipt,\ndue date (7 days*)", "D5"), ("5.4", "Return: outcome,\ncopy status", "D5")]),
     ("6.0 Send Notifications\nand Reminders", [("6.1", "Librarian notice\n(overdue / reminder)", None), ("6.2", "Daily job: loans\ndue tomorrow", "D5"), ("6.3", "Save in-app\nalert", "D6"), ("6.4", "Send email\n(if member has one)", "Email Service")]),
     ("7.0 Record Library\nVisits (Kiosk)", [("7.1", "Start kiosk\n(kiosk-only token)", None), ("7.2", "Identify member: card,\nID, phone QR / code", "D1"), ("7.3", "Apply Time In /\nTime Out rule", "D9"), ("7.4", "Offline: queue scan\non the kiosk computer", "D13"), ("7.5", "Close kiosk with\nlibrarian password", None)]),
     ("8.0 Collect\nSuggestions", [("8.1", "Member sends\n(5 a day)", "D11"), ("8.2", "Librarian reviews\n(NEW badge)", "D11"), ("8.3", "Set status\nand reply", "D11"), ("8.4", "Alert the\nmember", "D6")]),
     ("9.0 Generate Reports,\nTime Spent, Printouts", [("9.1", "Collect app time\nper PH day", "D10"), ("9.2", "Library time from\nTime In / Out", "D9"), ("9.3", "Loan statistics\nand days kept", "D5"), ("9.4", "Reports, Excel,\nprintouts", None)]),
-    ("10.0 Synchronize\nOffline Data", [("10.1", "Cache read lists\non the device", "D13"), ("10.2", "Queue offline\nchanges (Desktop)", "D13"), ("10.3", "Upload with\nIdempotency-Key", "D14"), ("10.4", "Conflict check\n(409 if changed)", None), ("10.5", "Show sent and\nskipped items", None)]),
+    ("10.0 Synchronize\nOffline Data", [("10.1", "Cache read lists\non the device", "D13"), ("10.2", "Queue offline\nchanges (Desktop)", "D13"), ("10.3", "Upload by itself with\nIdempotency-Key", "D14"), ("10.4", "Conflict check\n(409 if changed)", None), ("10.5", "Show sent and\nskipped items", None)]),
     ("11.0 Back Up and\nRestore Database", [("11.1", "Re-check the staff\npassword", "D1"), ("11.2", "Dump, gzip,\noptional encryption", "D15"), ("11.3", "Validate upload;\nsafety copy first", "D15"), ("11.4", "Restore, then\napply migrations", None)]),
+    ("12.0 School-issued Books,\nLost-book Documents", [("12.1", "Member types each\nbook (no limit)", "D18"), ("12.2", "Librarian checks;\nend of school year", "D18"), ("12.3", "Member uploads apology\n/ report (type checked)", "D19"), ("12.4", "Librarian downloads,\naccepts or asks more", "D19"), ("12.5", "Alert the\nmember", "D6")]),
 ]
 
 
 def dfd_level2():
-    p = Page("DFD Level 2 - Simplified", 1900, 2600)
+    p = Page("DFD Level 2 - Simplified", 1900, 2800)
     y, rh, sx, sw, gap = 40, 190, 280, 190, 60
     for r, (title, steps) in enumerate(L2):
         p.box(f"r{r}", "rowlabel", title, 40, y + 18, 200, 70)

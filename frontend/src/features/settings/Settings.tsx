@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { rules } from "../../lib/inputRules";
-import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone, Activity, DatabaseBackup, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone, Activity, DatabaseBackup, ChevronLeft, ChevronRight, HelpCircle, type LucideIcon } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
+import { HelpGuide } from "../../components/HelpGuide";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
@@ -32,6 +33,7 @@ export function Settings() {
     { key: "theme", title: "Theme", text: "Light or dark look for this computer.", icon: Palette, tone: "from-[#DB2777] to-[#831843]", show: true, panel: () => <ThemePanel /> },
     { key: "status", title: "System status", text: "Is everything working? Database, email, backups, storage.", icon: Activity, tone: "from-success to-success-strong", show: hasPerm("backup:manage"), panel: () => <SystemPanel /> },
     { key: "backup", title: "Backup and Restore", text: "Download a copy of all records, or bring one back.", icon: DatabaseBackup, tone: "from-danger to-danger-strong", show: hasPerm("backup:manage"), panel: () => <BackupPanel /> },
+    { key: "help", title: "Help", text: "How to lend, approve, return, import books, print ID cards, back up.", icon: HelpCircle, tone: "from-[#0E7490] to-[#164E63]", show: true, panel: () => <Panel title="Help" icon={HelpCircle}><HelpGuide audience="staff" /></Panel> },
     { key: "about", title: "About AklatOne", text: "Version, build date and who made it.", icon: Info, tone: "from-[#475569] to-[#1E293B]", show: true, panel: () => <AboutPanel /> },
   ].filter(x => x.show);
   const open = sections.find(x => x.key === section);

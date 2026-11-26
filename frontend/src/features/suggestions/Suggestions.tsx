@@ -60,7 +60,7 @@ export function Suggestions() {
                 <Badge tone={STATUS[s.status]?.tone ?? "primary"}>{STATUS[s.status]?.label ?? s.status}</Badge>
               </div>
               {s.message && <p className="text-sm text-ink whitespace-pre-line">{s.message}</p>}
-              <p className="text-xs text-ink-muted">{s.member.displayName ?? "Member"} · <span className="font-mono">{s.member.maskedId}</span> · {(s.member.memberType === "Teacher" ? s.member.department : s.member.gradeSection) ?? s.member.memberType ?? ""} · {phDateTime(s.createdAt)}</p>
+              <p className="text-xs text-ink-muted"><span className="font-mono font-bold text-primary-strong">{s.member.maskedId ?? "Member"}</span> · {(s.member.memberType === "Teacher" ? s.member.department : s.member.gradeSection) ?? s.member.memberType ?? ""} · {phDateTime(s.createdAt)}</p>
               {s.reply && <p className="text-sm rounded-xl bg-page px-3 py-2"><b className="text-primary-strong">Your reply:</b> {s.reply}</p>}
               {canAnswer && (
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -143,7 +143,7 @@ function ReviewsPanel() {
                 <span className="text-warning font-bold shrink-0" aria-label={`${r.stars} of 5 stars`}>{"★".repeat(r.stars)}</span>
               </div>
               <p className="text-sm text-ink whitespace-pre-line break-words">{r.review}</p>
-              <p className="text-xs text-ink-muted">{r.member.displayName ?? "Member"} · <span className="font-mono">{r.member.maskedId}</span> · {phDateTime(r.updatedAt)}</p>
+              <p className="text-xs text-ink-muted"><span className="font-mono font-bold text-primary-strong">{r.member.maskedId ?? "Member"}</span> · {phDateTime(r.updatedAt)}</p>
               <div className="flex flex-wrap gap-2 pt-1">
                 {r.reviewStatus !== "APPROVED" && <button type="button" onClick={() => decide(r, "APPROVED")} className={`${btn.success} ${btnSm}`}><Check size={14} aria-hidden="true" />Approve</button>}
                 {r.reviewStatus !== "HIDDEN" && <button type="button" onClick={() => decide(r, "HIDDEN")} className={`${btn.secondary} ${btnSm}`}><EyeOff size={14} aria-hidden="true" />Hide</button>}

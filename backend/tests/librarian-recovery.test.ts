@@ -36,6 +36,11 @@ describe("librarian recovery key", () => {
     const newLib = await signIn(app, `recover_a_${stamp}@example.test`, PW);
     expect((await request(app).get("/api/v1/auth/me").set(as(newLib))).body.data.role).toBe("LIBRARIAN");
     expect(await prisma.user.count({ where: { role: { name: "LIBRARIAN" }, isActive: true } })).toBe(1);
+
+    // Replacing that librarian again frees its Gmail: the new account may use the very same address.
+    const again = await request(app).post("/api/v1/setup/recover").send({ ...librarian("a"), recoveryKey: first.body.data.recoveryKey });
+    expect(again.status).toBe(201);
+    expect(await prisma.user.count({ where: { email: `recover_a_${stamp}@example.test` } })).toBe(1);
   });
 
   afterAll(async () => {

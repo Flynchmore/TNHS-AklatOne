@@ -61,6 +61,7 @@ export const openApiSpec = {
     "/users/{id}": {
       get: auth("/users", "Member details", "users:read", { "404": "Not found" }),
       patch: auth("/users", "Edit a member", "users:write", { "404": "Not found", "409": "Username or email taken" }),
+      delete: auth("/users", "Delete a member account: personal data removed, email and username free again; history kept under the Member ID", "users:write", { "404": "Not found", "409": "Still has borrowed books" }),
     },
     "/users/{id}/status": { patch: auth("/users", "Activate or deactivate a member", "users:write", { "404": "Not found" }) },
 

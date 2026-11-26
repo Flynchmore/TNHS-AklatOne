@@ -120,7 +120,7 @@ circulationRouter.get("/transactions", authenticate, async (req, res, next) => {
     if (from || to) where.borrowedAt = { ...(from && !isNaN(from.getTime()) ? { gte: from } : {}), ...(to && !isNaN(to.getTime()) ? { lte: to } : {}) };
 
     const [items, total] = await Promise.all([
-      prisma.borrowingTransaction.findMany({ where, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } }, borrower: { select: { id: true, username: true, displayName: true, maskedId: true } } }, orderBy: { borrowedAt: "desc" }, take, skip }),
+      prisma.borrowingTransaction.findMany({ where, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } }, borrower: { select: { id: true, username: true, displayName: true, maskedId: true, memberType: true, gradeSection: true, department: true } } }, orderBy: { borrowedAt: "desc" }, take, skip }),
       prisma.borrowingTransaction.count({ where }),
     ]);
     ok(res, { items, total, limit: take, offset: skip });
@@ -131,7 +131,7 @@ circulationRouter.get("/transactions/:id", authenticate, validate({ params: idPa
   try {
     const id = req.params.id as string;
     // Includes everything a receipt shows (book, copy barcode, borrower, approving librarian).
-    const tx = await prisma.borrowingTransaction.findUnique({ where: { id }, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true, serialNumber: true, publisher: true, publishedYear: true } } } }, borrower: { select: { id: true, username: true, displayName: true, memberType: true } }, request: { select: { id: true, createdAt: true, reviewedAt: true, reviewedBy: { select: { username: true, displayName: true } } } } } });
+    const tx = await prisma.borrowingTransaction.findUnique({ where: { id }, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true, serialNumber: true, publisher: true, publishedYear: true } } } }, borrower: { select: { id: true, username: true, displayName: true, memberType: true, maskedId: true } }, request: { select: { id: true, createdAt: true, reviewedAt: true, reviewedBy: { select: { username: true, displayName: true } } } } } });
     if (!tx) return fail(res, 404, "Transaction not found");
     const privileged = req.user?.permissions.includes("circulation:read") || req.user?.role === "ADMIN";
     if (!privileged && tx.borrowerId !== req.user?.id) return fail(res, 403, "Forbidden");

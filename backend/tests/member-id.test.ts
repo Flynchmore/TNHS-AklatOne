@@ -74,3 +74,22 @@ describe("Member ID preview while typing the name", () => {
     expect(c2.body.data.maskedId).toMatch(/^JC\d{6}$/);
   });
 });
+
+describe("a deleted member's Gmail can be used again", () => {
+  it("frees the email and username, keeps history, and lets the person sign up again", async () => {
+    const app = createApp();
+    const admin = await adminToken(app);
+    const u = `reuse_${Date.now()}`;
+    const m = await newMember(app, u);
+    const del = await request(app).delete(`/api/v1/users/${m.id}`).set("Authorization", `Bearer ${admin}`);
+    expect(del.status).toBe(200);
+    // Same username and email work again for a new account.
+    const again = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
+      .send({ username: u, password: "Strong#Pass2026x", displayName: "Juan Dela Cruz", memberType: "Student", email: `${u}@example.test` });
+    expect(again.status).toBe(201);
+    // The deleted account is gone from the Members list and cannot be deleted twice.
+    const list = (await request(app).get(`/api/v1/users?status=all&q=${u}`).set("Authorization", `Bearer ${admin}`)).body.data.items;
+    expect(list.map((x: { id: string }) => x.id)).toEqual([again.body.data.id]);
+    expect((await request(app).delete(`/api/v1/users/${m.id}`).set("Authorization", `Bearer ${admin}`)).status).toBe(404);
+  });
+});

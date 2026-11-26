@@ -1,3 +1,4 @@
+import { devOtp } from "../../common/devOtp.js";
 import { Router, type Request } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -103,8 +104,8 @@ sessionsRouter.post("/code", async (req, res, next) => {
     if (!u?.email) return ok(res, { needsCode: false });
     const otp = newOtp();
     await prisma.user.update({ where: { id: req.user!.id }, data: { otpCode: otpHash(otp), otpExpiry: new Date(Date.now() + 10 * 60_000) } });
-    const sent = await sendOtpEmail(u.email, otp, "session", u.displayName);
-    if (!sent && env.NODE_ENV !== "production") console.log(`[DEV OTP] device sign-out ${u.username}: ${otp}`);
+    await sendOtpEmail(u.email, otp, "session", u.displayName);
+    devOtp("device sign-out", u.username, otp);
     ok(res, { needsCode: true, email: u.email.replace(/^(.)[^@]*(@.*)$/, "$1***$2") });
   } catch (err) { next(err); }
 });

@@ -53,7 +53,7 @@ async function startupSummary() {
     !redis ? `  ${warn} Redis      not configured; sign-in limits are kept in memory`
       : redisUp ? `  ${ok} Redis      connected (shared sign-in limits)`
       : `  ${warn} Redis      not running; sign-in limits are kept in memory. Start it: docker start aklatone-redis`,
-    env.EMAIL_USER ? `  ${ok} Email      configured (codes go to each account's email)` : `  ${warn} Email      not set; every emailed code is printed here as [DEV OTP]`,
+    env.EMAIL_USER ? `  ${ok} Email      configured; every code is ALSO printed here as [DEV OTP · MOBILE APP / WEB APP / DESKTOP APP]` : `  ${warn} Email      not set; every code is printed here as [DEV OTP · MOBILE APP / WEB APP / DESKTOP APP]`,
     librarians === 0 ? `  ${warn} Librarian  none yet: open the Staff Web ${c("1", "/setup")} page to create it (print the recovery key it shows)`
       : librarians > 0 ? `  ${ok} Librarian  set up${recoveryKey ? "" : c("33", "  (no recovery key yet: Staff Web > Settings > Emergency recovery key)")}` : "",
     `  ${arrow} API        ${base}/api/v1`,
