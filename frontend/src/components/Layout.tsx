@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Skeleton } from "./staff/ui";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, X, LogOut, Search, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, Library, ArrowLeftRight, Users, BarChart3, Printer, Settings, UploadCloud, Wifi, WifiOff, DoorOpen, Lightbulb, Newspaper, type LucideIcon } from "lucide-react";
 import { useAuth } from "../features/auth/auth";
 import { apiFetch } from "../lib/api";
 import { useToast } from "./Toast";
@@ -49,7 +49,7 @@ export function Layout() {
   const permKey = user?.permissions.join(",") ?? "";
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const pages = useMemo(() => navLinks().filter(l => !l.perm || hasPerm(l.perm)), [permKey, !!user]);
-  // Ctrl+K (Cmd+K on a Mac) opens the search from any staff page.
+  // Ctrl+K (Cmd+K on a Mac) opens the search from any staff page (the button above Overview was removed, developer request).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setOpen(false); setSearching(true); } };
     window.addEventListener("keydown", onKey);
@@ -91,12 +91,6 @@ export function Layout() {
             <p className="text-[11px] text-accent font-semibold mt-0.5 tracking-wide uppercase">School Library</p>
           </div>
           <button className={`md:hidden w-10 h-10 shrink-0 rounded-xl flex items-center justify-center hover:bg-white/10 ${focusRing}`} onClick={() => setOpen(false)} aria-label="Close menu"><X size={20} aria-hidden="true" /></button>
-        </div>
-
-        <div className="relative px-4 pt-4 [@media(max-height:960px)]:pt-3">
-          <button type="button" onClick={() => { setOpen(false); setSearching(true); }} className={`w-full flex items-center gap-3 min-h-11 [@media(max-height:960px)]:min-h-9 px-4 rounded-2xl bg-white/10 border border-white/20 text-sm text-white/85 hover:bg-white/15 hover:text-white motion-safe:transition ${focusRing}`}>
-            <Search size={18} aria-hidden="true" /><span className="flex-1 text-left">Search AklatOne…</span><kbd className="text-[11px] font-semibold border border-white/30 rounded-md px-1.5 py-0.5">Ctrl K</kbd>
-          </button>
         </div>
 
         {/* Categories with clear gaps; scrolls (no scrollbar, faded edge) only if the window is short, and keeps space above the profile / Logout part. */}
@@ -159,7 +153,6 @@ export function Layout() {
           <button className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 ${focusRing}`} onClick={() => setOpen(true)} aria-label="Open menu"><Menu size={20} aria-hidden="true" /></button>
           <img src="/aklatone-icon.png" alt="" className="w-8 h-8 rounded-lg bg-white p-0.5" />
           <span className="font-bold flex-1">AklatOne</span>
-          <button className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 ${focusRing}`} onClick={() => setSearching(true)} aria-label="Search AklatOne"><Search size={20} aria-hidden="true" /></button>
         </div>
         <main id="main" className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
           <Suspense fallback={<Skeleton rows={6} />}><div key={location.pathname} className="ak-page"><Outlet /></div></Suspense>

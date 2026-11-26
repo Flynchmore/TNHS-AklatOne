@@ -77,7 +77,7 @@ export function MobileOpenLibrary() {
         <form role="search" onSubmit={e => { e.preventDefault(); fetchBooks(query); }} className="mt-4 bg-white/15 rounded-full flex items-center gap-2 pl-4 pr-1 focus-within:ring-2 focus-within:ring-white">
           <Search className="text-white/85 shrink-0" size={18} aria-hidden="true" />
           <label htmlFor="ol-search" className="sr-only">Search Open Library</label>
-          <input id="ol-search" type="search" enterKeyHint="search" className="flex-1 min-h-11 bg-transparent text-on-primary placeholder:text-white/80 outline-none text-sm" placeholder="Search by title or author" value={query} onChange={e => setQuery(e.target.value)} />
+          <input maxLength={100} id="ol-search" type="search" enterKeyHint="search" className="flex-1 min-h-11 bg-transparent text-on-primary placeholder:text-white/80 outline-none text-sm" placeholder="Search by title or author" value={query} onChange={e => setQuery(e.target.value)} />
           <button type="submit" className="min-h-10 px-3 rounded-lg text-on-primary text-sm font-medium bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Search</button>
         </form>
     }>

@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../features/auth/auth";
 import { Login } from "../features/auth/Login";
 import { ToastProvider } from "../components/Toast";
-import { RefreshButton } from "../features/circulation/RefreshButton";
+import { RefreshButton } from "../components/RefreshButton";
 import { Loans } from "../features/circulation/Loans";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 

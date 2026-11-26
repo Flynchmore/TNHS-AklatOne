@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withRule, type Rule } from "../../lib/inputRules";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
 import { Link, useSearchParams } from "react-router-dom";
@@ -7,7 +8,7 @@ import { Users, UserPlus, Pencil, Eye, UserX, UserCheck, ChevronLeft, ChevronRig
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { RefreshButton } from "../circulation/RefreshButton";
+import { RefreshButton } from "../../components/RefreshButton";
 import { Badge, EmptyState, FormSection, PageHeader, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, table, select, SearchField } from "../../components/staff/ui";
 import { StrengthMeter, loanStatus, passwordStrength } from "../../components/mobile/ui";
 import { phDate } from "../../lib/dates";
@@ -224,10 +225,10 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
     onClose();
   };
 
-  const field = (text: string, k: keyof Form, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+  const field = (text: string, k: keyof Form, props: React.InputHTMLAttributes<HTMLInputElement> = {}, rule?: Rule) => (
     <div>
       <label htmlFor={`member-${k}`} className={label}>{text}</label>
-      <input id={`member-${k}`} value={form[k]} onChange={set(k)} className={input} {...props} />
+      <input id={`member-${k}`} value={form[k]} onChange={withRule(rule, set(k))} className={input} {...props} />
     </div>
   );
 
@@ -245,16 +246,16 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
       </FormSection>
       <FormSection title="Personal information" icon={IdCard}>
         <div className="grid sm:grid-cols-2 gap-4">
-          {field("Full name *", "displayName", { maxLength: 100, autoComplete: "off" })}
+          {field("Full name *", "displayName", { maxLength: 100, autoComplete: "off" }, "name")}
           {isNew ? (
             <div>
-              {field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. reader2026", "aria-describedby": "member-username-tip" })}
+              {field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. reader2026", "aria-describedby": "member-username-tip" }, "username")}
               <p id="member-username-tip" className={`text-xs mt-1 ${looksLikeRealName(form.username, form.displayName) ? "text-warning font-semibold" : "text-ink-muted"}`}>{looksLikeRealName(form.username, form.displayName) ? USERNAME_WARNING : USERNAME_TIP}</p>
             </div>
           ) : (
             <div><p className={label}>Username</p><p className="min-h-11 flex items-center px-4 rounded-2xl bg-page text-ink-muted text-sm">@{form.username}</p></div>
           )}
-          {field("Email (required)", "email", { type: "email", maxLength: 191, autoComplete: "off", required: true })}
+          {field("Email (required)", "email", { type: "email", maxLength: 191, autoComplete: "off", required: true }, "email")}
           <div>
             <label htmlFor="member-gender" className={label}>Sex</label>
             <select id="member-gender" value={form.gender} onChange={set("gender")} className={select}>
@@ -268,12 +269,12 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
           {student ? (
             <>
               {field("Grade & section", "gradeSection", { maxLength: 50, placeholder: "e.g. 10 - Archimedes", title: GRADE_SECTION_HINT, onChange: e => { const v = e.target.value; setForm(f => ({ ...f, gradeSection: formatGradeSection(v, f.gradeSection) })); } })}
-              {field("Class record no.", "studentRowNo", { type: "number", min: 1, max: 999 })}
+              {field("Class record no.", "studentRowNo", { inputMode: "numeric", maxLength: 3, placeholder: "1 to 999" }, "digits")}
             </>
           ) : (
             <>
-              {field("Department", "department", { maxLength: 100, placeholder: "e.g. Science" })}
-              {field("Position", "position", { maxLength: 100, placeholder: "e.g. Teacher III" })}
+              {field("Department", "department", { maxLength: 100, placeholder: "e.g. Science" }, "words")}
+              {field("Position", "position", { maxLength: 100, placeholder: "e.g. Teacher III" }, "words")}
             </>
           )}
         </div>
@@ -282,7 +283,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
         <div>
           <label htmlFor="member-password" className={label}>{isNew ? "First password *" : "New password (leave blank to keep)"}</label>
           <div className="relative">
-            <input id="member-password" type={show ? "text" : "password"} value={form.password} onChange={set("password")} autoComplete="new-password" className={`${input} pr-12`} />
+            <input id="member-password" maxLength={128} type={show ? "text" : "password"} value={form.password} onChange={set("password")} autoComplete="new-password" className={`${input} pr-12`} />
             <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center text-ink-muted hover:text-primary hover:bg-primary-soft">{show ? <EyeOff size={18} aria-hidden="true" /> : <EyeIcon size={18} aria-hidden="true" />}</button>
           </div>
           <StrengthMeter password={form.password} />

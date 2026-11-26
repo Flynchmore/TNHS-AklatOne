@@ -44,7 +44,7 @@ export function AddEmailForm({ emailToken, onDone, onBack }: { emailToken: strin
       {error && <Alert>{error}</Alert>}
       {!sentTo ? (
         <form onSubmit={send} className="space-y-4" noValidate>
-          <Field label="Your email" type="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+          <Field label="Your email" type="email" rule="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
           <button type="submit" className={btnPrimary} disabled={busy}>{busy && <Spinner />}{busy ? "Sending…" : "Send code"}</button>
         </form>
       ) : (

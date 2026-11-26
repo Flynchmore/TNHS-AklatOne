@@ -91,13 +91,13 @@ export function LibrarianSetup({ recover = false }: { recover?: boolean }) {
       </div>
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} noValidate className="space-y-4">
-        {recover && <Field label="Recovery key" icon={<KeyRound size={18} />} autoComplete="off" autoCapitalize="characters" placeholder="AKLT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" value={form.recoveryKey} onChange={set("recoveryKey")} error={required(form.recoveryKey)} hint="From the paper the school printed when AklatOne was set up." />}
-        <Field label="Name" icon={<User size={18} />} autoComplete="name" placeholder="Full name" value={form.name} onChange={set("name")} error={required(form.name)} required />
+        {recover && <Field label="Recovery key" rule="code" maxLength={34} icon={<KeyRound size={18} />} autoComplete="off" autoCapitalize="characters" placeholder="AKLT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" value={form.recoveryKey} onChange={set("recoveryKey")} error={required(form.recoveryKey)} hint="From the paper the school printed when AklatOne was set up." />}
+        <Field label="Name" rule="name" maxLength={100} icon={<User size={18} />} autoComplete="name" placeholder="Full name" value={form.name} onChange={set("name")} error={required(form.name)} required />
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Position" icon={<Briefcase size={18} />} autoComplete="organization-title" placeholder="e.g. Librarian" value={form.position} onChange={set("position")} error={required(form.position)} required />
-          <Field label="Department" icon={<Building2 size={18} />} placeholder="e.g. Library" value={form.department} onChange={set("department")} error={required(form.department)} required />
+          <Field label="Position" rule="words" maxLength={100} icon={<Briefcase size={18} />} autoComplete="organization-title" placeholder="e.g. Librarian" value={form.position} onChange={set("position")} error={required(form.position)} required />
+          <Field label="Department" rule="words" maxLength={100} icon={<Building2 size={18} />} placeholder="e.g. Library" value={form.department} onChange={set("department")} error={required(form.department)} required />
         </div>
-        <Field label="Email" type="email" icon={<Mail size={18} />} autoComplete="email" placeholder="librarian@example.com" value={form.email} onChange={set("email")} error={required(form.email)} hint="You will sign in with this email." required />
+        <Field label="Email" type="email" rule="email" icon={<Mail size={18} />} autoComplete="email" placeholder="librarian@example.com" value={form.email} onChange={set("email")} error={required(form.email)} hint="You will sign in with this email." required />
         <div>
           <Field label="Password" type={show ? "text" : "password"} icon={<Lock size={18} />} autoComplete="new-password" placeholder="Create a password" value={form.password} onChange={set("password")} error={required(form.password)} trailing={eye(show, () => setShow(!show))} required />
           <StrengthMeter password={form.password} />

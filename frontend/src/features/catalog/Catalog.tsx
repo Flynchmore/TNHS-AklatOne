@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { withRule, type Rule } from "../../lib/inputRules";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Library, Copy, BookOpen, CheckCircle2, BookUp, AlertTriangle, Archive, BookPlus, Tags, FileText, Info, FileSpreadsheet, FileDown, EyeOff, Eye, ClipboardCheck } from "lucide-react";
@@ -6,7 +7,7 @@ import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { Stars } from "../../components/Stars";
-import { RefreshButton } from "../circulation/RefreshButton";
+import { RefreshButton } from "../../components/RefreshButton";
 import { Badge, EmptyState, FormSection, PageHeader, Skeleton, StaffDialog, btn, btnSm, card, input, label, table, select, SearchField } from "../../components/staff/ui";
 import { CopiesDialog } from "./CopiesDialog";
 import { BookCover } from "../../components/mobile/ui";
@@ -268,10 +269,10 @@ function BookDialog({ book, onClose, onSaved, newTitle = "" }: { book: Book | "n
     onClose();
   };
 
-  const field = (text: string, k: keyof FormState, props: React.InputHTMLAttributes<HTMLInputElement> = {}, hint?: string) => (
+  const field = (text: string, k: keyof FormState, props: React.InputHTMLAttributes<HTMLInputElement> = {}, hint?: string, rule?: Rule) => (
     <div>
       <label htmlFor={`book-${k}`} className={label}>{text}</label>
-      <input id={`book-${k}`} value={form[k]} onChange={set(k)} className={input} {...props} />
+      <input id={`book-${k}`} value={form[k]} onChange={withRule(rule, set(k))} className={input} {...props} />
       {hint && <p className="text-xs text-ink-muted mt-1">{hint}</p>}
     </div>
   );
@@ -289,12 +290,12 @@ function BookDialog({ book, onClose, onSaved, newTitle = "" }: { book: Book | "n
         <div className="grid sm:grid-cols-2 gap-4">
           {field("Author", "authors", { maxLength: 255 })}
           {field("Publisher", "publisher", { maxLength: 255 })}
-          {field("Published year", "publishedYear", { inputMode: "numeric", placeholder: "e.g. 1887" })}
-          {field("ISBN", "isbn", { maxLength: 20 }, "Leave blank if none (shown as N/A).")}
-          {field("Serial number", "serialNumber", { maxLength: 30, placeholder: "e.g. NMT-001", style: { textTransform: "uppercase" } }, "Library code. Letters, numbers and dashes.")}
+          {field("Published year", "publishedYear", { inputMode: "numeric", maxLength: 4, placeholder: "e.g. 1887" }, undefined, "digits")}
+          {field("ISBN", "isbn", { maxLength: 17, inputMode: "numeric" }, "Leave blank if none (shown as N/A). Numbers, X and dashes.", "isbn")}
+          {field("Serial number", "serialNumber", { maxLength: 30, placeholder: "e.g. NMT-001", style: { textTransform: "uppercase" } }, "Library code. Letters, numbers and dashes.", "code")}
           {choose("Book type", "bookType", BOOK_TYPES)}
           {choose("Grade level", "gradeLevel", GRADE_LEVELS)}
-          {isNew && field("Copies", "copies", { type: "number", min: 0, max: 50 }, "Copy codes are made automatically; staff see copies by ISBN.")}
+          {isNew && field("Copies", "copies", { inputMode: "numeric", maxLength: 2, placeholder: "0 to 50" }, "Copy codes are made automatically; staff see copies by ISBN.", "digits")}
           {isNew && field("Date received", "dateReceived", { type: "date" }, "When the copies arrived at the library.")}
           {isNew && field("Location", "location", { maxLength: 100, placeholder: "e.g. Shelf A3" }, "Where the copies are kept.")}
         </div>

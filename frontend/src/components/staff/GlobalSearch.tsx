@@ -85,7 +85,7 @@ export function GlobalSearch({ pages, open, onClose }: { pages: SearchPage[]; op
           <div className="flex items-center gap-3 px-5 border-b border-line">
             <Search size={20} className="text-primary shrink-0" aria-hidden="true" />
             <label htmlFor="global-search" className="sr-only">Search pages, books, members and borrowed books</label>
-            <input id="global-search" autoFocus type="search" value={q} onChange={e => { setQ(e.target.value); setActive(0); }} autoComplete="off"
+            <input maxLength={100} id="global-search" autoFocus type="search" value={q} onChange={e => { setQ(e.target.value); setActive(0); }} autoComplete="off"
               placeholder="Search pages, books, members, borrowed books…" className="flex-1 min-h-16 bg-transparent text-base outline-none placeholder:text-ink-muted [&::-webkit-search-cancel-button]:hidden" />
             {q && <button type="button" onClick={() => setQ("")} aria-label="Clear search" className="w-9 h-9 rounded-full flex items-center justify-center text-ink-muted hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><X size={18} aria-hidden="true" /></button>}
             <kbd className="hidden sm:inline text-[11px] font-semibold text-ink-muted border border-line rounded-md px-1.5 py-0.5">Esc</kbd>

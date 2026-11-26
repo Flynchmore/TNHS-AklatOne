@@ -21,7 +21,7 @@ export const newReceiptNo = (now = new Date()) => `AK-${fmtDate(now).replace(/-/
 
 const requestInclude = {
   book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } },
-  member: { select: { id: true, username: true, displayName: true, memberType: true } },
+  member: { select: { id: true, username: true, displayName: true, memberType: true, maskedId: true } },
   reviewedBy: { select: { id: true, username: true, displayName: true } },
   transaction: { select: { id: true, receiptNo: true, borrowedAt: true, dueAt: true, status: true, outcome: true, returnedAt: true, bookCopy: { select: { barcode: true } } } },
 } as const;

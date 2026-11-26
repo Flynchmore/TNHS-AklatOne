@@ -91,7 +91,7 @@ export function SignInSessions() {
           {formError && <p role="alert" className="text-sm text-danger">{formError}</p>}
           <label className="block">
             <span className="block text-sm font-semibold text-ink mb-1 flex items-center gap-1"><Lock size={14} aria-hidden="true" />Your password</span>
-            <input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className={field} />
+            <input maxLength={128} type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className={field} />
           </label>
           {needsCode && (
             <label className="block">

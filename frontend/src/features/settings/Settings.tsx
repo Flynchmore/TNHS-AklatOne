@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { rules } from "../../lib/inputRules";
 import { Settings as SettingsIcon, UserCog, Palette, KeyRound, Info, Sun, Moon, Eye, EyeOff, Check, MonitorSmartphone } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { apiFetch } from "../../lib/api";
@@ -54,7 +55,7 @@ function ProfilePanel() {
   const field = (text: string, k: keyof typeof form, max: number) => (
     <div>
       <label htmlFor={`profile-${k}`} className={label}>{text}</label>
-      <input id={`profile-${k}`} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} maxLength={max} className={input} />
+      <input id={`profile-${k}`} value={form[k]} onChange={e => { const v = (k === "displayName" ? rules.name : rules.words)(e.target.value); setForm(f => ({ ...f, [k]: v })); }} maxLength={max} className={input} />
     </div>
   );
 
@@ -120,16 +121,16 @@ function PasswordPanel() {
       <form onSubmit={save} className="space-y-4" noValidate>
         <div>
           <label htmlFor="current-password" className={label}>Current password</label>
-          <input id="current-password" type={show ? "text" : "password"} value={current} onChange={e => setCurrent(e.target.value)} autoComplete="current-password" className={input} />
+          <input maxLength={128} id="current-password" type={show ? "text" : "password"} value={current} onChange={e => setCurrent(e.target.value)} autoComplete="current-password" className={input} />
         </div>
         <div>
           <label htmlFor="new-password" className={label}>New password</label>
-          <div className="relative"><input id="new-password" type={show ? "text" : "password"} value={pw} onChange={e => setPw(e.target.value)} autoComplete="new-password" className={`${input} pr-12`} />{eye}</div>
+          <div className="relative"><input maxLength={128} id="new-password" type={show ? "text" : "password"} value={pw} onChange={e => setPw(e.target.value)} autoComplete="new-password" className={`${input} pr-12`} />{eye}</div>
           <StrengthMeter password={pw} />
         </div>
         <div>
           <label htmlFor="confirm-password" className={label}>Confirm new password</label>
-          <input id="confirm-password" type={show ? "text" : "password"} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={!!mismatch} aria-describedby={mismatch ? "confirm-error" : undefined} className={input} />
+          <input maxLength={128} id="confirm-password" type={show ? "text" : "password"} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" aria-invalid={!!mismatch} aria-describedby={mismatch ? "confirm-error" : undefined} className={input} />
           {mismatch && <p id="confirm-error" className="text-xs text-danger mt-1">Passwords do not match.</p>}
         </div>
         {codeTo !== null && (
@@ -227,7 +228,7 @@ function RecoveryKeyPanel() {
           <form onSubmit={make} className="flex flex-wrap items-end gap-3" noValidate>
             <div className="flex-1 min-w-[14rem]">
               <label htmlFor="rk-password" className={label}>Your password</label>
-              <input id="rk-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={input} />
+              <input maxLength={128} id="rk-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={input} />
             </div>
             <button type="submit" disabled={busy || !password} className={btn.secondary}>{busy ? "Making…" : createdAt ? "Make a new key" : "Make the recovery key"}</button>
           </form>

@@ -173,7 +173,7 @@ export function MobileLogin() {
       </div>
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />
+        <Field label="Username" maxLength={191} icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />
         <Field
           label="Password"
           icon={<Lock size={18} />}

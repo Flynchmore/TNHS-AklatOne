@@ -35,7 +35,11 @@ body { @apply bg-page text-ink antialiased; }
 
 /* Tailwind v4 gives buttons the default arrow cursor; show the hand on anything clickable. */
 @layer base {
-  button:not(:disabled), [role="button"], [role="tab"], a[href], select, summary, label:has(> input[type="file"]) { cursor: pointer; }
+  /* Hand cursor on everything that can be clicked. */
+  button:not(:disabled), [role="button"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [role="option"], [role="menuitem"],
+  a[href], select:not(:disabled), summary, label:has(> input[type="file"]), label:has(> input[type="checkbox"]), label:has(> input[type="radio"]),
+  input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled), input[type="file"], input[type="date"]:not(:disabled), input[type="range"],
+  input[type="color"], [onclick] { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
 }
 
@@ -139,8 +143,9 @@ html:has(.ak-mobile-nav) { scroll-padding-bottom: 6rem; }
 .ak-select { appearance: none; -webkit-appearance: none; padding-right: 2.75rem !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235B6578' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1.1rem center; background-size: 16px; }
 :root.ak-dark .ak-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23A3AEC4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
 
-/* Dropdown lists use the app's blue-grey surface instead of the browser's pure white / black. */
-select option { background-color: var(--color-surface); color: var(--color-ink); }
+/* Dropdown choices: white in light mode, black in dark mode (developer request 2026-11-26). */
+select option, select optgroup { background-color: #FFFFFF; color: #202A3B; }
+:root.ak-dark select option, :root.ak-dark select optgroup { background-color: #000000; color: #F1F4FA; }
 
 /* Desktop app: custom title bar (window controls) sits above everything. */
 html.ak-desktop { --ak-titlebar: 2.5rem; }

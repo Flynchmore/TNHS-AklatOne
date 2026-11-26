@@ -60,10 +60,10 @@ export function MobileRegister() {
       footer={<>Already have an account? <Link to="/m/login" className={`font-bold text-accent underline underline-offset-2 rounded ${focusRing}`}>Sign in</Link></>}>
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Full name" icon={<IdCard size={18} />} autoComplete="name" placeholder="e.g. Juan Dela Cruz" value={f.displayName} onChange={set("displayName")} maxLength={100} />
-        <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="e.g. reader2026" value={f.username} onChange={set("username")} maxLength={50}
+        <Field label="Full name" rule="name" icon={<IdCard size={18} />} autoComplete="name" placeholder="e.g. Juan Dela Cruz" value={f.displayName} onChange={set("displayName")} maxLength={100} />
+        <Field label="Username" rule="username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="e.g. reader2026" value={f.username} onChange={set("username")} maxLength={50}
           hint={looksLikeRealName(f.username, f.displayName) ? `⚠ ${USERNAME_WARNING}` : USERNAME_TIP} />
-        <Field label="Email" type="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={f.email} onChange={set("email")} maxLength={191} hint="Your activation and sign-in codes are sent here." />
+        <Field label="Email" type="email" rule="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={f.email} onChange={set("email")} maxLength={191} hint="Your activation and sign-in codes are sent here." />
         <div>
           <MemberTypePicker value={memberType} onChange={setMemberType} />
           <p className="text-xs text-ink-muted mt-1.5">Choose carefully: this is set once. To change it later, ask the librarian.</p>
@@ -86,8 +86,8 @@ export function MobileRegister() {
           <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. 10 - Archimedes" value={f.gradeSection} onChange={e => setF(v => ({ ...v, gradeSection: formatGradeSection(e.target.value, v.gradeSection) }))} maxLength={50} hint={GRADE_SECTION_HINT} />
         ) : (
           <>
-            <Field label="Department" icon={<Building2 size={18} />} placeholder="e.g. Science Department" value={f.department} onChange={set("department")} maxLength={100} />
-            <Field label="Designation" icon={<Award size={18} />} placeholder="e.g. Teacher III" value={f.position} onChange={set("position")} maxLength={100} />
+            <Field label="Department" rule="words" icon={<Building2 size={18} />} placeholder="e.g. Science Department" value={f.department} onChange={set("department")} maxLength={100} />
+            <Field label="Designation" rule="words" icon={<Award size={18} />} placeholder="e.g. Teacher III" value={f.position} onChange={set("position")} maxLength={100} />
           </>
         )}
         <div>

@@ -197,12 +197,12 @@ export function Printing() {
           <div className={`${card} p-5 grid sm:grid-cols-2 gap-4 max-w-3xl`}>
             <div>
               <label htmlFor="app-android" className={label}>Android download link</label>
-              <input id="app-android" type="url" value={appLinks.android} onChange={e => saveAppLinks({ ...appLinks, android: e.target.value.trim() })} className={input} />
+              <input maxLength={300} id="app-android" type="url" value={appLinks.android} onChange={e => saveAppLinks({ ...appLinks, android: e.target.value.trim() })} className={input} />
               <p className="text-xs text-ink-muted mt-1">Default: the APK on this school's server (must be https:// for members at home).</p>
             </div>
             <div>
               <label htmlFor="app-ios" className={label}>iPhone link <span className="font-normal text-ink-muted">(App Store or TestFlight, optional)</span></label>
-              <input id="app-ios" type="url" value={appLinks.ios} onChange={e => saveAppLinks({ ...appLinks, ios: e.target.value.trim() })} placeholder="https://apps.apple.com/…" className={input} />
+              <input maxLength={300} id="app-ios" type="url" value={appLinks.ios} onChange={e => saveAppLinks({ ...appLinks, ios: e.target.value.trim() })} placeholder="https://apps.apple.com/…" className={input} />
               <button type="button" onClick={() => saveAppLinks(defaultAppLinks())} className="text-xs text-primary underline mt-1">Use the default links</button>
             </div>
           </div>
@@ -211,7 +211,7 @@ export function Printing() {
           <div className="relative max-w-md">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
             <label htmlFor="label-filter" className="sr-only">Only labels for</label>
-            <input id="label-filter" type="search" value={labelFilter} onChange={e => setLabelFilter(e.target.value)} placeholder="Only labels for a title or copy code" className={`${input} pl-11 !rounded-full`} />
+            <input maxLength={100} id="label-filter" type="search" value={labelFilter} onChange={e => setLabelFilter(e.target.value)} placeholder="Only labels for a title or copy code" className={`${input} pl-11 !rounded-full`} />
           </div>
         )}
       </div>

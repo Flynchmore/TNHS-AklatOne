@@ -6,7 +6,7 @@ import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { loanStatus } from "../../components/mobile/ui";
 import { ReceiptDialog } from "./ReceiptDialog";
-import { RefreshButton } from "./RefreshButton";
+import { RefreshButton } from "../../components/RefreshButton";
 import { useToast } from "../../components/Toast";
 import { EmptyState, SearchField, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, matches, table, select } from "../../components/staff/ui";
 import { phDate } from "../../lib/dates";
@@ -81,7 +81,7 @@ export function Loans() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented label="Borrowed books view" value={view} onChange={v => { setView(v); setReturning(null); setShow(""); }} options={[{ key: "ACTIVE", label: "Borrowed now" }, { key: "CLOSED", label: "Returned & closed" }]} />
+        <Segmented label="Borrowed books view" value={view} onChange={v => { setView(v); setReturning(null); setShow(""); }} options={[{ key: "ACTIVE", label: "Borrowed now" }, { key: "CLOSED", label: "Returned" }]} />
         <RefreshButton what="borrowed books" onRefresh={refetch} />
       </div>
       <p className="text-sm text-ink-muted">Books currently borrowed. When a book comes back, record how it was returned.</p>

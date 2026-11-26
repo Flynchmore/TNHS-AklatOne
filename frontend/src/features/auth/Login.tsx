@@ -139,7 +139,7 @@ export function Login() {
         {expired && <Alert tone="warning">Your session has expired. Please sign in again.</Alert>}
         {error && <Alert>{error}</Alert>}
         <form onSubmit={submit} className="space-y-4" noValidate>
-          <Field label="Username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Username or email" value={username} onChange={e => setUsername(e.target.value)} hint="Librarian: use the email from first-time setup." />
+          <Field label="Username" maxLength={191} icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="Username or email" value={username} onChange={e => setUsername(e.target.value)} hint="Librarian: use the email from first-time setup." />
           <Field
             label="Password"
             type={showPassword ? "text" : "password"}

@@ -119,7 +119,10 @@ export function StaffDialog({ open, onClose, title, subtitle, icon: Icon, childr
     if (!open && d.open) d.close();
   }, [open]);
   const Body = onSubmit ? "form" : "div";
-  const band = { primary: "from-primary to-primary-strong", danger: "from-danger to-danger-strong", warning: "from-warning to-[#7A3A06]", success: "from-success to-success-strong" }[tone];
+  // Every dialog has the same navy header (developer request: one design and colour for all modals); only a dialog that
+  // can destroy data (tone "danger", e.g. Restore) shows its icon on red.
+  const band = "from-primary to-primary-strong";
+  const chip = tone === "danger" ? "bg-danger border-white/30" : "bg-white/15 border-white/25";
   return (
     <dialog ref={ref} onClose={onClose} aria-label={title} className={`m-auto rounded-3xl p-0 w-[calc(100%-2rem)] ${wide ? "max-w-3xl" : "max-w-xl"} max-h-[90vh] bg-surface text-ink shadow-2xl shadow-primary-strong/40 border border-white/20 backdrop:bg-primary-strong/55 backdrop:backdrop-blur-sm ak-scale overflow-hidden`}>
       {open && (
@@ -127,7 +130,7 @@ export function StaffDialog({ open, onClose, title, subtitle, icon: Icon, childr
           <div className={`relative overflow-hidden flex items-center gap-4 px-6 py-5 bg-gradient-to-br ${band} text-white`}>
             <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="absolute -right-6 -top-8 w-40 h-40 object-contain opacity-15 pointer-events-none" />
             <span className="absolute -left-10 -bottom-16 w-40 h-40 rounded-full bg-white/10 pointer-events-none" aria-hidden="true" />
-            {Icon && <span className="relative w-12 h-12 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0 shadow-inner" aria-hidden="true"><Icon size={24} /></span>}
+            {Icon && <span className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 shadow-inner ${chip}`} aria-hidden="true"><Icon size={24} /></span>}
             <div className="relative flex-1 min-w-0">
               <h2 className="text-xl font-bold leading-tight truncate">{title}</h2>
               {subtitle && <p className="text-sm text-white/85 mt-0.5 truncate">{subtitle}</p>}
@@ -195,7 +198,7 @@ export function SearchField({ id, label: aria, value, onChange, placeholder, sho
       <label htmlFor={id} className="sr-only">{aria}</label>
       <div className="relative">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
-        <input id={id} type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete="off" className={`${input} pl-11 pr-11 !rounded-full shadow-sm [&::-webkit-search-cancel-button]:hidden`} />
+        <input maxLength={100} id={id} type="search" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete="off" className={`${input} pl-11 pr-11 !rounded-full shadow-sm [&::-webkit-search-cancel-button]:hidden`} />
         {value && <button type="button" onClick={() => onChange("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"><X size={16} aria-hidden="true" /></button>}
       </div>
       {value.trim() && shown !== undefined && total !== undefined && <p className="mt-1 px-4 text-xs text-ink-muted" aria-live="polite">{shown} of {total} match “{value.trim()}”</p>}

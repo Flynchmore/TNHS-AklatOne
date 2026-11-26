@@ -124,7 +124,7 @@ export function LendDialog({ open, onClose, onLent }: { open: boolean; onClose: 
               <label htmlFor="lend-search" className={label}>No QR label? Type the title, author, ISBN or serial number</label>
               <div className="relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
-                <input id="lend-search" value={q} onChange={e => setQ(e.target.value)} disabled={!memberCode || !online} placeholder={online ? "e.g. Noli Me Tangere" : "Needs a connection"} autoComplete="off" className={`${input} pl-10`} />
+                <input maxLength={100} id="lend-search" value={q} onChange={e => setQ(e.target.value)} disabled={!memberCode || !online} placeholder={online ? "e.g. Noli Me Tangere" : "Needs a connection"} autoComplete="off" className={`${input} pl-10`} />
               </div>
             </div>
             {hits && hits.length > 0 && (

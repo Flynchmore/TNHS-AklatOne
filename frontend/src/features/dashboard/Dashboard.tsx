@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { RefreshButton } from "../../components/RefreshButton";
 import { Link } from "react-router-dom";
-import { BookOpen, Users, BookUp, CalendarClock, History, Zap, BookPlus, ClipboardCheck, UserPlus, BellRing, Printer, BarChart3, Library, ArrowLeftRight, Tag, UserCog, ShieldCheck, RefreshCw, ChevronRight, type LucideIcon } from "lucide-react";
+import { BookOpen, Users, BookUp, CalendarClock, History, Zap, BookPlus, ClipboardCheck, UserPlus, BellRing, Printer, BarChart3, Library, ArrowLeftRight, Tag, UserCog, ShieldCheck, ChevronRight, type LucideIcon } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
-import { useToast } from "../../components/Toast";
 import { Panel, StatTile, Skeleton, btn, btnSm, card } from "../../components/staff/ui";
 import { focusRing } from "../../components/mobile/ui";
 import { timeAgo } from "../mobile/MobileNotifications";
-import { phHour, phLongDate, phTime } from "../../lib/dates";
+import { phHour, phLongDate } from "../../lib/dates";
 import { txPath } from "../../lib/offline";
 import { ThisWeek } from "./ThisWeek";
 
@@ -31,7 +31,6 @@ const greeting = (h = phHour()) => (h < 12 ? "Good morning" : h < 18 ? "Good aft
 
 export function Dashboard() {
   const { user, token, logout, hasPerm } = useAuth();
-  const toast = useToast();
   const summary = useQuery({
     queryKey: ["summary"],
     queryFn: async () => {
@@ -50,12 +49,7 @@ export function Dashboard() {
   const s = summary.data;
   const name = (user?.displayName || user?.username || "Librarian").split(" ")[0];
 
-  const refresh = async () => {
-    const [a, b] = await Promise.all([summary.refetch(), activity.refetch()]);
-    toast(a.isError || b.isError
-      ? { tone: "error", title: "Refresh failed", message: "Could not reload the dashboard. Check the server and try again." }
-      : { tone: "success", title: "Dashboard refreshed", message: `Updated ${phTime(Date.now())}.` });
-  };
+  const refresh = async () => (await Promise.all([summary.refetch(), activity.refetch()])).map(r => ({ isError: r.isError }));
 
   const actions: { to: string; label: string; hint: string; icon: LucideIcon; cls: string }[] = [
     { to: "/catalog?new=1", label: "Add a book", hint: "New title and copies", icon: BookPlus, cls: "from-primary to-primary-strong" },
@@ -80,7 +74,7 @@ export function Dashboard() {
           </div>
           <div className="flex flex-col items-end gap-3">
             <p className="text-sm font-medium text-white/90 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5">{phLongDate()}</p>
-            <button type="button" onClick={refresh} className={`${btn.secondary} !bg-white/15 !text-white !border-white/30 hover:!bg-white hover:!text-[#1E326D] backdrop-blur-sm`}><RefreshCw size={16} aria-hidden="true" />Refresh</button>
+            <RefreshButton onRefresh={refresh} what="the dashboard" onDark />
           </div>
         </div>
       </section>

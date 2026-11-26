@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, X, Receipt, ClipboardList } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Check, X, Receipt, ClipboardList, BookOpen, UserRound } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { ReceiptDialog } from "./ReceiptDialog";
-import { RefreshButton } from "./RefreshButton";
+import { RefreshButton } from "../../components/RefreshButton";
 import { Badge, EmptyState, SearchField, Segmented, Skeleton, btn, btnSm, input, matches, select, table } from "../../components/staff/ui";
 import { phDateTime } from "../../lib/dates";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 interface Req {
-  id: string; status: Status; createdAt: string; reviewedAt?: string | null; decisionNote?: string | null; availableCopies: number;
+  id: string; status: Status; createdAt: string; updatedAt?: string; reviewedAt?: string | null; decisionNote?: string | null; availableCopies: number;
   book: { title: string; authors?: string | null };
-  member: { username: string; displayName?: string | null; memberType?: string | null };
+  member: { username: string; displayName?: string | null; memberType?: string | null; maskedId?: string | null };
   reviewedBy?: { username: string; displayName?: string | null } | null;
   transaction?: { id: string; receiptNo?: string | null; dueAt?: string | null } | null;
 }
@@ -96,7 +97,7 @@ export function BorrowRequests() {
                   <td className={`${table.td} text-ink-muted`}>
                     {tab === "PENDING"
                       ? <Badge tone={r.availableCopies > 0 ? "success" : "danger"}>{r.availableCopies} available</Badge>
-                      : <>{r.reviewedBy && <div>By {r.reviewedBy.displayName || r.reviewedBy.username}</div>}{r.decisionNote && <div className="text-xs">“{r.decisionNote}”</div>}{r.transaction?.receiptNo && <div className="font-mono text-xs">{r.transaction.receiptNo}</div>}</>}
+                      : <Decision r={r} />}
                   </td>
                   <td className={table.td}>
                     <div className="flex justify-end gap-2">
@@ -115,6 +116,8 @@ export function BorrowRequests() {
                         </form>
                       )}
                       {r.transaction && <button className={`${btn.secondary} ${btnSm}`} onClick={() => setReceiptId(r.transaction!.id)}><Receipt size={14} aria-hidden="true" />Receipt</button>}
+                      {tab !== "PENDING" && <Link to={`/catalog?q=${encodeURIComponent(r.book.title)}`} className={`${btn.secondary} ${btnSm}`}><BookOpen size={14} aria-hidden="true" />Book</Link>}
+                      {tab !== "PENDING" && <Link to={`/members?q=${encodeURIComponent(r.member.maskedId || r.member.username)}`} className={`${btn.secondary} ${btnSm}`}><UserRound size={14} aria-hidden="true" />Member</Link>}
                     </div>
                   </td>
                 </tr>
@@ -124,6 +127,27 @@ export function BorrowRequests() {
         </div>
       )}
       <ReceiptDialog transactionId={receiptId} onClose={() => setReceiptId(null)} />
+    </div>
+  );
+}
+
+/** What happened to a request that is no longer pending: who decided, when, and why. */
+function Decision({ r }: { r: Req }) {
+  const by = r.reviewedBy ? r.reviewedBy.displayName || r.reviewedBy.username : null;
+  if (r.status === "CANCELLED") return <div><Badge tone="muted">Cancelled by the member</Badge><div className="text-xs mt-1">{phDateTime(r.updatedAt ?? r.createdAt)}</div></div>;
+  if (r.status === "REJECTED") return (
+    <div>
+      <Badge tone="danger">Declined</Badge>
+      <div className="text-xs mt-1">{by ? `By ${by}` : "By the librarian"}{r.reviewedAt ? ` · ${phDateTime(r.reviewedAt)}` : ""}</div>
+      <div className="text-xs italic">{r.decisionNote ? `“${r.decisionNote}”` : "No reason given"}</div>
+    </div>
+  );
+  return (
+    <div>
+      <Badge tone="success">Approved</Badge>
+      <div className="text-xs mt-1">{by ? `By ${by}` : "By the librarian"}{r.reviewedAt ? ` · ${phDateTime(r.reviewedAt)}` : ""}</div>
+      {r.transaction?.receiptNo && <div className="font-mono text-xs">{r.transaction.receiptNo}{r.transaction.dueAt ? ` · due ${phDateTime(r.transaction.dueAt)}` : ""}</div>}
+      {r.decisionNote && <div className="text-xs italic">“{r.decisionNote}”</div>}
     </div>
   );
 }

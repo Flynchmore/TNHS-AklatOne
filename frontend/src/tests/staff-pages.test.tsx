@@ -23,13 +23,13 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("staff portal pages", () => {
-  it("side nav shows the ten sections in their categories, in order, plus search and Logout", async () => {
+  it("side nav shows the ten sections in their categories, in order, plus Logout", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ pendingRequests: 3 }));
     wrap(<Layout />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     expect(within(nav).getAllByRole("link").map(l => l.textContent?.replace(/\d+$/, ""))).toEqual(["Dashboard", "Catalog", "Borrowing", "Suggestions", "Members", "Visitor's Log", "Reports", "Printing", "School Newspaper", "Settings"]);
     expect(within(nav).getAllByRole("heading").map(h => h.textContent)).toEqual(["Overview", "Circulation", "Patrons", "Records", "System"]);
-    expect(screen.getAllByRole("button", { name: /Search AklatOne/ }).length).toBeGreaterThan(0); // side nav + phone top bar
+    expect(screen.queryByRole("button", { name: /Search AklatOne/ })).toBeNull(); // removed from above Overview; Ctrl+K still opens the search
     expect(await within(nav).findByLabelText("3 pending requests")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Logout/ })).toBeInTheDocument();
     expect(screen.getByText("Tagumpay National", { exact: false })).toBeInTheDocument();

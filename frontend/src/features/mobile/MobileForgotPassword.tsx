@@ -121,7 +121,7 @@ export function MobileForgotPassword({ staff = false }: { staff?: boolean }) {
 
           {step === "email" && (
             <form onSubmit={sendOtp} className="space-y-4" noValidate>
-              <Field label="Registered email" type="email" icon={<Mail size={18} />} autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} hint="We'll send a 6-digit code to this email." />
+              <Field label="Registered email" type="email" rule="email" icon={<Mail size={18} />} autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} hint="We'll send a 6-digit code to this email." />
               <button type="submit" className={btnPrimary} disabled={loading}>
                 {loading && <Spinner />}
                 {loading ? "Sending…" : "Send code"}

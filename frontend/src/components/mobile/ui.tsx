@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { DEFAULT_MAX, withRule, type Rule } from "../../lib/inputRules";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, ChevronLeft, GraduationCap, Briefcase, Search, type LucideIcon } from "lucide-react";
 import { cacheGet, cacheSet, isPhone, setReachable } from "../../lib/offline";
@@ -43,10 +44,12 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   hint?: string;
   error?: string;
   hideLabel?: boolean;
+  /** What may be typed (digits only, a name, ...); see lib/inputRules.ts. */
+  rule?: Rule;
 };
 
 /** Labelled input: the label, hint and error are programmatically linked to the input. */
-export function Field({ label, icon, trailing, hint, error, hideLabel, className = "", ...input }: FieldProps) {
+export function Field({ label, icon, trailing, hint, error, hideLabel, rule, className = "", ...input }: FieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errId = error ? `${id}-err` : undefined;
@@ -61,6 +64,8 @@ export function Field({ label, icon, trailing, hint, error, hideLabel, className
           aria-describedby={[hintId, errId].filter(Boolean).join(" ") || undefined}
           className={`${inputBase} ${icon ? "pl-10" : "pl-3"} ${trailing ? "pr-12" : "pr-3"} ${className}`}
           {...input}
+          maxLength={input.maxLength ?? (input.type === "date" || input.type === "number" ? undefined : DEFAULT_MAX[input.type ?? "text"] ?? 100)}
+          onChange={withRule(rule, input.onChange)}
         />
         {trailing && <span className="absolute right-1 top-1/2 -translate-y-1/2">{trailing}</span>}
       </div>
@@ -251,7 +256,7 @@ export function FloatingSearch({ id, label, placeholder, value, onChange, onSubm
     <form role="search" onSubmit={e => { e.preventDefault(); onSubmit(); }} className="relative z-10 -mt-7 flex items-center justify-center gap-3">
       <div className="flex-1 max-w-64 bg-surface rounded-full shadow-lg border border-line-strong px-5 focus-within:ring-2 focus-within:ring-focus">
         <label htmlFor={id} className="sr-only">{label}</label>
-        <input id={id} type="search" enterKeyHint="search" className="w-full min-h-12 outline-none text-ink placeholder:text-ink-muted bg-transparent text-sm" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
+        <input maxLength={100} id={id} type="search" enterKeyHint="search" className="w-full min-h-12 outline-none text-ink placeholder:text-ink-muted bg-transparent text-sm" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} />
       </div>
       <button type="submit" aria-label={buttonLabel} className={`w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-primary to-primary-strong text-on-primary shadow-lg flex items-center justify-center active:scale-95 transition ${focusRing}`}>
         <Search size={20} aria-hidden="true" />

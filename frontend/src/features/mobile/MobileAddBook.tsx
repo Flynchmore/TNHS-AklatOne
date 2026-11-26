@@ -5,6 +5,7 @@ import { useToast } from "../../components/Toast";
 import { Alert, Field, Spinner, btnPrimary, btnSecondary, focusRing, mobileApi } from "../../components/mobile/ui";
 import { nativeOcr, photoText, type TextLine } from "../../lib/phoneCamera";
 import { BOOK_TYPES, GRADE_LEVELS } from "../../lib/bookFields";
+import type { Rule } from "../../lib/inputRules";
 
 export interface BookGuess { title: string; authors: string; publisher: string; publishedYear: string; isbn: string }
 const EMPTY: BookGuess = { title: "", authors: "", publisher: "", publishedYear: "", isbn: "" };
@@ -33,11 +34,11 @@ export function guessBookInfo(lines: TextLine[]): BookGuess {
   return g;
 }
 
-const FIELDS: { key: Key; label: string; inputMode?: "numeric" }[] = [
-  { key: "title", label: "Title" }, { key: "authors", label: "Author(s)" }, { key: "publisher", label: "Publisher" },
-  { key: "publishedYear", label: "Year published", inputMode: "numeric" }, { key: "isbn", label: "ISBN" },
-  { key: "serialNumber", label: "Serial number (optional)" }, { key: "copies", label: "Copies", inputMode: "numeric" },
-  { key: "location", label: "Location (optional)" },
+const FIELDS: { key: Key; label: string; inputMode?: "numeric"; rule?: Rule; max: number }[] = [
+  { key: "title", label: "Title", max: 255 }, { key: "authors", label: "Author(s)", max: 255 }, { key: "publisher", label: "Publisher", max: 255 },
+  { key: "publishedYear", label: "Year published", inputMode: "numeric", rule: "digits", max: 4 }, { key: "isbn", label: "ISBN", rule: "isbn", max: 17 },
+  { key: "serialNumber", label: "Serial number (optional)", rule: "code", max: 30 }, { key: "copies", label: "Copies", inputMode: "numeric", rule: "digits", max: 2 },
+  { key: "location", label: "Location (optional)", max: 100 },
 ];
 const BLANK = { ...EMPTY, serialNumber: "", copies: "1", location: "" };
 
@@ -121,7 +122,7 @@ export function MobileAddBook() {
       )}
 
       {FIELDS.map(f => (
-        <Field key={f.key} label={f.label} inputMode={f.inputMode} value={form[f.key]} onFocus={() => setTarget(f.key)} onChange={e => set(f.key, e.target.value)}
+        <Field key={f.key} label={f.label} inputMode={f.inputMode} rule={f.rule} maxLength={f.max} value={form[f.key]} onFocus={() => setTarget(f.key)} onChange={e => set(f.key, e.target.value)}
           className={target === f.key && lines.length ? "ring-2 ring-primary/40" : ""} />
       ))}
       <div className="grid grid-cols-2 gap-3">

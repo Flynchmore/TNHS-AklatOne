@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Database, Zap, Mail, HardDrive, DatabaseBackup, RefreshCw, CheckCircle2, AlertTriangle, MinusCircle } from "lucide-react";
+import { RefreshButton } from "../../components/RefreshButton";
+import { Activity, Database, Zap, Mail, HardDrive, DatabaseBackup, CheckCircle2, AlertTriangle, MinusCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { phDateTime } from "../../lib/dates";
 import { useAuth } from "../auth/auth";
-import { Panel, btn, btnSm } from "../../components/staff/ui";
+import { Panel } from "../../components/staff/ui";
 
 interface Status {
   serverTime: string; startedAt: string; environment: string;
@@ -53,7 +54,7 @@ export function SystemPanel() {
     <Panel title="System status" icon={Activity} className="lg:col-span-2">
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-sm text-ink-muted">{s ? `Checked ${phDateTime(s.serverTime)} · server running since ${phDateTime(s.startedAt)}` : "Checking the library server…"}</p>
-        <button type="button" onClick={() => q.refetch()} disabled={q.isFetching} className={`${btn.secondary} ${btnSm}`}><RefreshCw size={14} className={q.isFetching ? "animate-spin" : ""} aria-hidden="true" />Check again</button>
+        <RefreshButton onRefresh={() => q.refetch()} what="system status" label="Check again" />
       </div>
       {q.isError && <p role="alert" className="text-sm text-danger">Could not reach the library server. Backups and sign-in need it.</p>}
       {s && b && (

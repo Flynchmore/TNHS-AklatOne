@@ -282,8 +282,8 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
     <form onSubmit={save} noValidate className="bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4 ak-scale">
       <h2 className="font-semibold text-primary-strong">Update information</h2>
       {error && <Alert>{error}</Alert>}
-      <Field label="Full name" icon={<IdCard size={18} />} autoComplete="name" value={form.displayName ?? ""} onChange={set("displayName")} maxLength={100} />
-      <Field label="Username" icon={<UserIcon size={18} />} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")}
+      <Field label="Full name" rule="name" icon={<IdCard size={18} />} autoComplete="name" value={form.displayName ?? ""} onChange={set("displayName")} maxLength={100} />
+      <Field label="Username" rule="username" maxLength={50} icon={<UserIcon size={18} />} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")}
         hint={looksLikeRealName(form.username, form.displayName ?? "") ? `⚠ ${USERNAME_WARNING}` : USERNAME_TIP} />
       {/* Student or Teacher is chosen once; after that only the librarian can change it. */}
       {me.memberType ? (
@@ -306,12 +306,12 @@ function AccountPanel({ me, onSave }: { me: Details; onSave: (p: Record<string, 
       {type === "Student" ? (
         <>
           <Field label="Grade & section" icon={<GraduationCap size={18} />} placeholder="e.g. 10 - Archimedes" value={form.gradeSection ?? ""} onChange={e => { const v = e.target.value; setForm(f => ({ ...f, gradeSection: formatGradeSection(v, f.gradeSection ?? "") })); }} maxLength={50} hint={GRADE_SECTION_HINT} />
-          <Field label="Student Row No." icon={<Hash size={18} />} inputMode="numeric" placeholder="e.g. 23" value={rowNo} onChange={e => setRowNo(e.target.value.replace(/\D/g, "").slice(0, 3))} hint="Your number in your teacher's class record." />
+          <Field label="Student Row No." rule="digits" maxLength={3} icon={<Hash size={18} />} inputMode="numeric" placeholder="e.g. 23" value={rowNo} onChange={e => setRowNo(e.target.value.replace(/\D/g, "").slice(0, 3))} hint="Your number in your teacher's class record." />
         </>
       ) : (
         <>
-          <Field label="Department" icon={<Building2 size={18} />} placeholder="e.g. Science Department" value={form.department ?? ""} onChange={set("department")} maxLength={100} />
-          <Field label="Designation" icon={<Award size={18} />} placeholder="e.g. Teacher III" value={form.position ?? ""} onChange={set("position")} maxLength={100} />
+          <Field label="Department" rule="words" icon={<Building2 size={18} />} placeholder="e.g. Science Department" value={form.department ?? ""} onChange={set("department")} maxLength={100} />
+          <Field label="Designation" rule="words" icon={<Award size={18} />} placeholder="e.g. Teacher III" value={form.position ?? ""} onChange={set("position")} maxLength={100} />
         </>
       )}
       <div>

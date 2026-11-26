@@ -89,15 +89,15 @@ export function BackupPanel() {
       <div className="space-y-5">
         <div className="max-w-md">
           <label htmlFor="bk-mypw" className={label}>Your password <span className="font-normal text-ink-muted">(needed for every backup action)</span></label>
-          <input id="bk-mypw" type="password" value={myPw} onChange={e => setMyPw(e.target.value)} autoComplete="current-password" className={input} />
+          <input maxLength={128} id="bk-mypw" type="password" value={myPw} onChange={e => setMyPw(e.target.value)} autoComplete="current-password" className={input} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-5">
           <FormSection title="Download a backup" icon={Download}>
             <p className="text-sm text-ink-muted">A copy of the whole library database (books, copies, members, borrowing records) as a MariaDB / MySQL <code>.sql.gz</code> file.</p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <div><label htmlFor="bk-pw" className={label}>Backup password <span className="font-normal text-ink-muted">(recommended)</span></label><input id="bk-pw" type="password" value={backupPw} onChange={e => setBackupPw(e.target.value)} autoComplete="new-password" className={input} /></div>
-              <div><label htmlFor="bk-pw2" className={label}>Repeat backup password</label><input id="bk-pw2" type="password" value={backupPw2} onChange={e => setBackupPw2(e.target.value)} autoComplete="new-password" className={input} /></div>
+              <div><label htmlFor="bk-pw" className={label}>Backup password <span className="font-normal text-ink-muted">(recommended)</span></label><input maxLength={128} id="bk-pw" type="password" value={backupPw} onChange={e => setBackupPw(e.target.value)} autoComplete="new-password" className={input} /></div>
+              <div><label htmlFor="bk-pw2" className={label}>Repeat backup password</label><input maxLength={128} id="bk-pw2" type="password" value={backupPw2} onChange={e => setBackupPw2(e.target.value)} autoComplete="new-password" className={input} /></div>
             </div>
             <p className="text-xs text-ink-muted"><Lock size={12} className="inline -mt-0.5" aria-hidden="true" /> With a backup password the file is encrypted (AES-256). Without it, anyone holding the file can read members' personal data.</p>
             <button type="button" onClick={download} disabled={disabled || busy !== null || !myPw} className={btn.primary}><Download size={16} aria-hidden="true" />{busy === "download" ? "Preparing backup…" : "Download backup"}</button>
@@ -109,8 +109,8 @@ export function BackupPanel() {
               <label htmlFor="bk-file" className={label}>Backup file (.sql, .sql.gz or .sql.gz.enc)</label>
               <input id="bk-file" ref={fileRef} type="file" accept=".sql,.gz,.enc" onChange={e => setFile(e.target.files?.[0] ?? null)} className={`${input} file:mr-3 file:rounded-xl file:border-0 file:bg-primary-soft file:px-3 file:py-1.5 file:text-primary file:font-semibold`} />
             </div>
-            {file?.name.endsWith(".enc") && <div><label htmlFor="bk-rpw" className={label}>Backup password</label><input id="bk-rpw" type="password" value={restorePw} onChange={e => setRestorePw(e.target.value)} className={input} /></div>}
-            <div><label htmlFor="bk-confirm" className={label}>Type RESTORE to confirm</label><input id="bk-confirm" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" className={input} /></div>
+            {file?.name.endsWith(".enc") && <div><label htmlFor="bk-rpw" className={label}>Backup password</label><input maxLength={128} id="bk-rpw" type="password" value={restorePw} onChange={e => setRestorePw(e.target.value)} className={input} /></div>}
+            <div><label htmlFor="bk-confirm" className={label}>Type RESTORE to confirm</label><input maxLength={7} id="bk-confirm" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" className={input} /></div>
             <button type="button" onClick={restoreUpload} disabled={disabled || busy !== null || !file || !myPw || confirm !== "RESTORE"} className={btn.danger}><RotateCcw size={16} aria-hidden="true" />{busy === "restore" ? "Restoring… do not close" : "Restore database"}</button>
           </FormSection>
         </div>
@@ -168,8 +168,8 @@ function ServerRestoreDialog({ backup, myPw, onClose, onDone }: { backup: Server
         <button type="submit" disabled={busy || confirm !== "RESTORE"} className={btn.danger}>{busy ? "Restoring… do not close" : "Restore database"}</button>
       </>}>
       <p className="flex gap-2 text-sm font-semibold text-danger bg-danger-soft rounded-2xl p-3"><ShieldAlert size={18} className="shrink-0" aria-hidden="true" />All current library data will be replaced by this backup. A safety copy of the current data is saved first.</p>
-      {backup?.encrypted && <div><label htmlFor="srv-pw" className={label}>Backup password <span className="font-normal text-ink-muted">(leave blank if it uses the server's backup key)</span></label><input id="srv-pw" type="password" value={pw} onChange={e => setPw(e.target.value)} className={input} /></div>}
-      <div><label htmlFor="srv-confirm" className={label}>Type RESTORE to confirm</label><input id="srv-confirm" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" className={input} /></div>
+      {backup?.encrypted && <div><label htmlFor="srv-pw" className={label}>Backup password <span className="font-normal text-ink-muted">(leave blank if it uses the server's backup key)</span></label><input maxLength={128} id="srv-pw" type="password" value={pw} onChange={e => setPw(e.target.value)} className={input} /></div>}
+      <div><label htmlFor="srv-confirm" className={label}>Type RESTORE to confirm</label><input maxLength={7} id="srv-confirm" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" className={input} /></div>
     </StaffDialog>
   );
 }
