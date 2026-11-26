@@ -31,6 +31,7 @@ export const openApiSpec = {
     "/auth/email/send": { post: pub("/auth", "Account without an email: send a code to the email it adds (emailToken from sign-in)", { "401": "Step expired", "409": "Email used by another account" }) },
     "/auth/email/verify": { post: pub("/auth", "Confirm the added email with its code; saves it and signs in", { "400": "Wrong or expired code", "401": "Step expired" }) },
     "/auth/register": { post: pub("/auth", "Member self-registration (Personal information + email); emails an activation code, the account stays inactive until activated", { "409": "Username or email already used" }) },
+    "/auth/member-id-preview": { get: pub("/auth", "Member ID shown while a full name is typed (initials + 6 free digits; ?name=)") },
     "/auth/activate": { post: pub("/auth", "Enter the emailed activation code (username + code); activates and signs in", { "400": "Wrong or expired code" }) },
     "/auth/password-code": { post: auth("/auth", "Email the code that confirms a password change (accounts with an email)", undefined, { "429": "Sent less than a minute ago" }) },
     "/auth/forgot-password": { post: pub("/auth", "Email a password reset code") },

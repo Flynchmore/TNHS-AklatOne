@@ -24,6 +24,18 @@ export async function newMemberId(name: string | null | undefined, username: str
   throw new Error("Could not make a unique Member ID");
 }
 
+export const MEMBER_ID_RE = /^[A-Z]{2}\d{6}$/;
+
+/**
+ * The Member ID the form showed while the name was typed (preview), if it still fits: same initials as the saved name
+ * and nobody took it meanwhile. Otherwise a new one, so the saved ID is always unique.
+ */
+export async function pickMemberId(name: string | null | undefined, username: string, wanted?: string | null): Promise<string> {
+  if (wanted && MEMBER_ID_RE.test(wanted) && wanted.slice(0, 2) === initials(name, username)
+    && !(await prisma.user.findUnique({ where: { maskedId: wanted }, select: { id: true } }))) return wanted;
+  return newMemberId(name, username);
+}
+
 /** Gives every member without a Member ID one (members created before the feature). Runs at server start. */
 export async function ensureMemberIds(): Promise<number> {
   const missing = await prisma.user.findMany({ where: { maskedId: null, role: { name: "MEMBER" } }, select: { id: true, displayName: true, username: true } });

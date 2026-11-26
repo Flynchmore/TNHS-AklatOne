@@ -43,6 +43,8 @@ export const registerSchema = z.object({
   department: optText(100),
   position: optText(100),
   hobbies: optText(300),
+  // The Member ID the sign-up screen showed (initials + 6 digits); kept if it still fits, else a new one is made.
+  memberId: z.string().regex(/^[A-Z]{2}\d{6}$/).optional(),
 });
 
 export const activateSchema = z.object({

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { sendOtpEmail, sendPasswordChangedEmail, sendWelcomeEmail, type OtpPurpose } from "../../common/email.js";
-import { newMemberId } from "../users/memberId.js";
+import { newMemberId, pickMemberId } from "../users/memberId.js";
 
 // 6-digit sign-in / reset codes: cryptographically random, and only a SHA-256 hash is stored in the database.
 let dummy: Promise<string> | undefined;
@@ -311,6 +311,7 @@ const asAuthUser = (u: { id: string; username: string; role: { name: string; per
 export interface RegisterInput {
   username: string; password: string; displayName: string; email: string; memberType: "Student" | "Teacher";
   gender?: string | undefined; gradeSection?: string | undefined; department?: string | undefined; position?: string | undefined; hobbies?: string | undefined;
+  memberId?: string | undefined;
 }
 
 /**
@@ -335,6 +336,8 @@ export async function register(input: RegisterInput): Promise<{ email: string }>
       roleId: role.id, memberType: input.memberType, gender: input.gender ?? null, hobbies: blank(input.hobbies),
       gradeSection: student ? blank(input.gradeSection) : null, department: student ? null : blank(input.department), position: student ? null : blank(input.position),
       isActive: false, activationPending: true,
+      // Shown live on the sign-up screen; activation keeps it.
+      maskedId: await pickMemberId(input.displayName, input.username, input.memberId),
     },
   });
   await sendCode({ ...user, email: input.email }, "activate");

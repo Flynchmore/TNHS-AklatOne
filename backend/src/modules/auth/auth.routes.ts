@@ -7,6 +7,7 @@ import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema
 import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode, sendEmailCode, confirmEmail } from "./auth.service.js";
 import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
+import { newMemberId } from "../users/memberId.js";
 import { authenticate } from "../../middleware/auth.js";
 import { fail } from "../../common/response.js";
 
@@ -70,6 +71,17 @@ authRouter.post("/register", validate({ body: registerSchema }), async (req, res
   } catch (err) {
     next(err);
   }
+});
+
+/**
+ * Member ID preview while a full name is typed (phone sign-up, staff Add member): the name's initials + 6 digits nobody
+ * has right now. Not reserved; the server keeps it on save if it is still free (pickMemberId).
+ */
+authRouter.get("/member-id-preview", async (req, res, next) => {
+  try {
+    const name = typeof req.query.name === "string" ? req.query.name.slice(0, 100) : "";
+    ok(res, { memberId: await newMemberId(name, "member") });
+  } catch (err) { next(err); }
 });
 
 authRouter.post("/activate", validate({ body: activateSchema }), async (req, res, next) => {

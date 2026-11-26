@@ -54,3 +54,23 @@ describe("Member ID", () => {
     });
   });
 });
+
+describe("Member ID preview while typing the name", () => {
+  it("shows initials + 6 free digits, and the saved member keeps that Member ID", async () => {
+    const app = createApp();
+    const p = await request(app).get("/api/v1/auth/member-id-preview?name=Maria%20Santos");
+    expect(p.status).toBe(200);
+    expect(p.body.data.memberId).toMatch(/^MS\d{6}$/);
+    const admin = await adminToken(app);
+    const u = `preview_${Date.now()}`;
+    const c = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
+      .send({ username: u, password: "Strong#Pass2026x", displayName: "Maria Santos", memberType: "Student", email: `${u}@example.test`, memberId: p.body.data.memberId });
+    expect(c.status).toBe(201);
+    expect(c.body.data.maskedId).toBe(p.body.data.memberId);
+    // A preview for other initials is not used: the saved ID always starts with the saved name's initials.
+    const u2 = `preview2_${Date.now()}`;
+    const c2 = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
+      .send({ username: u2, password: "Strong#Pass2026x", displayName: "Juan Dela Cruz", memberType: "Student", email: `${u2}@example.test`, memberId: "MS000001" });
+    expect(c2.body.data.maskedId).toMatch(/^JC\d{6}$/);
+  });
+});

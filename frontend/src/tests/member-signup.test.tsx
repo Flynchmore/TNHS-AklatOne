@@ -22,7 +22,9 @@ beforeEach(() => {
 
 describe("Create an account", () => {
   it("asks for the Personal information details, then the emailed activation code", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ success: true, data: { requiresActivation: true, email: "j***@example.com" } }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async input => String(input).includes("member-id-preview")
+      ? json({ success: true, data: { memberId: "JD123456" } })
+      : json({ success: true, data: { requiresActivation: true, email: "j***@example.com" } }));
     render(<MemoryRouter><ToastProvider><MobileRegister /></ToastProvider></MemoryRouter>);
     for (const label of ["Full name", "Username", "Email", "Sex", "Grade & section", "Password", "Confirm password"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Phone/i)).toBeNull();
@@ -33,13 +35,18 @@ describe("Create an account", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/full name, username and email/);
 
     const type = (label: string, v: string) => fireEvent.change(screen.getByLabelText(label), { target: { value: v } });
-    type("Full name", "Juan Dela Cruz"); type("Username", "juan.dc"); type("Email", "juan@example.com"); type("Grade & section", "Grade 10 - Rizal");
+    type("Full name", "Juan Dela Cruz");
+    // The Member ID appears while the name is typed: initials of first + last name + the server's 6 digits.
+    expect(await screen.findByText("123456")).toBeInTheDocument();
+    expect(screen.getByLabelText("Member ID")).toHaveTextContent("JC123456");
+    type("Username", "juan.dc"); type("Email", "juan@example.com"); type("Grade & section", "Grade 10 - Rizal");
     type("Password", "Strong-Pass-2026!"); type("Confirm password", "Strong-Pass-2026!");
     fireEvent.click(screen.getByRole("button", { name: /Create account/ }));
     expect(await screen.findByText("Activate your account")).toBeInTheDocument();
     expect(screen.getByText(/j\*\*\*@example.com/)).toBeInTheDocument();
-    const sent = JSON.parse(String(fetchMock.mock.calls[0]![1]!.body));
-    expect(sent).toMatchObject({ username: "juan.dc", email: "juan@example.com", memberType: "Student", gradeSection: "10 - Rizal" });
+    const reg = fetchMock.mock.calls.find(c => String(c[0]).includes("/auth/register"))!;
+    const sent = JSON.parse(String(reg[1]!.body));
+    expect(sent).toMatchObject({ username: "juan.dc", email: "juan@example.com", memberType: "Student", gradeSection: "10 - Rizal", memberId: "JC123456" });
     expect(sent.department).toBeUndefined();
   });
 });

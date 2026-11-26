@@ -8,3 +8,10 @@ export function formatMemberId(raw: string): string {
   const digits = s.slice(letters.length).replace(/\D/g, "").slice(0, 6);
   return letters.length < 2 ? letters : letters + digits;
 }
+
+/** Same initials rule as the server (modules/users/memberId.ts): first + last word of the name, letters only. */
+export function initialsOf(name: string): string {
+  const words = name.normalize("NFD").replace(/[^A-Za-z\s]/g, "").toUpperCase().split(/\s+/).filter(Boolean);
+  const pick = words.length >= 2 ? words[0]![0]! + words[words.length - 1]![0]! : (words[0] ?? "").slice(0, 2);
+  return (pick + "XX").slice(0, 2);
+}

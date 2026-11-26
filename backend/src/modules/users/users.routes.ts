@@ -11,7 +11,7 @@ import { editConflict } from "../../common/conflict.js";
 import { isStrongPassword } from "../../common/passwordStrength.js";
 import { sendWelcomeEmail } from "../../common/email.js";
 import { hashPassword } from "../auth/auth.service.js";
-import { newMemberId } from "./memberId.js";
+import { pickMemberId } from "./memberId.js";
 import { gradeSectionField } from "../../common/gradeSection.js";
 
 export const usersRouter = Router();
@@ -42,6 +42,8 @@ const memberBase = {
   studentRowNo: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(1).max(999).nullable().optional()),
 };
 const createMemberSchema = z.object({
+  // The Member ID the Add member form showed while the name was typed; kept if it still fits.
+  memberId: z.string().regex(/^[A-Z]{2}\d{6}$/).optional(),
   username: z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9_.-]+$/, "Letters, numbers, dot, dash and underscore only"),
   password: strongPassword,
   ...memberBase,
@@ -138,7 +140,7 @@ usersRouter.get("/:id", authenticate, requirePermission("users:read"), validate(
 
 usersRouter.post("/", authenticate, requirePermission("users:write"), validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
-    const { password, ...input } = req.body as z.infer<typeof createMemberSchema>;
+    const { password, memberId, ...input } = req.body as z.infer<typeof createMemberSchema>;
     if (await prisma.user.findUnique({ where: { username: input.username } })) return fail(res, 409, "That username is already taken.");
     if (input.email && (await prisma.user.findUnique({ where: { email: input.email } }))) return fail(res, 409, "An account with this email already exists.");
     const role = await prisma.role.findUnique({ where: { name: "MEMBER" } });
@@ -146,7 +148,7 @@ usersRouter.post("/", authenticate, requirePermission("users:write"), validate({
     const passwordHash = await hashPassword(password);
     const user = await prisma.$transaction(async (db) => {
       // Zod leaves absent optional fields undefined, which Prisma treats as "not set".
-      const data = { ...input, ...roleFields(input.memberType), passwordHash, roleId: role.id, maskedId: await newMemberId(input.displayName, input.username) } as Prisma.UserUncheckedCreateInput;
+      const data = { ...input, ...roleFields(input.memberType), passwordHash, roleId: role.id, maskedId: await pickMemberId(input.displayName, input.username, memberId) } as Prisma.UserUncheckedCreateInput;
       const u = await db.user.create({ data, select: memberFields });
       await writeAuditTx(db, { actorId: req.user!.id, action: "user.create", entityType: "User", entityId: u.id, metadata: { memberType: u.memberType } });
       return u;

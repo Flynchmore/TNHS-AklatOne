@@ -25,7 +25,7 @@ describe("self-registration", () => {
     expect(r.status).toBe(200);
     expect(r.body.data).toEqual({ requiresActivation: true, email: "s***@example.com" });
     const pending = await prisma.user.findUniqueOrThrow({ where: { username: f.username } });
-    expect(pending).toMatchObject({ isActive: false, activationPending: true, maskedId: null, memberType: "Student", gradeSection: "10 - Rizal", department: null });
+    expect(pending).toMatchObject({ isActive: false, activationPending: true, maskedId: expect.stringMatching(/^[A-Z]{2}\d{6}$/), memberType: "Student", gradeSection: "10 - Rizal", department: null });
 
     // Signing in before activation sends a new activation code instead of a token.
     const early = await request(app).post("/api/v1/auth/login").send({ username: f.username, password: PW });

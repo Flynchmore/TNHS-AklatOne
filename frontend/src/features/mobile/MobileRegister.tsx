@@ -6,6 +6,7 @@ import { Eye, EyeOff, User, Lock, Mail, IdCard, GraduationCap, Building2, Award 
 import { Alert, Field, FieldIconButton, MemberTypePicker, Spinner, StrengthMeter, btnPrimary, focusRing, friendlyError, mobileApi, passwordStrength, type MemberType } from "../../components/mobile/ui";
 import { MobileAuthShell } from "../../components/mobile/MobileAuthShell";
 import { CodeStep } from "./MobileLogin";
+import { MemberIdPreview, useMemberIdPreview } from "../../components/MemberIdPreview";
 
 const SEXES = ["Male", "Female"] as const;
 
@@ -25,6 +26,7 @@ export function MobileRegister() {
   const [sentTo, setSentTo] = useState("");
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF(v => ({ ...v, [k]: e.target.value }));
   const student = memberType === "Student";
+  const memberId = useMemberIdPreview(f.displayName);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +43,7 @@ export function MobileRegister() {
       method: "POST",
       body: JSON.stringify({
         username: f.username.trim(), password: f.password, displayName: f.displayName.trim(), email: f.email.trim(), memberType,
-        ...(gender ? { gender } : {}), hobbies: f.hobbies.trim(),
+        ...(gender ? { gender } : {}), hobbies: f.hobbies.trim(), ...(memberId ? { memberId } : {}),
         ...(student ? { gradeSection: f.gradeSection.trim() } : { department: f.department.trim(), position: f.position.trim() }),
       }),
     });
@@ -61,6 +63,7 @@ export function MobileRegister() {
       {error && <Alert>{error}</Alert>}
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="Full name" rule="name" icon={<IdCard size={18} />} autoComplete="name" placeholder="e.g. Juan Dela Cruz" value={f.displayName} onChange={set("displayName")} maxLength={100} />
+        <MemberIdPreview memberId={memberId} mobile />
         <Field label="Username" rule="username" icon={<User size={18} />} autoComplete="username" autoCapitalize="none" placeholder="e.g. reader2026" value={f.username} onChange={set("username")} maxLength={50}
           hint={looksLikeRealName(f.username, f.displayName) ? `⚠ ${USERNAME_WARNING}` : USERNAME_TIP} />
         <Field label="Email" type="email" rule="email" icon={<Mail size={18} />} autoComplete="email" autoCapitalize="none" placeholder="you@example.com" value={f.email} onChange={set("email")} maxLength={191} hint="Your activation and sign-in codes are sent here." />

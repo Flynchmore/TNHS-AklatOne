@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { maskEmail } from "../../lib/privacy";
+import { MemberIdPreview, useMemberIdPreview } from "../../components/MemberIdPreview";
 import { withRule, type Rule } from "../../lib/inputRules";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
 import { USERNAME_TIP, USERNAME_WARNING, looksLikeRealName } from "../../lib/username";
@@ -130,7 +132,7 @@ export function Members() {
                   <td className={`${table.td} whitespace-nowrap`}>
                     {m.memberType ? <Badge tone={m.memberType === "Teacher" ? "warning" : "primary"}>{m.memberType === "Teacher" ? <Briefcase size={12} aria-hidden="true" /> : <GraduationCap size={12} aria-hidden="true" />}{m.memberType}</Badge> : <span className="text-ink-muted text-xs">Not set</span>}
                   </td>
-                  <td className={`${table.td} text-xs text-ink-muted`}>{m.email && <div className="flex items-center gap-1"><Mail size={12} aria-hidden="true" />{m.email}</div>}{!m.email && "—"}</td>
+                  <td className={`${table.td} text-xs text-ink-muted`}>{m.email && <div className="flex items-center gap-1"><Mail size={12} aria-hidden="true" />{maskEmail(m.email)}</div>}{!m.email && "—"}</td>
                   <td className={`${table.td} tabular-nums`}><span className="text-ink font-semibold">{m.activeLoans ?? 0} now</span><div className="text-xs text-ink-muted">{m.totalLoans ?? 0} in all</div></td>
                   <td className={table.td}><Badge tone={m.isActive ? "success" : "muted"}>{m.isActive ? "Active" : "Deactivated"}</Badge></td>
                   <td className={table.td}>
@@ -193,6 +195,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
   const student = form.memberType === "Student";
+  const previewId = useMemberIdPreview(isNew ? form.displayName : "");
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,7 +209,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
     const body = {
       ...rest,
       ...(student ? { department: "", position: "", studentRowNo: studentRowNo || null } : { gradeSection: "", studentRowNo: null }),
-      ...(isNew ? { username: username.trim() } : {}),
+      ...(isNew ? { username: username.trim(), ...(previewId ? { memberId: previewId } : {}) } : {}),
       ...(password ? { password } : {}),
     };
     const expected = !isNew && (member as Member).updatedAt ? { "X-Expected-Updated-At": (member as Member).updatedAt! } : undefined;
@@ -247,6 +250,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
       <FormSection title="Personal information" icon={IdCard}>
         <div className="grid sm:grid-cols-2 gap-4">
           {field("Full name *", "displayName", { maxLength: 100, autoComplete: "off" }, "name")}
+          {isNew && <MemberIdPreview memberId={previewId} />}
           {isNew ? (
             <div>
               {field("Username *", "username", { maxLength: 50, autoCapitalize: "none", autoComplete: "off", placeholder: "e.g. reader2026", "aria-describedby": "member-username-tip" }, "username")}
@@ -311,7 +315,7 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
   const m = detail.data ?? member;
   const teacher = m?.memberType === "Teacher";
   // Each role only shows its own details.
-  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", m.email], ["Sex", m.gender === "Male" || m.gender === "Female" ? m.gender : null], ["Member since", phDate(m.createdAt)]] : [];
+  const personal: [string, string | number | null | undefined][] = m ? [["Member ID", m.maskedId], ["Library ID card", m.cardPrintedAt ? `Printed ${phDate(m.cardPrintedAt)}` : "Not printed yet"], ["Username", `@${m.username}`], ["Role", m.memberType || "Not set"], ["Email", maskEmail(m.email)], ["Sex", m.gender === "Male" || m.gender === "Female" ? m.gender : null], ["Member since", phDate(m.createdAt)]] : [];
   const roleRows: [string, string | number | null | undefined][] = !m ? [] : teacher ? [["Department", m.department], ["Position", m.position]] : m.memberType === "Student" ? [["Grade & section", m.gradeSection], ["Class record no.", m.studentRowNo]] : [];
   const list = (rows: [string, string | number | null | undefined][]) => (
     <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
