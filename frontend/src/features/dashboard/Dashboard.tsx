@@ -24,6 +24,12 @@ const ACTIVITY: Record<string, string> = {
   "category.create": "added a category", "category.update": "updated a category", "category.delete": "deleted a category",
   "setup.librarian": "set up the librarian account", "user.register": "registered in the mobile app",
   "user.create": "added a member", "user.update": "updated a member", "user.activate": "activated a member", "user.deactivate": "deactivated a member",
+  "bookCopy.update": "updated a copy's location or date received", "book.import": "imported books from Excel",
+  "backup.download": "downloaded a database backup", "backup.restore": "restored a database backup",
+  "inventory.start": "started an inventory audit", "inventory.close": "closed an inventory audit",
+  "issuedBook.update": "checked a school-issued book", "issuedBook.returnAll": "closed the school year for school-issued books",
+  "lostReport.create": "sent a lost-book document", "lostReport.review": "answered a lost-book document",
+  "review.moderate": "approved or hid a book review", "suggestion.answer": "answered a suggestion", "setup.recover": "replaced the librarian account with the recovery key",
 };
 const ENTITY_ICON: Record<string, LucideIcon> = { Book: Library, BookCopy: BookOpen, BorrowRequest: ClipboardCheck, BorrowingTransaction: ArrowLeftRight, Category: Tag, User: UserCog };
 
@@ -141,7 +147,7 @@ interface Resume {
   openAudit: { id: string; startedAt: string; note: string | null; scanned: number } | null;
 }
 // Where to pick up an earlier action.
-const ENTITY_PAGE: Record<string, string> = { Book: "/catalog", BookCopy: "/catalog", BorrowRequest: txPath, BorrowingTransaction: `${txPath}?tab=borrowed`, Category: "/catalog", User: "/members", Suggestion: "/suggestions", BookRating: "/suggestions", InventoryAudit: "/inventory", LibraryVisit: "/visitors" };
+const ENTITY_PAGE: Record<string, string> = { IssuedBook: `${txPath}?tab=issued`, LostReport: `${txPath}?tab=lost`, Book: "/catalog", BookCopy: "/catalog", BorrowRequest: txPath, BorrowingTransaction: `${txPath}?tab=borrowed`, Category: "/catalog", User: "/members", Suggestion: "/suggestions", BookRating: "/suggestions", InventoryAudit: "/inventory", LibraryVisit: "/visitors" };
 
 /**
  * "Continue where you left off": the work still waiting (each opens its page) and this librarian's last actions,
