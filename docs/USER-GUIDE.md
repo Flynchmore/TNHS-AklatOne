@@ -27,7 +27,8 @@ Short step-by-step guides for the librarian and for members. Setup and installat
 ### Every day
 | Task | Where |
 |---|---|
-| Lend a book at the desk | **Borrowing > Lend a book**: scan the member's card, then the book's QR label (or search the catalog). The receipt and due date (7 days) appear; the member gets an alert and email. Limit: 8 books per member. |
+| Lend a book at the desk | **Librarian's phone** (AklatOne app > Librarian > **Lend**): scan the member's Library ID card, then the book's QR label (or search its title or serial number). It is approved at once; the receipt and due date (7 days) appear and the member gets an alert and email. Limit: 8 books per member. |
+| Teacher takes a book while you are away | The teacher times in at the Visitor's Log, then ticks *I already took this book* when requesting in the app. Borrowing > Borrow Requests shows it with **Taken while you were away**; approve it to start the due date. |
 | Approve or decline app requests | **Borrowing > Borrow Requests** (the red number on the menu shows how many are waiting) |
 | Receive a returned book | **Borrowing > Borrowed Books** > Return, and choose its condition (on time / late is decided by the due date; or damaged / missing) |
 | Remind or warn a member | **Borrowing > Borrowed Books** > Reminder / Overdue notice (app alert + email). A reminder is also sent automatically the day before the due date. |

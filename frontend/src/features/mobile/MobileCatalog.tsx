@@ -278,6 +278,9 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
   const toast = useToast();
   const ref = useRef<HTMLDialogElement>(null);
   const [sending, setSending] = useState(false);
+  // Teacher emergency borrowing: no librarian in, the teacher (timed in today) takes the book and says so here.
+  const [takenNow, setTakenNow] = useState(false);
+  const teacher = auth.user?.memberType === "Teacher";
   const [rating, setRating] = useState(false);
   const [error, setError] = useState("");
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -321,10 +324,12 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
   const request = async () => {
     if (!book) return;
     setSending(true);
-    const r = await mobileApi("/api/v1/borrow-requests", { method: "POST", body: JSON.stringify({ bookId: book.id }), token: auth.token });
+    const r = await mobileApi("/api/v1/borrow-requests", { method: "POST", body: JSON.stringify({ bookId: book.id, ...(takenNow ? { takenNow: true } : {}) }), token: auth.token });
     setSending(false);
     // Success: close the sheet so the toast is visible (a native modal sits above everything, toasts included).
-    if (r.ok) { onRequested(); onClose(); toast({ tone: "success", title: "Borrow request sent", message: `"${book.title}" is waiting for librarian approval. Track it in My Books.` }); }
+    if (r.ok) { onRequested(); onClose(); toast(takenNow
+      ? { tone: "success", title: "Recorded: you took this book", message: `"${book.title}" is yours to use now. The librarian will confirm it and set the due date.` }
+      : { tone: "success", title: "Borrow request sent", message: `"${book.title}" is waiting for librarian approval. Track it in My Books.` }); }
     else setError(r.message ?? "Could not send the request.");
   };
 
@@ -455,6 +460,12 @@ function BookSheet({ book, onClose, onRequested, onUpdated }: { book: Book | nul
               </button>
             )}
             {!av.ok && isMember && <p className="text-xs text-danger text-center mt-2">{av.text}</p>}
+            {av.ok && teacher && (
+              <label className="mt-3 flex items-start gap-2.5 rounded-2xl border border-line bg-page px-3 py-2.5 text-sm text-ink">
+                <input type="checkbox" checked={takenNow} onChange={e => setTakenNow(e.target.checked)} className="w-5 h-5 mt-0.5 accent-primary shrink-0" />
+                <span><b>No librarian right now?</b> I already took this book from the shelf. <span className="text-ink-muted">(Teachers only; Time In at the Visitor's Log first. The librarian confirms it later.)</span></span>
+              </label>
+            )}
             <p className="text-xs text-ink-muted text-center mt-2">A librarian reviews every request. Borrow up to 8 books, 7 days each.</p>
           </div>
         </div>

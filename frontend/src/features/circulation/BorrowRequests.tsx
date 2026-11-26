@@ -13,7 +13,7 @@ import { phDateTime } from "../../lib/dates";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 interface Req {
-  id: string; status: Status; createdAt: string; updatedAt?: string; reviewedAt?: string | null; decisionNote?: string | null; availableCopies: number;
+  id: string; status: Status; createdAt: string; updatedAt?: string; takenNow?: boolean; reviewedAt?: string | null; decisionNote?: string | null; availableCopies: number;
   book: { title: string; authors?: string | null };
   member: { username: string; displayName?: string | null; memberType?: string | null; maskedId?: string | null };
   reviewedBy?: { username: string; displayName?: string | null } | null;
@@ -92,7 +92,7 @@ export function BorrowRequests() {
               {rows.map(r => (
                 <tr key={r.id} className={table.row}>
                   <td className={table.td}><div className="font-semibold text-ink">{r.member.displayName || r.member.username}</div><div className="text-xs text-ink-muted">{r.member.username}{r.member.memberType ? ` · ${r.member.memberType}` : ""}</div></td>
-                  <td className={table.td}><div className="font-semibold text-ink">{r.book.title}</div><div className="text-xs text-ink-muted">{r.book.authors}</div></td>
+                  <td className={table.td}><div className="font-semibold text-ink">{r.book.title}</div><div className="text-xs text-ink-muted">{r.book.authors}</div>{r.takenNow && <div className="mt-1"><Badge tone="warning">Taken while you were away</Badge></div>}</td>
                   <td className={`${table.td} text-ink-muted`}>{phDateTime(r.createdAt)}</td>
                   <td className={`${table.td} text-ink-muted`}>
                     {tab === "PENDING"

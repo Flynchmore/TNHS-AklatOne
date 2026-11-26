@@ -10,6 +10,7 @@ import { focusRing } from "./mobile/ui";
 import { isDesktop, useOnline, useOutbox } from "../lib/offline";
 import { IdleLogout } from "./staff/IdleLogout";
 import { GlobalSearch } from "./staff/GlobalSearch";
+import { useAutoUpload } from "../features/upload/autoUpload";
 import { useScreenTimeTracker } from "./mobile/screenTime";
 
 type NavItem = { to: string; label: string; icon: LucideIcon; perm?: string; group: string };
@@ -41,6 +42,7 @@ export function Layout() {
   const location = useLocation();
   // Librarian's app time (Time Spent), like the members'.
   useScreenTimeTracker(user?.id, token, isDesktop ? "desktop" : "web");
+  useAutoUpload(token, isDesktop);
   const nav = useNavigate();
   const toast = useToast();
   const [open, setOpen] = useState(false);

@@ -1,3 +1,4 @@
+import { phDay } from "../visits/visits.routes.js";
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../config/prisma.js";
@@ -32,9 +33,16 @@ borrowRequestsRouter.post("/", authenticate, validate({ body: createRequestSchem
   try {
     if (req.user?.role !== "MEMBER") return fail(res, 403, "Only members can request to borrow books");
     const memberId = req.user.id;
-    const { bookId, note } = req.body as { bookId: string; note?: string };
+    const { bookId, note, takenNow } = req.body as { bookId: string; note?: string; takenNow?: boolean };
     const book = await prisma.book.findUnique({ where: { id: bookId } });
     if (!book || book.isHidden) return fail(res, 404, "Book not found");
+    if (takenNow) {
+      // Only teachers, and only after a Time In today at the Visitor's Log (developer rule 2026-11-26).
+      const me = await prisma.user.findUnique({ where: { id: memberId }, select: { memberType: true } });
+      if (me?.memberType !== "Teacher") return fail(res, 403, "Only teachers can take a book while the librarian is away. Please wait for the librarian.");
+      const inside = await prisma.libraryVisit.findFirst({ where: { memberId, day: phDay(new Date()), timeOut: null } });
+      if (!inside) return fail(res, 409, "Time in at the Visitor's Log first, then send the request.");
+    }
 
     const request = await prisma.$transaction(async (db) => {
       const [activeLoans, pending, duplicate, available] = await Promise.all([
@@ -46,8 +54,8 @@ borrowRequestsRouter.post("/", authenticate, validate({ body: createRequestSchem
       if (duplicate) throw conflict("You already have a pending request for this book.");
       if (activeLoans + pending >= MAX_BOOKS_PER_MEMBER) throw conflict(`You can have at most ${MAX_BOOKS_PER_MEMBER} books borrowed or requested at a time.`);
       if (available === 0) throw conflict("No copies of this book are available right now.");
-      const r = await db.borrowRequest.create({ data: { bookId, memberId, note: note ?? null }, include: requestInclude });
-      await writeAuditTx(db, { actorId: memberId, action: "borrowRequest.create", entityType: "BorrowRequest", entityId: r.id, metadata: { bookId } });
+      const r = await db.borrowRequest.create({ data: { bookId, memberId, note: note ?? null, takenNow: !!takenNow }, include: requestInclude });
+      await writeAuditTx(db, { actorId: memberId, action: "borrowRequest.create", entityType: "BorrowRequest", entityId: r.id, metadata: { bookId, takenNow: !!takenNow } });
       return r;
     });
     created(res, request);

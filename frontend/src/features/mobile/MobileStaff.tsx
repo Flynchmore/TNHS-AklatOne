@@ -50,16 +50,26 @@ function Lend() {
     setMember(m);
   };
 
-  const lend = async (copyCode: string) => {
+  // No QR label at hand: find the book by title or serial number; the server lends the first copy on the shelf.
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<{ id: string; title: string; authors?: string | null; serialNumber?: string | null; availability?: { available: number } }[] | null>(null);
+  const search = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (q.trim().length < 2) return;
+    const r = await mobileApi(`/api/v1/catalog?q=${encodeURIComponent(q.trim())}&limit=5`, { token });
+    setFound(r.ok ? (r.data as { items: NonNullable<typeof found> }).items : []);
+  };
+
+  const lend = async (copyCode: string, bookId?: string) => {
     if (!member?.maskedId) return;
     setError(""); setBusy(true);
-    const r = await mobileApi("/api/v1/circulation/borrow", { method: "POST", token, body: JSON.stringify({ memberCode: member.maskedId, copyCode: copyCode.trim() }) });
+    const r = await mobileApi("/api/v1/circulation/borrow", { method: "POST", token, body: JSON.stringify({ memberCode: member.maskedId, ...(bookId ? { bookId } : { copyCode: copyCode.trim() }) }) });
     setBusy(false);
     if (!r.ok) { setError(r.message ?? "Not lent. Please try again."); return; }
     const tx = r.data as { receiptNo: string; dueAt: string; bookCopy: { book: { title: string } } };
     const text = `"${tx.bookCopy.book.title}" lent to ${member.displayName ?? member.maskedId}, due ${phDate(tx.dueAt)}. Receipt ${tx.receiptNo}.`;
     toast({ tone: "success", title: "Book lent", message: text });
-    setDone(text); setMember(null);
+    setDone(text); setMember(null); setQ(""); setFound(null);
   };
 
   return (
@@ -78,8 +88,28 @@ function Lend() {
             <p className="text-sm text-ink-muted">{(member.memberType === "Teacher" ? member.department : member.gradeSection) ?? member.memberType ?? ""} · {member.activeLoans ?? 0} book(s) borrowed now</p>
           </div>
           <h2 className="font-semibold text-primary-strong flex items-center gap-2"><BookUp size={18} aria-hidden="true" />2. Scan the book's QR label</h2>
-          {busy ? <p className="flex items-center gap-2 text-ink-muted"><Spinner />Lending…</p> : <Scanner id="m-lend-copy" autoFocus={false} onCode={lend} />}
-          <button type="button" className={btnSecondary} onClick={() => { setMember(null); setError(""); }}>Another member</button>
+          {busy ? <p className="flex items-center gap-2 text-ink-muted"><Spinner />Lending…</p> : <Scanner id="m-lend-copy" autoFocus={false} onCode={c => void lend(c)} />}
+          <form onSubmit={search} className="space-y-2" role="search">
+            <label htmlFor="m-lend-q" className="block text-sm font-medium text-ink">No QR label? Search the title or serial number</label>
+            <div className="flex gap-2">
+              <input id="m-lend-q" value={q} onChange={e => setQ(e.target.value)} maxLength={100} placeholder="e.g. Noli Me Tangere or NMT-001" className="flex-1 min-h-12 rounded-xl border border-line-strong bg-surface px-3 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus" />
+              <button type="submit" disabled={q.trim().length < 2} className={`${btnSecondary} !w-auto px-4`}>Search</button>
+            </div>
+          </form>
+          {found && (found.length === 0 ? <p className="text-sm text-ink-muted">No book matches. Add it from the Add book tab first.</p> : (
+            <ul className="space-y-2">
+              {found.map(b => {
+                const left = b.availability?.available ?? 0;
+                return (
+                  <li key={b.id} className="flex items-center gap-3 rounded-2xl border border-line bg-page p-3">
+                    <div className="min-w-0 flex-1"><p className="font-semibold text-ink truncate">{b.title}</p><p className="text-xs text-ink-muted truncate">{[b.authors, b.serialNumber].filter(Boolean).join(" · ")} · {left} on the shelf</p></div>
+                    <button type="button" disabled={!left || busy} onClick={() => void lend("", b.id)} className={`${btnPrimary} !w-auto px-4 !min-h-10`}>Lend</button>
+                  </li>
+                );
+              })}
+            </ul>
+          ))}
+          <button type="button" className={btnSecondary} onClick={() => { setMember(null); setError(""); setQ(""); setFound(null); }}>Another member</button>
         </>
       )}
     </div>

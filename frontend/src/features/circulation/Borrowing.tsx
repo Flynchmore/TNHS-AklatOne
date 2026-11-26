@@ -1,10 +1,6 @@
-import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeftRight, ClipboardList, BookUp } from "lucide-react";
-import { PageHeader, btn } from "../../components/staff/ui";
-import { LendDialog } from "./LendDialog";
-import { ReceiptDialog } from "./ReceiptDialog";
-import { useAuth } from "../auth/auth";
+import { ArrowLeftRight, ClipboardList, BookUp, Smartphone } from "lucide-react";
+import { PageHeader, card } from "../../components/staff/ui";
 import { SlidingTabs, useSlideDirection, type TabDef } from "../../components/mobile/ui";
 import { BorrowRequests } from "./BorrowRequests";
 import { Loans } from "./Loans";
@@ -20,19 +16,18 @@ export function Borrowing() {
     { key: "borrowed", label: "Borrowed Books", icon: BookUp },
   ];
   const direction = useSlideDirection(tabs.findIndex(t => t.key === tab));
-  const { hasPerm } = useAuth();
-  const [lending, setLending] = useState(false);
-  const [receipt, setReceipt] = useState<string | null>(null);
   return (
     <div className="space-y-6">
-      <PageHeader icon={ArrowLeftRight} title="Borrowing" subtitle="Lend books at the desk, approve member requests, track borrowed books, record returns and send notices."
-        actions={hasPerm("circulation:write") ? <button type="button" onClick={() => setLending(true)} className={btn.success}><BookUp size={18} aria-hidden="true" />Lend a book</button> : undefined} />
+      <PageHeader icon={ArrowLeftRight} title="Borrowing" subtitle="Approve member requests, track borrowed books, record returns and send notices." />
+      {/* Lending at the desk moved to the librarian's phone (developer decision 2026-11-26): scanning there approves at once. */}
+      <div className={`${card} p-4 flex items-center gap-3 text-sm text-ink`}>
+        <span className="w-10 h-10 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true"><Smartphone size={20} /></span>
+        <p><b>Lending at the desk:</b> open the AklatOne app on the librarian's phone, choose <b>Librarian</b> &gt; <b>Lend</b>, scan the member's Library ID card, then the book's QR label (or search its title or serial number). It is approved at once and shows up here.</p>
+      </div>
       <div className="max-w-xl"><SlidingTabs label="Borrowing" tabs={tabs} active={tab} onChange={k => setParams(k === "borrowed" ? { tab: k } : {}, { replace: true })} /></div>
       <div key={tab} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className={direction}>
         {tab === "requests" ? <BorrowRequests /> : <Loans />}
       </div>
-      <LendDialog open={lending} onClose={() => setLending(false)} onLent={id => setReceipt(id)} />
-      <ReceiptDialog transactionId={receipt} onClose={() => setReceipt(null)} />
     </div>
   );
 }

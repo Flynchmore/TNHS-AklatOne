@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { UploadCloud, Wifi, WifiOff, Trash2, Library, Copy, Users, Undo2, Bell, AlertTriangle, CheckCircle2, type LucideIcon, BookUp } from "lucide-react";
-import { apiFetch } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { Badge, EmptyState, PageHeader, Panel, btn, btnSm, card } from "../../components/staff/ui";
-import { outboxBody, outboxHeaders, removeOutbox, uploadOutbox, useOnline, useOutbox, type OutboxKind } from "../../lib/offline";
+import { removeOutbox, useOnline, useOutbox, type OutboxKind } from "../../lib/offline";
+import { sendOutbox } from "./autoUpload";
 import { phDateTime } from "../../lib/dates";
 
 const KIND: Record<OutboxKind, { icon: LucideIcon; label: string }> = {
@@ -26,7 +26,7 @@ export function Upload() {
 
   const upload = async () => {
     setBusy(true);
-    const r = await uploadOutbox(async item => { const body = await outboxBody(item); return apiFetch(item.path, { method: item.method, token, headers: outboxHeaders(item), ...(body ? { body } : {}) }); });
+    const r = await sendOutbox(token);
     setBusy(false);
     qc.invalidateQueries();
     if (r.stopped === "offline") toast({ tone: "error", title: "Upload paused", message: `${r.sent} sent. The connection dropped; the rest are still on this computer.` });
@@ -44,7 +44,7 @@ export function Upload() {
         <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${online ? "bg-gradient-to-br from-success to-success-strong" : "bg-gradient-to-br from-warning to-[#7A3A06]"}`} aria-hidden="true">{online ? <Wifi size={22} /> : <WifiOff size={22} />}</span>
         <div className="flex-1 min-w-48">
           <p className="font-bold text-ink">{online ? "Connected to the internet" : "No internet connection"}</p>
-          <p className="text-sm text-ink-muted">{online ? (items.length ? "Press Upload to send your saved changes." : "Everything is up to date.") : "Keep working: books, copies, members, returns and notices are saved here until you upload."}</p>
+          <p className="text-sm text-ink-muted">{online ? (items.length ? "They upload by themselves; press Upload to send them now." : "Everything is up to date.") : "Keep working: books, copies, members, returns and notices are saved here until you upload."}</p>
         </div>
         <div className="flex gap-2"><Badge tone="warning">{items.length} waiting</Badge>{failed > 0 && <Badge tone="danger">{failed} need attention</Badge>}</div>
       </div>

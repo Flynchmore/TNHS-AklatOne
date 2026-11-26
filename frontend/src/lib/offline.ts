@@ -111,9 +111,9 @@ export interface UploadResult { sent: number; failed: number; stopped?: "offline
 /** Headers for sending an outbox item: the item id doubles as the Idempotency-Key, so a retried upload runs only once. */
 export const outboxHeaders = (item: OutboxItem): Record<string, string> => ({ ...item.headers, "Idempotency-Key": `outbox-${item.id}` });
 
-export async function uploadOutbox(send: (item: OutboxItem) => Promise<{ ok: boolean; status: number; message?: string }>): Promise<UploadResult> {
+export async function uploadOutbox(send: (item: OutboxItem) => Promise<{ ok: boolean; status: number; message?: string }>, only: (item: OutboxItem) => boolean = () => true): Promise<UploadResult> {
   const result: UploadResult = { sent: 0, failed: 0 };
-  for (const item of [...snapshot]) {
+  for (const item of snapshot.filter(only)) {
     const r = await send(item);
     if (r.status === 0) return { ...result, stopped: "offline" };
     if (r.status === 401) return { ...result, stopped: "signin" };
