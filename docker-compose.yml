@@ -54,6 +54,7 @@ services:
     volumes:
       - backups:/app/backups
       - covers:/app/covers   # book covers downloaded once from Open Library
+      - uploads:/app/uploads # lost-book documents members send
     # Not published: only the web container talks to it. Uncomment to reach the API directly (e.g. for the mobile app).
     # ports: ["3000:3000"]
 
@@ -88,5 +89,6 @@ volumes:
   db-data:
   backups:
   covers:
+  uploads:
   caddy-data:   # HTTPS certificates; keep it, or Let's Encrypt limits may block new ones
   caddy-config:

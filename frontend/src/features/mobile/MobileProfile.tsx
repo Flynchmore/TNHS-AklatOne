@@ -13,6 +13,7 @@ import { PhotoCropper } from "../../components/mobile/PhotoCropper";
 import { SplineArea } from "../../components/SplineArea";
 import { ColumnChart, DonutChart, TONE } from "../../components/Charts";
 import { MyActivity } from "./MyActivity";
+import { Backpack, FileWarning } from "lucide-react";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
 import { phISODate } from "../../lib/dates";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
@@ -154,6 +155,10 @@ export function MobileProfile() {
         {tab === "activity" && (
           <>
           <ReadingGoal goal={me?.readingGoal ?? null} txs={history.txs} onSave={patch} />
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/m/school-books" className={`bg-surface rounded-3xl border border-line shadow-sm p-4 flex flex-col gap-2 ${focusRing}`}><span className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true"><Backpack size={20} /></span><span className="font-semibold text-ink text-sm">Books from the school</span><span className="text-xs text-ink-muted">Textbooks you keep this year</span></Link>
+            <Link to="/m/lost-report" className={`bg-surface rounded-3xl border border-line shadow-sm p-4 flex flex-col gap-2 ${focusRing}`}><span className="w-10 h-10 rounded-xl bg-danger-soft text-danger flex items-center justify-center" aria-hidden="true"><FileWarning size={20} /></span><span className="font-semibold text-ink text-sm">Lost a book?</span><span className="text-xs text-ink-muted">Send your apology or report</span></Link>
+          </div>
           <MyActivity />
           <section aria-labelledby="profile-history" className="space-y-3">
             <div className="flex items-center justify-between px-1">

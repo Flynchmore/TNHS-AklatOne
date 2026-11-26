@@ -90,6 +90,8 @@ model User {
   suggestions       Suggestion[]           @relation("MemberSuggestions")
   signInSessions    Session[]
   bookWatches       BookWatch[]            @relation("MemberBookWatches")
+  issuedBooks       IssuedBook[]           @relation("MemberIssuedBooks")
+  lostReports       LostReport[]           @relation("MemberLostReports")
   /// Books the member wants to borrow each month (null = no goal).
   readingGoal       Int?
   auditLogs         AuditLog[]             @relation("ActorAuditLogs")
@@ -442,4 +444,48 @@ model LibraryRecovery {
   id        Int      @id @default(1)
   keyHash   String   @db.VarChar(64)
   createdAt DateTime @default(now())
+}
+
+/// Books the school gave a member for the school year (e.g. textbooks), typed in by the member one by one on the phone.
+/// No limit; returned at the end of the school year. The librarian checks each one and records the return.
+model IssuedBook {
+  id          String    @id @default(cuid())
+  memberId    String
+  member      User      @relation("MemberIssuedBooks", fields: [memberId], references: [id], onDelete: Cascade)
+  title       String    @db.VarChar(255)
+  subject     String?   @db.VarChar(100)
+  code        String?   @db.VarChar(60) // serial number, ISBN or the school's code on the book
+  condition   String?   @db.VarChar(100)
+  schoolYear  String    @db.VarChar(20) // "SY 2026-2027" (June to May)
+  status      String    @default("ISSUED") @db.VarChar(12) // ISSUED | RETURNED
+  checkedAt   DateTime?
+  checkedById String?
+  returnedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([memberId])
+  @@index([schoolYear, status])
+}
+
+/// A member's apology letter or report about a lost borrowed book (PDF, Word or photo), for the librarian to read.
+model LostReport {
+  id            String    @id @default(cuid())
+  memberId      String
+  member        User      @relation("MemberLostReports", fields: [memberId], references: [id], onDelete: Cascade)
+  transactionId String?
+  kind          String    @db.VarChar(12) // APOLOGY | REPORT
+  message       String?   @db.VarChar(1000)
+  fileName      String    @db.VarChar(200)
+  mimeType      String    @db.VarChar(100)
+  size          Int
+  storedAs      String    @db.VarChar(100)
+  status        String    @default("SUBMITTED") @db.VarChar(12) // SUBMITTED | ACCEPTED | NEEDS_MORE
+  note          String?   @db.VarChar(300)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([memberId])
+  @@index([status])
 }

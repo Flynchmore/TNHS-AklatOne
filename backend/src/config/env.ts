@@ -32,6 +32,8 @@ const envSchema = z.object({
   BACKUP_DIR: z.string().default("backups"),
   // Book covers downloaded once from Open Library and kept here (modules/covers).
   COVER_DIR: z.string().default("covers"),
+  // Files members send (lost-book apology / report documents), kept outside the web folder.
+  UPLOAD_DIR: z.string().default("uploads"),
   // Optional full-rights database user for backups, restores and migrations; DATABASE_URL can then be a rows-only user.
   DATABASE_ADMIN_URL: z.string().optional(),
   BACKUP_AUTO: z.string().optional().transform((v) => v !== "false"),

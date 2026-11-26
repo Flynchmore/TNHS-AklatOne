@@ -137,7 +137,7 @@ export function Dashboard() {
 
 interface Resume {
   lastActions: { id: string; action: string; entityType: string; createdAt: string }[];
-  waiting: { pendingRequests: number; takenNow: number; pendingReviews: number; newSuggestions: number; cardsWaiting: number; overdue: number };
+  waiting: { pendingRequests: number; takenNow: number; pendingReviews: number; newSuggestions: number; cardsWaiting: number; overdue: number; lostReports: number; issuedUnchecked: number };
   openAudit: { id: string; startedAt: string; note: string | null; scanned: number } | null;
 }
 // Where to pick up an earlier action.
@@ -160,6 +160,8 @@ function ContinueWhereYouLeftOff() {
     { to: txPath, text: "borrow request(s) to review", n: d.waiting.pendingRequests, icon: ClipboardCheck, tone: "bg-primary-soft text-primary" },
     { to: txPath, text: "book(s) a teacher took while you were away", n: d.waiting.takenNow, icon: BookUp, tone: "bg-warning-soft text-warning" },
     { to: `${txPath}?tab=borrowed`, text: "overdue book(s) to send notices for", n: d.waiting.overdue, icon: BellRing, tone: "bg-danger-soft text-danger" },
+    { to: `${txPath}?tab=lost`, text: "lost-book document(s) to read", n: d.waiting.lostReports, icon: ClipboardCheck, tone: "bg-danger-soft text-danger" },
+    { to: `${txPath}?tab=issued`, text: "school-issued book(s) to check", n: d.waiting.issuedUnchecked, icon: BookOpen, tone: "bg-primary-soft text-primary" },
     { to: "/suggestions", text: "review(s) waiting for approval", n: d.waiting.pendingReviews, icon: ShieldCheck, tone: "bg-success-soft text-success" },
     { to: "/suggestions", text: "new suggestion(s)", n: d.waiting.newSuggestions, icon: Zap, tone: "bg-primary-soft text-primary" },
     { to: "/printing", text: "Library ID card(s) to print", n: d.waiting.cardsWaiting, icon: Printer, tone: "bg-primary-soft text-primary" },

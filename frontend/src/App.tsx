@@ -25,6 +25,8 @@ const Members = lazy(() => import("./features/members/Members").then(m => ({ def
 const Reports = lazy(() => import("./features/reports/Reports").then(m => ({ default: m.Reports })));
 const Printing = lazy(() => import("./features/printing/Printing").then(m => ({ default: m.Printing })));
 const Inventory = lazy(() => import("./features/inventory/Inventory").then(m => ({ default: m.Inventory })));
+const MobileSchoolBooks = lazy(() => import("./features/mobile/MobileSchoolBooks").then(m => ({ default: m.MobileSchoolBooks })));
+const MobileLostReport = lazy(() => import("./features/mobile/MobileLostReport").then(m => ({ default: m.MobileLostReport })));
 const MobileTopReaders = lazy(() => import("./features/mobile/MobileTopReaders").then(m => ({ default: m.MobileTopReaders })));
 const MobileSuggestions = lazy(() => import("./features/mobile/MobileSuggestions").then(m => ({ default: m.MobileSuggestions })));
 const Visitors = lazy(() => import("./features/visits/Visitors").then(m => ({ default: m.Visitors })));
@@ -114,6 +116,8 @@ function AppRoutes() {
               <Route path="/m/notifications" element={<MobileNotifications />} />
               <Route path="/m/suggestions" element={<MobileSuggestions />} />
               <Route path="/m/top-readers" element={<MobileTopReaders />} />
+              <Route path="/m/school-books" element={<MobileSchoolBooks />} />
+              <Route path="/m/lost-report" element={<MobileLostReport />} />
               <Route path="/m/newspaper" element={<MobileNewspaper />} />
               <Route path="/m/visit" element={<MobileVisit />} />
             </Route>

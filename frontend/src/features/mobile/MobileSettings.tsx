@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone } from "lucide-react";
+import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone, Backpack, FileWarning } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { useAuth } from "../../features/auth/auth";
 import { useToast } from "../../components/Toast";
@@ -92,6 +92,8 @@ function SettingsHome() {
         <ul className={group}>
           <Row to="/m/suggestions" icon={Lightbulb} label="Suggestion Box" hint="Suggest a book or send feedback to the librarian" tone="bg-accent-soft text-on-accent" />
           <Row to="/m/newspaper" icon={Newspaper} label="School Newspaper" hint="The Victor and Masid" />
+          <Row to="/m/school-books" icon={Backpack} label="Books from the school" hint="Textbooks you keep this school year" />
+          <Row to="/m/lost-report" icon={FileWarning} label="Lost a book?" hint="Send your apology letter or report" />
         </ul>
       </section>
       <section aria-labelledby="set-about">

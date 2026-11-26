@@ -20,8 +20,8 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/assets ./assets
 COPY --from=build /app/scripts ./scripts
 COPY prisma.config.ts package.json ./
-ENV BACKUP_DIR=/app/backups COVER_DIR=/app/covers
-RUN mkdir -p /app/backups /app/covers && chown node:node /app/backups /app/covers
+ENV BACKUP_DIR=/app/backups COVER_DIR=/app/covers UPLOAD_DIR=/app/uploads
+RUN mkdir -p /app/backups /app/covers /app/uploads && chown node:node /app/backups /app/covers /app/uploads
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD curl -fs http://localhost:3000/health || exit 1

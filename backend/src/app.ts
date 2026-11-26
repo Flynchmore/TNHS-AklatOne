@@ -31,6 +31,7 @@ import { inventoryRouter } from "./modules/inventory/inventory.routes.js";
 import { visitsRouter } from "./modules/visits/visits.routes.js";
 import { timeRouter } from "./modules/time/time.routes.js";
 import { suggestionsRouter } from "./modules/suggestions/suggestions.routes.js";
+import { issuedBooksRouter, lostReportsRouter } from "./modules/member-books/memberBooks.routes.js";
 import { isRestoring } from "./modules/backup/backup.service.js";
 import { verifyToken } from "./modules/auth/auth.service.js";
 
@@ -162,6 +163,8 @@ export function createApp() {
   api.use("/visits", loginLimiter, visitsRouter);
   api.use("/time", timeRouter);
   api.use("/suggestions", suggestionsRouter);
+  api.use("/issued-books", issuedBooksRouter);
+  api.use("/lost-reports", lostReportsRouter);
   app.use("/api/v1", api);
 
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
