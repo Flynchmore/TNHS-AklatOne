@@ -120,7 +120,7 @@ circulationRouter.get("/transactions", authenticate, async (req, res, next) => {
     if (from || to) where.borrowedAt = { ...(from && !isNaN(from.getTime()) ? { gte: from } : {}), ...(to && !isNaN(to.getTime()) ? { lte: to } : {}) };
 
     const [items, total] = await Promise.all([
-      prisma.borrowingTransaction.findMany({ where, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } }, borrower: { select: { id: true, username: true, displayName: true } } }, orderBy: { borrowedAt: "desc" }, take, skip }),
+      prisma.borrowingTransaction.findMany({ where, include: { bookCopy: { include: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } }, borrower: { select: { id: true, username: true, displayName: true, maskedId: true } } }, orderBy: { borrowedAt: "desc" }, take, skip }),
       prisma.borrowingTransaction.count({ where }),
     ]);
     ok(res, { items, total, limit: take, offset: skip });

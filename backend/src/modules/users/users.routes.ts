@@ -93,7 +93,7 @@ usersRouter.get("/", authenticate, requirePermission("users:read"), async (req, 
 });
 
 // --- Library ID cards (Printing > Library ID cards) ---
-const cardFields = { id: true, maskedId: true, displayName: true, memberType: true, gradeSection: true, department: true, cardPrintedAt: true } satisfies Prisma.UserSelect;
+const cardFields = { id: true, maskedId: true, displayName: true, memberType: true, gradeSection: true, department: true, position: true, cardPrintedAt: true } satisfies Prisma.UserSelect;
 
 /** Active members whose card has not been marked as printed yet (new members), oldest first. */
 usersRouter.get("/cards", authenticate, requirePermission("users:read"), async (_req, res, next) => {

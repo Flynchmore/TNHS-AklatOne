@@ -192,7 +192,7 @@ reportsRouter.get("/overdue", authenticate, requirePermission("reports:read"), a
     const [items, total] = await Promise.all([
       prisma.borrowingTransaction.findMany({
         where: { status: "ACTIVE", dueAt: { lt: new Date() } },
-        include: { bookCopy: { include: { book: { select: { id: true, title: true } } } }, borrower: { select: { id: true, username: true, displayName: true } } },
+        include: { bookCopy: { include: { book: { select: { id: true, title: true } } } }, borrower: { select: { id: true, username: true, displayName: true, maskedId: true } } },
         orderBy: { dueAt: "asc" },
         take,
         skip,

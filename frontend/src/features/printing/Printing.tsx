@@ -1,16 +1,17 @@
-import { useState } from "react";
-import { typeAndGrade } from "../../lib/bookFields";
+import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, Library, BookUp, AlertTriangle, Users, PenLine, RotateCcw, QrCode, Search, IdCard, Smartphone, type LucideIcon } from "lucide-react";
+import { Printer, Library, BookUp, AlertTriangle, Users, PenLine, RotateCcw, QrCode, Search, IdCard, Smartphone, BookOpen, Send, CalendarClock, DoorOpen, Heart, type LucideIcon } from "lucide-react";
 import QRCode from "qrcode";
 import { apiFetch, apiUrl } from "../../lib/api";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { FormSection, PageHeader, Skeleton, StaffDialog, btn, card, input, label } from "../../components/staff/ui";
 import { focusRing } from "../../components/mobile/ui";
-import { phDate, phDateTime } from "../../lib/dates";
-import { LibraryCard, type CardMember } from "../../components/LibraryCard";
+import { phDate } from "../../lib/dates";
+import { CutLine, LibraryCard, type CardMember } from "../../components/LibraryCard";
+import { maskEmail } from "../../lib/privacy";
+import { PAPERS, PagedGrid, PagedTable, Pager, SinglePage, paperSize, usePageRule, usePaper, type PaperKey } from "./paper";
 
 type Kind = "inventory" | "borrowed" | "overdue" | "members" | "labels" | "cards" | "app";
 interface AppLinks { android: string; ios: string }
@@ -44,30 +45,31 @@ async function all<T>(path: string, token: string | null): Promise<T[]> {
   return out;
 }
 
-const SHEETS: Record<Kind, { title: string; hint: string; icon: LucideIcon; load: (token: string | null, cardOf?: string | null, links?: AppLinks) => Promise<Sheet> }> = {
+const SHEETS: Record<Kind, { title: string; paper: string; hint: string; icon: LucideIcon; load: (token: string | null, cardOf?: string | null, links?: AppLinks) => Promise<Sheet> }> = {
   inventory: {
-    title: "Book inventory", hint: "Every title with its copies", icon: Library,
+    title: "Book inventory", paper: "Book inventory of AklatOne System", hint: "Every title with its copies", icon: Library,
     load: async (t) => {
-      const books = await all<{ serialNumber?: string | null; title: string; authors?: string | null; isbn?: string | null; publishedYear?: number | null; bookType?: string | null; gradeLevel?: string | null; availability: { total: number; available: number } }>("/api/v1/catalog", t);
-      return { columns: ["#", "Serial", "Title", "Author", "Type · Grade", "ISBN", "Year", "Available / Total"], rows: books.map((b, i) => [i + 1, b.serialNumber ?? "—", b.title, b.authors || "—", typeAndGrade(b) || "—", b.isbn ?? "N/A", b.publishedYear ?? "—", `${b.availability.available} / ${b.availability.total}`]) };
+      const books = await all<{ serialNumber?: string | null; title: string; authors?: string | null; publisher?: string | null; isbn?: string | null; publishedYear?: number | null; availability: { total: number; available: number } }>("/api/v1/catalog", t);
+      return { columns: ["#", "Serial", "Title", "Author", "Publisher", "ISBN", "Year", "Available / Total"], rows: books.map((b, i) => [i + 1, b.serialNumber ?? "—", b.title, b.authors || "—", b.publisher || "—", b.isbn ?? "N/A", b.publishedYear ?? "—", `${b.availability.available} / ${b.availability.total}`]) };
     },
   },
   borrowed: {
-    title: "Borrowed books", hint: "Books that are out right now", icon: BookUp,
+    title: "Borrowed books", paper: "Borrowed books of AklatOne System", hint: "Books that are out right now", icon: BookUp,
     load: async (t) => {
-      const loans = await all<{ receiptNo?: string | null; borrowedAt: string; dueAt?: string | null; bookCopy?: { book?: { title: string; isbn?: string | null } }; borrower?: { username: string; displayName?: string | null } }>("/api/v1/circulation/transactions?status=ACTIVE", t);
-      return { columns: ["#", "Book", "ISBN", "Member", "Borrowed", "Due", "Receipt"], rows: loans.map((l, i) => [i + 1, l.bookCopy?.book?.title ?? "—", l.bookCopy?.book?.isbn || "N/A", l.borrower?.displayName || l.borrower?.username || "—", fmt(l.borrowedAt), fmt(l.dueAt), l.receiptNo ?? "—"]) };
+      const loans = await all<{ receiptNo?: string | null; borrowedAt: string; dueAt?: string | null; bookCopy?: { book?: { title: string; isbn?: string | null } }; borrower?: { maskedId?: string | null } }>("/api/v1/circulation/transactions?status=ACTIVE", t);
+      // Members are printed by Member ID, not by name (privacy).
+      return { columns: ["#", "Book", "ISBN", "Member ID", "Borrowed", "Due", "Receipt"], rows: loans.map((l, i) => [i + 1, l.bookCopy?.book?.title ?? "—", l.bookCopy?.book?.isbn || "N/A", l.borrower?.maskedId || "—", fmt(l.borrowedAt), fmt(l.dueAt), l.receiptNo ?? "—"]) };
     },
   },
   overdue: {
-    title: "Overdue books", hint: "Past the due date, still out", icon: AlertTriangle,
+    title: "Overdue books", paper: "Overdue books of AklatOne System", hint: "Past the due date, still out", icon: AlertTriangle,
     load: async (t) => {
-      const items = await all<{ dueAt: string; daysOverdue: number; bookCopy?: { book?: { title: string } }; borrower?: { username: string; displayName?: string | null } }>("/api/v1/reports/overdue", t);
-      return { columns: ["#", "Book", "Member", "Due", "Days overdue"], rows: items.map((o, i) => [i + 1, o.bookCopy?.book?.title ?? "—", o.borrower?.displayName || o.borrower?.username || "—", fmt(o.dueAt), o.daysOverdue]) };
+      const items = await all<{ dueAt: string; daysOverdue: number; bookCopy?: { book?: { title: string } }; borrower?: { maskedId?: string | null } }>("/api/v1/reports/overdue", t);
+      return { columns: ["#", "Book", "Member ID", "Due", "Days overdue"], rows: items.map((o, i) => [i + 1, o.bookCopy?.book?.title ?? "—", o.borrower?.maskedId || "—", fmt(o.dueAt), o.daysOverdue]) };
     },
   },
   labels: {
-    title: "Copy QR labels", hint: "Stick on each copy for scanning", icon: QrCode,
+    title: "Book Copy QR Labels", paper: "Book Copy QR Labels", hint: "Stick on each copy for scanning", icon: QrCode,
     load: async (t) => {
       const copies = await all<{ barcode: string; status: string; book: { title: string; isbn?: string | null; serialNumber?: string | null } }>("/api/v1/book-copies", t);
       const labels = await Promise.all(copies.filter(c => c.status !== "RETIRED").sort((a, b) => a.book.title.localeCompare(b.book.title) || a.barcode.localeCompare(b.barcode)).map(async c => ({
@@ -79,7 +81,7 @@ const SHEETS: Record<Kind, { title: string; hint: string; icon: LucideIcon; load
     },
   },
   cards: {
-    title: "Library ID cards", hint: "New members waiting for a card", icon: IdCard,
+    title: "Library ID cards", paper: "Library ID cards", hint: "New members waiting for a card", icon: IdCard,
     load: async (t, cardOf) => {
       // Reprint of one member's card (from Members), or every card not yet marked as printed.
       const r = await apiFetch(cardOf ? `/api/v1/users/${cardOf}` : "/api/v1/users/cards", { token: t });
@@ -90,17 +92,18 @@ const SHEETS: Record<Kind, { title: string; hint: string; icon: LucideIcon; load
     },
   },
   app: {
-    title: "Mobile app QR", hint: "Poster: members scan it to get the app", icon: Smartphone,
+    title: "Mobile app QR", paper: "AklatOne Mobile App", hint: "Poster: members scan it to get the app", icon: Smartphone,
     load: async (_t, _c, links = loadAppLinks()) => ({
       columns: [], rows: [],
       poster: { ...links, androidSvg: await qrSvg(links.android), iosSvg: await qrSvg(links.ios) },
     }),
   },
   members: {
-    title: "Member list", hint: "Active students and teachers", icon: Users,
+    title: "Member list", paper: "Member list of AklatOne System", hint: "Active students and teachers", icon: Users,
     load: async (t) => {
-      const members = await all<{ username: string; displayName?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; email?: string | null }>("/api/v1/users?status=active", t);
-      return { columns: ["#", "Name", "Username", "Role", "Grade & section / Department", "Email"], rows: members.map((m, i) => [i + 1, m.displayName || "—", m.username, m.memberType ?? "—", (m.memberType === "Teacher" ? m.department : m.gradeSection) || "—", m.email ?? "—"]) };
+      const members = await all<{ maskedId?: string | null; displayName?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; email?: string | null }>("/api/v1/users?status=active", t);
+      // Full names stay (the list is for the principal / school records); emails are masked like on screen.
+      return { columns: ["#", "Member ID", "Full name", "Role", "Grade & section / Department", "Email"], rows: members.map((m, i) => [i + 1, m.maskedId || "—", m.displayName || "—", m.memberType ?? "—", (m.memberType === "Teacher" ? m.department : m.gradeSection) || "—", maskEmail(m.email) || "—"]) };
     },
   },
 };
@@ -137,18 +140,25 @@ export function Printing() {
   const saveAppLinks = (v: AppLinks) => { setAppLinks(v); try { localStorage.setItem(APP_KEY, JSON.stringify(v)); } catch { /* private mode */ } };
   const sheet = useQuery({ queryKey: ["print", kind, reprint, kind === "app" ? appLinks : null], queryFn: () => SHEETS[kind].load(token, reprint, appLinks), enabled: !!token });
   const s = SHEETS[kind];
-  const pick = (k: Kind) => { setKind(k); setSigs(loadSignatories(k)); if (cardOf) setParams({}, { replace: true }); };
+  const pick = (k: Kind) => { setKind(k); setPage(0); setSigs(loadSignatories(k)); if (cardOf) setParams({}, { replace: true }); };
   const cards = sheet.data?.cards;
   const [labelFilter, setLabelFilter] = useState("");
   const lf = labelFilter.trim().toLowerCase();
   const labels = sheet.data?.labels?.filter(l => !lf || l.title.toLowerCase().includes(lf) || l.code.toLowerCase().includes(lf));
   const poster = sheet.data?.poster;
+  // Paper size (saved per list on this computer) and the page shown in the preview.
+  const [paper, orient, setPaper, setOrient] = usePaper(kind);
+  const size = paperSize(paper, kind === "cards" || kind === "labels" ? "portrait" : orient);
+  usePageRule(size);
+  const [page, setPage] = useState(0);
+  const [pages, setPages] = useState(1);
+  const onPages = useCallback((n: number) => { setPages(n); setPage(p => Math.min(p, n - 1)); }, []);
   const count = poster ? 1 : cards ? cards.length : labels ? labels.length : sheet.data?.rows.length ?? 0;
 
   const print = () => {
     if (!sheet.data) return;
     // The toast area is hidden on paper (.ak-no-print), so this never ends up in the document.
-    toast({ tone: "info", title: "Opening print dialog", message: `${s.title}: ${count} ${labels ? "label" : "row"}(s). Choose a printer or "Save as PDF".` });
+    toast({ tone: "info", title: "Opening print dialog", message: `${s.title}: ${pages} page(s) on ${PAPERS[paper].label}. Choose a printer (or "Save as PDF"); the paper size is already set.` });
     setTimeout(() => {
       window.print();
       // The browser cannot tell whether the cards really came out, so the librarian confirms it.
@@ -216,75 +226,57 @@ export function Printing() {
         )}
       </div>
 
-      {/* The printable sheet: on paper only this part shows (see .ak-no-print / @page in index.css). */}
-      <article aria-label={`${s.title} preview`} className={`ak-print-sheet ${card} p-6 sm:p-10`}>
-        {!cards && <><header className="flex items-center gap-4 border-b-2 border-primary-strong pb-4 mb-5">
-          <img src="/tnhs-logo.png" alt="" className="w-20 h-20 object-contain" />
-          <div className="flex-1 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Republic of the Philippines</p>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Department of Education</p>
-            <p className="text-xl font-bold text-primary-strong uppercase mt-1">Tagumpay National High School</p>
-            <p className="text-sm text-ink">School ID: {SCHOOL_ID} · School Library</p>
-          </div>
-          <span className="w-20" aria-hidden="true" />
-        </header>
-        <h2 className="text-lg font-bold text-ink text-center uppercase tracking-wide mb-4">{s.title}</h2></>}
-        {cards && <p className="ak-no-print text-sm text-ink-muted mb-4">{reprint ? "Reprint of one member's card." : `Cards of new members${(sheet.data?.cardsWaiting ?? 0) > cards.length ? ` (${cards.length} of ${sheet.data!.cardsWaiting} waiting; the next batch shows after these are marked as printed)` : ""}. After printing, confirm that they came out so they leave this list.`} Names below the cards are for you only; they are not printed.</p>}
-        {sheet.isLoading ? <Skeleton rows={5} className="h-8" /> : sheet.isError ? <p role="alert" className="text-danger">Could not load this list. <button className="underline ak-no-print" onClick={() => sheet.refetch()}>Try again</button></p> : !count ? <p className="text-ink-muted text-center py-8">{cards ? "Every member already has a printed card. Reprint a card from Members." : "Nothing to print in this list."}</p> : cards ? (
-          <ul className="flex flex-wrap gap-[4mm] justify-center">
-            {cards.map(c => (
-              <li key={c.id} className="break-inside-avoid">
-                <LibraryCard m={c} />
-                <p className="ak-no-print text-xs text-ink-muted text-center mt-1">{c.displayName}</p>
-              </li>
-            ))}
-          </ul>
-        ) : poster ? (
-          <div className="text-center space-y-6">
-            <p className="text-2xl font-extrabold text-primary-strong">Get the AklatOne library app</p>
-            <p className="text-ink">Search books, request to borrow, see your due dates and record your library visits.</p>
-            <div className="flex flex-wrap justify-center gap-12">
-              {[{ os: "Android", url: poster.android, svg: poster.androidSvg }, { os: "iPhone", url: poster.ios, svg: poster.iosSvg }].filter(q => q.svg).map(q => (
-                <figure key={q.os} className="space-y-2">
-                  <span className="block w-56 h-56 mx-auto bg-white p-2 [&>svg]:w-full [&>svg]:h-full" role="img" aria-label={`QR code to get the app for ${q.os}`} dangerouslySetInnerHTML={{ __html: q.svg }} />
-                  <figcaption><span className="block text-lg font-bold text-ink">{q.os}</span><span className="block text-[10px] text-ink-muted break-all max-w-56">{q.url}</span></figcaption>
-                </figure>
-              ))}
-            </div>
-            <ol className="text-left max-w-md mx-auto text-sm text-ink list-decimal pl-5 space-y-1">
-              <li>Scan the code with your phone camera and open the link.</li>
-              <li>Android: open the downloaded file; if asked, allow installing apps from your browser.</li>
-              <li>Tap <b>Create an account</b> and enter the activation code sent to your email (or sign in with the account the librarian gave you). No phone? Your Library ID card works at the desk and the Visitor's Log.</li>
-            </ol>
-          </div>
-        ) : labels ? (
-          <ul className="grid grid-cols-3 gap-3">
-            {labels.map(l => (
-              <li key={l.code} className="flex items-center gap-3 border border-dashed border-line-strong rounded-lg p-2 break-inside-avoid">
-                <span className="w-20 h-20 shrink-0 bg-white p-1 [&>svg]:w-full [&>svg]:h-full" role="img" aria-label={`QR code ${l.code}`} dangerouslySetInnerHTML={{ __html: l.svg }} />
-                <span className="min-w-0">
-                  <span className="block font-mono text-sm font-bold text-ink">{l.code}</span>
-                  <span className="block text-xs font-semibold text-ink line-clamp-2">{l.title}</span>
-                  <span className="block text-[10px] text-ink-muted">{l.sub}</span>
-                  <span className="block text-[10px] text-ink-muted">TNHS Library · AklatOne</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <table className="w-full text-sm border-collapse">
-            <thead><tr>{sheet.data!.columns.map(c => <th key={c} className="text-left text-xs font-semibold uppercase text-primary-strong border-b border-line-strong px-2 py-2">{c}</th>)}</tr></thead>
-            <tbody>{sheet.data!.rows.map((r, i) => <tr key={i} className="border-b border-line break-inside-avoid">{r.map((v, j) => <td key={j} className={`px-2 py-1.5 text-ink align-top ${/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(String(v)) ? "whitespace-nowrap" : ""}`}>{v}</td>)}</tr>)}</tbody>
-          </table>
+      {/* Paper size and pages: the preview below is cut into the same pages the printer will make. */}
+      <div className={`ak-no-print ${card} p-4 flex flex-wrap items-center gap-4`}>
+        <label className="flex items-center gap-2 text-sm font-semibold text-ink">Paper
+          <select value={paper} onChange={e => { setPaper(e.target.value as PaperKey); setPage(0); }} className={`${input} ak-select !w-auto !min-h-10`}>
+            {(Object.keys(PAPERS) as PaperKey[]).map(k => <option key={k} value={k}>{PAPERS[k].label}</option>)}
+          </select>
+        </label>
+        {kind !== "cards" && kind !== "labels" && (
+          <label className="flex items-center gap-2 text-sm font-semibold text-ink">Orientation
+            <select value={orient} onChange={e => { setOrient(e.target.value as "portrait" | "landscape"); setPage(0); }} className={`${input} ak-select !w-auto !min-h-10`}>
+              <option value="portrait">Portrait</option><option value="landscape">Landscape</option>
+            </select>
+          </label>
         )}
-        {!labels && !cards && !poster && <footer className="mt-12 break-inside-avoid">
-          <div className="grid grid-cols-2 gap-10">
-            {signer(sigs.preparedLabel, sigs.preparedName, sigs.preparedTitle)}
-            {signer(sigs.notedLabel, sigs.notedName, sigs.notedTitle)}
-          </div>
-          <p className="mt-8 text-right text-xs text-ink-muted">Generated {phDateTime(Date.now())}{sheet.data ? ` · ${count} row(s)` : ""}</p>
-        </footer>}
-      </article>
+        <div className="ml-auto"><Pager page={page} total={pages} onPage={setPage} /></div>
+        {cards && <p className="w-full text-sm text-ink-muted">{reprint ? "Reprint of one member's card." : `Cards of new members${(sheet.data?.cardsWaiting ?? 0) > cards.length ? ` (${cards.length} of ${sheet.data!.cardsWaiting} waiting; the next batch shows after these are marked as printed)` : ""}. Cut along the dashed lines; laminate them so they last.`}</p>}
+      </div>
+
+      {/* The printable pages: on paper only these show (see .ak-no-print / .ak-sheet-page in index.css). */}
+      <div aria-label={`${s.title} preview`} className="ak-print-pages overflow-x-auto pb-2">
+        {sheet.isLoading ? <Skeleton rows={5} className="h-8" /> : sheet.isError ? <p role="alert" className="text-danger">Could not load this list. <button className="underline ak-no-print" onClick={() => sheet.refetch()}>Try again</button></p>
+          : cards ? (!cards.length ? <p className="text-ink-muted text-center py-8">Every member already has a printed card. Reprint a card from Members.</p> : (
+            <PagedGrid size={size} items={cards} itemW={89.6} itemH={58} gap={3} page={page} onPages={onPages} note="Library ID cards · cut along the dashed lines"
+              render={c => <CutLine w={89.6} h={58}><LibraryCard m={c} /></CutLine>} />
+          ))
+          : labels ? (
+            <PagedGrid size={size} items={labels} itemW={60} itemH={30} gap={2} title={s.paper} page={page} onPages={onPages} note="cut along the dashed lines"
+              render={l => (
+                <CutLine w={60} h={30}>
+                  <div className="flex items-center gap-[2mm] w-full px-[2mm]">
+                    <span className="block w-[23mm] h-[23mm] shrink-0 bg-white [&>svg]:w-full [&>svg]:h-full" role="img" aria-label={`QR code ${l.code}`} dangerouslySetInnerHTML={{ __html: l.svg }} />
+                    <span className="min-w-0 leading-tight">
+                      <span className="block font-mono text-[8.5pt] font-bold">{l.code}</span>
+                      <span className="block text-[7.5pt] font-semibold line-clamp-2">{l.title}</span>
+                      <span className="block text-[6.5pt] text-[#5B6578] truncate">{l.sub}</span>
+                      <span className="block text-[6.5pt] text-[#5B6578]">TNHS Library · AklatOne</span>
+                    </span>
+                  </div>
+                </CutLine>
+              )} />
+          )
+          : poster ? (
+            <SinglePage size={size} title={s.paper} onPages={onPages}>
+              <AppPoster poster={poster} />
+            </SinglePage>
+          )
+          : sheet.data ? (
+            <PagedTable size={size} title={s.paper} columns={sheet.data.columns} rows={sheet.data.rows} page={page} onPages={onPages} note={`${count} row(s)`}
+              footer={<div className="grid grid-cols-2 gap-10 break-inside-avoid" style={{ paddingTop: "12mm" }}>{signer(sigs.preparedLabel, sigs.preparedName, sigs.preparedTitle)}{signer(sigs.notedLabel, sigs.notedName, sigs.notedTitle)}</div>} />
+          ) : null}
+      </div>
 
       <StaffDialog open={confirmPrinted} onClose={() => setConfirmPrinted(false)} title="Did all the cards print correctly?" subtitle={`${cards?.length ?? 0} Library ID card(s)`} icon={IdCard} onSubmit={e => { e.preventDefault(); void markPrinted(); }}
         footer={<><button type="button" onClick={() => setConfirmPrinted(false)} className={btn.secondary}>No, keep them in the list</button><button type="submit" className={btn.primary}>Yes, mark as printed</button></>}>
@@ -292,6 +284,42 @@ export function Printing() {
       </StaffDialog>
       <SignatoriesDialog open={editing} kind={kind} title={s.title} value={sigs} onClose={() => setEditing(false)}
         onSave={v => { saveSignatories(kind, v); setSigs(v ?? DEFAULT_SIGNATORIES); setEditing(false); toast(v ? { tone: "success", title: "Signatures saved", message: `Used for "${s.title}" on this computer.` } : { tone: "info", title: "Signatures reset", message: `"${s.title}" uses the default names again.` }); }} />
+    </div>
+  );
+}
+
+/** Mobile app poster: what the app does, the QR codes and a short install guide. */
+function AppPoster({ poster }: { poster: Poster }) {
+  const qrs = [{ os: "Android phones", url: poster.android, svg: poster.androidSvg }, { os: "iPhone", url: poster.ios, svg: poster.iosSvg }].filter(q => q.svg);
+  const feats: [LucideIcon, string][] = [[BookOpen, "Search the library catalog"], [Send, "Request to borrow books"], [CalendarClock, "See due dates and reminders"], [DoorOpen, "Time in at the Visitor's Log"], [Heart, "Favourites, wishlist and reviews"]];
+  const steps = ["Scan the QR code with your phone camera and open the link.", "Android: open the downloaded file. If asked, allow installing apps from your browser.", "Open AklatOne, tap Create an account, then type the activation code sent to your email.", "No phone? Your Library ID card works at the desk and at the Visitor's Log."];
+  return (
+    <div className="flex-1 flex flex-col gap-[6mm] text-black" style={{ paddingTop: "2mm" }}>
+      <div className="flex items-center gap-[4mm] rounded-[4mm] bg-[#1E326D] text-white p-[5mm]">
+        <img src="/aklatone-icon.png" alt="" style={{ width: "18mm", height: "18mm" }} className="rounded-[3mm] bg-white p-[1mm]" />
+        <div>
+          <p className="text-[20pt] font-extrabold leading-tight">Get the AklatOne library app</p>
+          <p className="text-[10pt] text-white/90">The Tagumpay National High School Library in your pocket. Free for students and teachers.</p>
+        </div>
+      </div>
+      <div className="flex justify-center gap-[10mm]">
+        {qrs.map(q => (
+          <figure key={q.os} className="flex flex-col items-center gap-[2mm] rounded-[4mm] border-2 border-[#1E326D] p-[4mm]">
+            <span className="block bg-white [&>svg]:w-full [&>svg]:h-full" style={{ width: "50mm", height: "50mm" }} role="img" aria-label={`QR code to get the app for ${q.os}`} dangerouslySetInnerHTML={{ __html: q.svg }} />
+            <figcaption className="text-center"><span className="block text-[12pt] font-bold text-[#1E326D]">{q.os}</span><span className="block text-[7pt] text-[#5B6578] break-all" style={{ maxWidth: "52mm" }}>{q.url}</span></figcaption>
+          </figure>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-[5mm]">
+        <section className="rounded-[4mm] bg-[#EAF0FF] p-[4mm]">
+          <p className="text-[11pt] font-bold text-[#1E326D] mb-[2mm]">How to install</p>
+          <ol className="space-y-[2mm]">{steps.map((t, i) => <li key={i} className="flex gap-[2mm] text-[9pt]"><span className="shrink-0 w-[5.5mm] h-[5.5mm] rounded-full bg-[#1E326D] text-white text-[8pt] font-bold flex items-center justify-center">{i + 1}</span><span>{t}</span></li>)}</ol>
+        </section>
+        <section className="rounded-[4mm] border border-[#DCE3F0] p-[4mm]">
+          <p className="text-[11pt] font-bold text-[#1E326D] mb-[2mm]">What you can do</p>
+          <ul className="space-y-[2mm]">{feats.map(([Icon, t]) => <li key={t} className="flex items-center gap-[2mm] text-[9pt]"><Icon size={14} className="text-[#3354B5] shrink-0" aria-hidden="true" />{t}</li>)}</ul>
+        </section>
+      </div>
     </div>
   );
 }

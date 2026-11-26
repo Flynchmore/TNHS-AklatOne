@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Printer, X } from "lucide-react";
 import { focusRing } from "./mobile/ui";
+import { PAPERS, paperSize, usePageRule, usePaper, type PaperKey } from "../features/printing/paper";
 
 /**
  * Print preview for a single paper (receipt, recovery key): the paper is shown first, then Print sends only that paper
@@ -10,6 +11,11 @@ import { focusRing } from "./mobile/ui";
  */
 export function PrintPreview({ open, title, onClose, children, paperWidth = "148mm" }: { open: boolean; title: string; onClose: () => void; children: ReactNode; paperWidth?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // The paper is chosen here (saved on this computer); the content keeps its own width at the top of the page, so a
+  // receipt never stretches over the whole sheet.
+  const [paper, , setPaper] = usePaper(`preview:${paperWidth}`, "a4");
+  const size = paperSize(paper, "portrait");
+  usePageRule(open ? size : null);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -36,11 +42,19 @@ export function PrintPreview({ open, title, onClose, children, paperWidth = "148
               <p className="font-bold truncate">{title}</p>
               <p className="text-xs text-white/80">Preview: this is how the paper will look. Choose a printer or "Save as PDF" next.</p>
             </div>
+            <label className="hidden sm:flex items-center gap-2 text-sm font-semibold">Paper
+              <select value={paper} onChange={e => setPaper(e.target.value as PaperKey)} className="min-h-11 rounded-xl bg-white/10 border border-white/30 px-2 text-white [&>option]:text-ink">
+                {(Object.keys(PAPERS) as PaperKey[]).map(k => <option key={k} value={k}>{PAPERS[k].label}</option>)}
+              </select>
+            </label>
             <button type="button" onClick={print} className={`inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-accent text-on-accent font-bold ${focusRing}`}><Printer size={18} aria-hidden="true" />Print</button>
             <button type="button" onClick={onClose} aria-label="Close preview" className={`w-11 h-11 rounded-xl flex items-center justify-center bg-white/10 hover:bg-white/25 ${focusRing}`}><X size={20} aria-hidden="true" /></button>
           </div>
-          <div className="flex-1 overflow-auto p-4 sm:p-8">
-            <div className="ak-paper mx-auto bg-white text-black shadow-2xl" style={{ width: `min(100%, ${paperWidth})` }}>{children}</div>
+          <div className="flex-1 overflow-auto p-4 sm:p-8 ak-preview-scroll">
+            {/* The whole sheet at the chosen size; the content sits at the top, centred, at its own width. */}
+            <div className="ak-paper ak-preview-sheet mx-auto bg-white text-black shadow-2xl flex justify-center items-start" style={{ width: `${size.w}mm`, minHeight: `${size.h}mm` }}>
+              <div style={{ width: `min(100%, ${paperWidth})` }}>{children}</div>
+            </div>
           </div>
         </div>
       )}

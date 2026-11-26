@@ -168,8 +168,17 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
   html.ak-print-preview .ak-preview::backdrop { display: none; }
   html.ak-print-preview .ak-preview > div { height: auto !important; background: #fff !important; display: block !important; }
   html.ak-print-preview .ak-preview-bar { display: none !important; }
-  html.ak-print-preview .ak-preview .overflow-auto { overflow: visible !important; padding: 0 !important; }
+  html.ak-print-preview .ak-preview .ak-preview-scroll { overflow: visible !important; padding: 0 !important; }
   html.ak-print-preview .ak-paper { box-shadow: none !important; margin: 0 auto !important; }
+  html.ak-print-preview .ak-preview-sheet { min-height: 0 !important; width: auto !important; }
+}
+
+/* Printing pages (features/printing/paper.tsx): each sheet is one sheet of paper. */
+.ak-sheet-page { box-sizing: border-box; overflow: hidden; }
+@media print {
+  .ak-print-pages { overflow: visible !important; padding: 0 !important; }
+  .ak-sheet-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+  .ak-sheet-page:last-child { break-after: auto; page-break-after: auto; }
 }
 
 /* Staff Printing: only the sheet goes to paper. */
