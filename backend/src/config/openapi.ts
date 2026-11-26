@@ -31,6 +31,7 @@ export const openApiSpec = {
     "/auth/email/send": { post: pub("/auth", "Account without an email: send a code to the email it adds (emailToken from sign-in)", { "401": "Step expired", "409": "Email used by another account" }) },
     "/auth/email/verify": { post: pub("/auth", "Confirm the added email with its code; saves it and signs in", { "400": "Wrong or expired code", "401": "Step expired" }) },
     "/auth/register": { post: pub("/auth", "Member self-registration (Personal information + email); emails an activation code, the account stays inactive until activated", { "409": "Username or email already used" }) },
+    "/auth/my-activity": { get: auth("/auth", "Your own activity (?period=yesterday|day|week|month): borrowed, returned, requests, ratings, visits, favourites, suggestions") },
     "/auth/member-id-preview": { get: pub("/auth", "Member ID shown while a full name is typed (initials + 6 free digits; ?name=)") },
     "/auth/activate": { post: pub("/auth", "Enter the emailed activation code (username + code); activates and signs in", { "400": "Wrong or expired code" }) },
     "/auth/password-code": { post: auth("/auth", "Email the code that confirms a password change (accounts with an email)", undefined, { "429": "Sent less than a minute ago" }) },
@@ -77,6 +78,7 @@ export const openApiSpec = {
       get: pub("/catalog", "List/search books: q, categoryId, available=1, sortBy, sortOrder, limit, offset (hidden books only for staff; hidden=1 lists hidden ones)"),
       post: auth("/catalog", "Add a book (optionally with copies)", "catalog:write", { "201": "Created", "409": "Duplicate ISBN or serial number" }),
     },
+    "/catalog/top-readers": { get: auth("/catalog", "Most active readers (?period=day|week|month): photo, Member ID, grade-section, borrows, reviews, visits; no names") },
     "/catalog/this-week": { get: auth("/catalog", "Books borrowed this school week (Mon-Fri, PH time), top 10 titles with how many times; no borrower details") },
     "/catalog/{id}": {
       get: pub("/catalog", "Book details with availability and rating", { "404": "Not found (or hidden)" }),
@@ -151,6 +153,7 @@ export const openApiSpec = {
     "/reports/circulation": { get: auth("/reports", "Borrowing records in a date range", "reports:read") },
     "/reports/popular-books": { get: auth("/reports", "Most borrowed books", "reports:read") },
     "/reports/overdue": { get: auth("/reports", "Overdue borrowed books", "reports:read") },
+    "/reports/resume": { get: auth("/reports", "Continue where you left off: this librarian's last actions and the work still waiting") },
     "/reports/top-members": { get: auth("/reports", "Most active members today / this week / this month (?period=day|week|month): Member ID, photo, grade-section, borrows, reviews, visits") },
     "/reports/this-week": { get: auth("/reports", "Books used this school week (Monday-Friday, PH time; ?day= any day of the week): borrowed/returned/visits per day, titles", "reports:read") },
     "/reports/export.xlsx": { get: auth("/reports", "All report lists as one Excel file (from, to)", "reports:read") },

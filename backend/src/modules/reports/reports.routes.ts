@@ -77,6 +77,31 @@ reportsRouter.get("/recent-activity", authenticate, requirePermission("reports:r
   } catch (err) { next(err); }
 });
 
+/**
+ * "Continue where you left off" (Dashboard): what this librarian did last, and the work still waiting, each with a
+ * place to go. Counts only; nothing is changed.
+ */
+reportsRouter.get("/resume", authenticate, requirePermission("reports:read"), async (req, res, next) => {
+  try {
+    const now = new Date();
+    const [mine, pendingRequests, takenNow, pendingReviews, newSuggestions, openAudit, cardsWaiting, overdue] = await Promise.all([
+      prisma.auditLog.findMany({ where: { actorId: req.user!.id, NOT: { action: { startsWith: "auth." } } }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, action: true, entityType: true, createdAt: true } }),
+      prisma.borrowRequest.count({ where: { status: "PENDING" } }),
+      prisma.borrowRequest.count({ where: { status: "PENDING", takenNow: true } }),
+      prisma.bookRating.count({ where: { reviewStatus: "PENDING" } }),
+      prisma.suggestion.count({ where: { status: "NEW" } }),
+      prisma.inventoryAudit.findFirst({ where: { closedAt: null }, orderBy: { startedAt: "desc" }, select: { id: true, startedAt: true, note: true, _count: { select: { scans: true } } } }),
+      prisma.user.count({ where: { role: { name: "MEMBER" }, isActive: true, cardPrintedAt: null, maskedId: { not: null } } }),
+      prisma.borrowingTransaction.count({ where: { status: "ACTIVE", dueAt: { lt: now } } }),
+    ]);
+    ok(res, {
+      lastActions: mine,
+      waiting: { pendingRequests, takenNow, pendingReviews, newSuggestions, cardsWaiting, overdue },
+      openAudit: openAudit ? { id: openAudit.id, startedAt: openAudit.startedAt, note: openAudit.note, scanned: openAudit._count.scans } : null,
+    });
+  } catch (err) { next(err); }
+});
+
 /** All report lists as one Excel file (from/to like the Reports page). */
 reportsRouter.get("/export.xlsx", authenticate, requirePermission("reports:read"), async (req, res, next) => {
   try {

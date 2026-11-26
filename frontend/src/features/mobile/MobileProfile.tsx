@@ -12,6 +12,7 @@ import { Alert, Field, ListState, MemberTypePicker, ScreenShell, SlidingTabs, Sp
 import { PhotoCropper } from "../../components/mobile/PhotoCropper";
 import { SplineArea } from "../../components/SplineArea";
 import { ColumnChart, DonutChart, TONE } from "../../components/Charts";
+import { MyActivity } from "./MyActivity";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
 import { phISODate } from "../../lib/dates";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
@@ -153,6 +154,7 @@ export function MobileProfile() {
         {tab === "activity" && (
           <>
           <ReadingGoal goal={me?.readingGoal ?? null} txs={history.txs} onSave={patch} />
+          <MyActivity />
           <section aria-labelledby="profile-history" className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h2 id="profile-history" className="font-semibold text-primary-strong">Recent borrowing</h2>

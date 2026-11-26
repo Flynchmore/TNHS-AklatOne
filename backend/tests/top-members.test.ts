@@ -34,6 +34,21 @@ describe("top active members", () => {
       expect(me).toMatchObject({ group: "9 - Rizal", borrows: 1, books: [book.body.data.title] });
       expect(me.score).toBeGreaterThanOrEqual(3);
       expect(me).not.toHaveProperty("displayName");
+
+      // The member sees the board (no names) and their own activity log.
+      const board = await request(app).get("/api/v1/catalog/top-readers?period=day").set(as(m.token));
+      expect(board.status).toBe(200);
+      expect(JSON.stringify(board.body.data.items)).not.toContain("displayName");
+      const log = await request(app).get("/api/v1/auth/my-activity?period=day").set(as(m.token));
+      expect(log.status).toBe(200);
+      expect(log.body.data.items.map((i: { text: string }) => i.text)).toContain(`Borrowed "${book.body.data.title}"`);
+      expect((await request(app).get("/api/v1/auth/my-activity?period=yesterday").set(as(m.token))).body.data.items).toEqual([]);
+
+      // The librarian's "Continue where you left off".
+      const resume = await request(app).get("/api/v1/reports/resume").set(as(admin));
+      expect(resume.status).toBe(200);
+      expect(resume.body.data.waiting).toHaveProperty("pendingRequests");
+      expect(resume.body.data.lastActions.length).toBeGreaterThan(0);
     } finally { restore(); }
   });
 });

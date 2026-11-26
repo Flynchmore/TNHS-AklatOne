@@ -1,13 +1,14 @@
 import { prisma } from "../../config/prisma.js";
 
-export type Period = "day" | "week" | "month";
+export type Period = "day" | "yesterday" | "week" | "month";
 const phDay = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Manila" }).format(d);
 
 /** Philippine-time range of today, this Monday-Friday school week, or this calendar month. */
 export function periodRange(period: Period, now = new Date()): { from: string; to: string; start: Date; end: Date } {
   const today = phDay(now);
   let from = today, to = today;
-  if (period === "week") {
+  if (period === "yesterday") { from = to = phDay(new Date(new Date(`${today}T12:00:00+08:00`).getTime() - 86_400_000)); }
+  else if (period === "week") {
     const noon = new Date(`${today}T12:00:00+08:00`);
     const dow = noon.getUTCDay();
     const monday = new Date(noon.getTime() - ((dow + 6) % 7) * 86_400_000); // Saturday and Sunday show the week just ended
@@ -48,4 +49,33 @@ export async function topMembers(period: Period, limit = 10): Promise<{ from: st
       return { memberId: u.id, maskedId: u.maskedId, memberType: u.memberType, group: (u.memberType === "Teacher" ? u.department : u.gradeSection) ?? null, avatarUrl: u.avatarUrl, borrows: r.borrows, reviews: r.reviews, visits: r.visits, score: r.score, books: r.books.slice(0, 5) };
     }),
   };
+}
+
+export interface ActivityItem { at: Date; kind: "borrowed" | "returned" | "requested" | "rated" | "visit" | "favourite" | "suggestion"; text: string }
+const OUTCOME_TEXT: Record<string, string> = { RETURNED_ON_TIME: "on time", RETURNED_LATE: "late", DAMAGED: "torn / damaged", MISSING: "recorded as missing" };
+const REQUEST_TEXT: Record<string, string> = { PENDING: "waiting for the librarian", APPROVED: "approved", REJECTED: "declined", CANCELLED: "cancelled" };
+
+/** A member's own activity in a period (yesterday, today, this week, this month): newest first, plain sentences. */
+export async function memberActivity(memberId: string, period: Period) {
+  const { from, to, start, end } = periodRange(period);
+  const inRange = { gte: start, lte: end };
+  const [lent, back, requests, ratings, visits, favs, suggestions] = await Promise.all([
+    prisma.borrowingTransaction.findMany({ where: { borrowerId: memberId, borrowedAt: inRange }, select: { borrowedAt: true, dueAt: true, bookCopy: { select: { book: { select: { title: true } } } } } }),
+    prisma.borrowingTransaction.findMany({ where: { borrowerId: memberId, returnedAt: inRange }, select: { returnedAt: true, outcome: true, bookCopy: { select: { book: { select: { title: true } } } } } }),
+    prisma.borrowRequest.findMany({ where: { memberId, createdAt: inRange }, select: { createdAt: true, status: true, takenNow: true, book: { select: { title: true } } } }),
+    prisma.bookRating.findMany({ where: { memberId, updatedAt: inRange }, select: { updatedAt: true, stars: true, review: true, book: { select: { title: true } } } }),
+    prisma.libraryVisit.findMany({ where: { memberId, day: { gte: from, lte: to } }, select: { timeIn: true, timeOut: true } }),
+    prisma.favourite.findMany({ where: { memberId, createdAt: inRange }, select: { createdAt: true, book: { select: { title: true } } } }),
+    prisma.suggestion.findMany({ where: { memberId, createdAt: inRange }, select: { createdAt: true, title: true, kind: true } }),
+  ]);
+  const items: ActivityItem[] = [
+    ...lent.map((t) => ({ at: t.borrowedAt, kind: "borrowed" as const, text: `Borrowed "${t.bookCopy.book.title}"` })),
+    ...back.map((t) => ({ at: t.returnedAt!, kind: "returned" as const, text: `Returned "${t.bookCopy.book.title}"${t.outcome && OUTCOME_TEXT[t.outcome] ? ` (${OUTCOME_TEXT[t.outcome]})` : ""}` })),
+    ...requests.map((r) => ({ at: r.createdAt, kind: "requested" as const, text: `${r.takenNow ? "Took" : "Requested"} "${r.book.title}" · ${REQUEST_TEXT[r.status] ?? r.status.toLowerCase()}` })),
+    ...ratings.map((r) => ({ at: r.updatedAt, kind: "rated" as const, text: `Rated "${r.book.title}" ${r.stars} star${r.stars === 1 ? "" : "s"}${r.review ? " and wrote a review" : ""}` })),
+    ...visits.flatMap((v) => [{ at: v.timeIn, kind: "visit" as const, text: "Time In at the library" }, ...(v.timeOut ? [{ at: v.timeOut, kind: "visit" as const, text: "Time Out from the library" }] : [])]),
+    ...favs.map((f) => ({ at: f.createdAt, kind: "favourite" as const, text: `Added "${f.book.title}" to Favourites` })),
+    ...suggestions.map((g) => ({ at: g.createdAt, kind: "suggestion" as const, text: g.kind === "BOOK" ? `Suggested the book "${g.title}"` : `Sent feedback: ${g.title}` })),
+  ].sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 200);
+  return { from, to, items };
 }

@@ -8,6 +8,7 @@ import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp,
 import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
 import { newMemberId } from "../users/memberId.js";
+import { memberActivity } from "../reports/topMembers.js";
 import { authenticate } from "../../middleware/auth.js";
 import { fail } from "../../common/response.js";
 
@@ -71,6 +72,15 @@ authRouter.post("/register", validate({ body: registerSchema }), async (req, res
   } catch (err) {
     next(err);
   }
+});
+
+/** The signed-in member's own activity: yesterday, today, this week or this month (phone Profile > Activity). */
+authRouter.get("/my-activity", authenticate, async (req, res, next) => {
+  try {
+    const q = req.query.period;
+    const period = q === "day" || q === "yesterday" || q === "month" ? q : "week";
+    ok(res, { period, ...(await memberActivity(req.user!.id, period)) });
+  } catch (err) { next(err); }
 });
 
 /**

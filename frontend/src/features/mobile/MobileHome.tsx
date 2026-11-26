@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../features/auth/auth";
-import { BookOpen, History, UserCircle, ChevronRight, Clock, AlertCircle, Library, Newspaper, Lightbulb, DoorOpen } from "lucide-react";
+import { BookOpen, History, UserCircle, ChevronRight, Clock, AlertCircle, Library, Newspaper, Lightbulb, DoorOpen, Medal, BookMarked, Bell } from "lucide-react";
 import { BookCover, CurvedPanel, FloatingSearch, ListState, PhotoHeader, focusRing, isNewBook, linkText, mobileApi } from "../../components/mobile/ui";
 import { useToast } from "../../components/Toast";
 
@@ -16,6 +16,9 @@ const quickMenu = [
   { label: "Newspaper", hint: "School news", icon: Newspaper, path: "/m/newspaper", chip: "bg-success-soft text-success" },
   { label: "Suggest", hint: "Ask for a book", icon: Lightbulb, path: "/m/suggestions", chip: "bg-accent-soft/50 text-on-accent" },
   { label: "Visit Log", hint: "Time in / out", icon: DoorOpen, path: "/m/visit", chip: "bg-danger-soft text-danger" },
+  { label: "Top readers", hint: "Most active", icon: Medal, path: "/m/top-readers", chip: "bg-warning-soft text-warning" },
+  { label: "My Books", hint: "Books with you", icon: BookMarked, path: "/m/loans", chip: "bg-primary-soft text-primary" },
+  { label: "Alerts", hint: "Notices", icon: Bell, path: "/m/notifications", chip: "bg-success-soft text-success" },
 ];
 
 export function MobileHome() {

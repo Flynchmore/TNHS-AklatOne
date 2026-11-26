@@ -1,4 +1,5 @@
 import express, { Router, type Request, type Response } from "express";
+import { topMembers } from "../reports/topMembers.js";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../../config/prisma.js";
@@ -179,6 +180,14 @@ catalogRouter.get("/this-week", authenticate, async (_req, res, next) => {
     const titles = new Map<string, { id: string; title: string; authors: string | null; isbn: string | null; coverUrl: string | null; times: number }>();
     for (const l of lent) { const b = l.bookCopy.book; const t = titles.get(b.id) ?? { ...b, times: 0 }; t.times++; titles.set(b.id, t); }
     ok(res, { from: days[0], to: days[4], total: lent.length, items: [...titles.values()].sort((a, b) => b.times - a.times || a.title.localeCompare(b.title)).slice(0, 10) });
+  } catch (err) { next(err); }
+});
+
+/** Members' board of the most active readers (photo, Member ID and grade-section only; never names). */
+catalogRouter.get("/top-readers", authenticate, async (req, res, next) => {
+  try {
+    const period = req.query.period === "day" || req.query.period === "month" ? req.query.period : "week";
+    ok(res, { period, ...(await topMembers(period, 20)) });
   } catch (err) { next(err); }
 });
 

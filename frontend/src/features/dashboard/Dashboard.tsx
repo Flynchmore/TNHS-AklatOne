@@ -7,8 +7,8 @@ import { useAuth } from "../auth/auth";
 import { Panel, StatTile, Skeleton, btn, btnSm, card } from "../../components/staff/ui";
 import { focusRing } from "../../components/mobile/ui";
 import { timeAgo } from "../mobile/MobileNotifications";
-import { phHour, phLongDate } from "../../lib/dates";
-import { txPath } from "../../lib/offline";
+import { phDate, phDateTime, phHour, phLongDate } from "../../lib/dates";
+import { txPath, useOutbox } from "../../lib/offline";
 import { ThisWeek } from "./ThisWeek";
 
 interface Summary { titles: number; copies: number; activeLoans: number; overdueLoans: number; members: number; dueThisWeek: number; pendingRequests: number }
@@ -92,6 +92,8 @@ export function Dashboard() {
         )}
       </div>
 
+      {hasPerm("reports:read") && <ContinueWhereYouLeftOff />}
+
       {hasPerm("reports:read") && <ThisWeek />}
 
       <div className="grid lg:grid-cols-2 gap-6 items-stretch">
@@ -130,5 +132,80 @@ export function Dashboard() {
         </Panel>
       </div>
     </div>
+  );
+}
+
+interface Resume {
+  lastActions: { id: string; action: string; entityType: string; createdAt: string }[];
+  waiting: { pendingRequests: number; takenNow: number; pendingReviews: number; newSuggestions: number; cardsWaiting: number; overdue: number };
+  openAudit: { id: string; startedAt: string; note: string | null; scanned: number } | null;
+}
+// Where to pick up an earlier action.
+const ENTITY_PAGE: Record<string, string> = { Book: "/catalog", BookCopy: "/catalog", BorrowRequest: txPath, BorrowingTransaction: `${txPath}?tab=borrowed`, Category: "/catalog", User: "/members", Suggestion: "/suggestions", BookRating: "/suggestions", InventoryAudit: "/inventory", LibraryVisit: "/visitors" };
+
+/**
+ * "Continue where you left off": the work still waiting (each opens its page) and this librarian's last actions,
+ * so the next session starts where the last one ended. Desktop also shows changes saved offline.
+ */
+function ContinueWhereYouLeftOff() {
+  const { token } = useAuth();
+  const outbox = useOutbox().length;
+  const q = useQuery({
+    queryKey: ["resume"],
+    queryFn: async () => { const r = await apiFetch("/api/v1/reports/resume", { token }); if (!r.ok) throw new Error(r.message); return r.data as Resume; },
+    enabled: !!token, refetchInterval: 60_000,
+  });
+  const d = q.data;
+  const todo: { to: string; text: string; n: number; icon: LucideIcon; tone: string }[] = d ? [
+    { to: txPath, text: "borrow request(s) to review", n: d.waiting.pendingRequests, icon: ClipboardCheck, tone: "bg-primary-soft text-primary" },
+    { to: txPath, text: "book(s) a teacher took while you were away", n: d.waiting.takenNow, icon: BookUp, tone: "bg-warning-soft text-warning" },
+    { to: `${txPath}?tab=borrowed`, text: "overdue book(s) to send notices for", n: d.waiting.overdue, icon: BellRing, tone: "bg-danger-soft text-danger" },
+    { to: "/suggestions", text: "review(s) waiting for approval", n: d.waiting.pendingReviews, icon: ShieldCheck, tone: "bg-success-soft text-success" },
+    { to: "/suggestions", text: "new suggestion(s)", n: d.waiting.newSuggestions, icon: Zap, tone: "bg-primary-soft text-primary" },
+    { to: "/printing", text: "Library ID card(s) to print", n: d.waiting.cardsWaiting, icon: Printer, tone: "bg-primary-soft text-primary" },
+    ...(outbox ? [{ to: "/upload", text: "offline change(s) waiting to upload", n: outbox, icon: History, tone: "bg-warning-soft text-warning" }] : []),
+  ].filter(t => t.n > 0) : [];
+  return (
+    <Panel title="Continue where you left off" icon={History}>
+      {q.isLoading ? <Skeleton rows={2} className="h-12" /> : q.isError || !d ? <p role="alert" className="text-danger text-sm">Could not load your work list.</p> : (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-ink-muted">Still to do</h3>
+            {d.openAudit && (
+              <Link to="/inventory" className={`flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary-soft/40 p-3 hover:border-primary ${focusRing}`}>
+                <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-strong text-white flex items-center justify-center shrink-0" aria-hidden="true"><ClipboardCheck size={20} /></span>
+                <span className="flex-1 min-w-0"><span className="block font-semibold text-ink">Inventory audit in progress</span><span className="block text-xs text-ink-muted truncate">{d.openAudit.scanned} cop{d.openAudit.scanned === 1 ? "y" : "ies"} scanned since {phDate(d.openAudit.startedAt)}{d.openAudit.note ? ` · ${d.openAudit.note}` : ""}</span></span>
+                <span className="text-sm font-semibold text-primary inline-flex items-center gap-1">Continue<ChevronRight size={16} aria-hidden="true" /></span>
+              </Link>
+            )}
+            {todo.length === 0 && !d.openAudit && <p className="text-sm text-ink-muted rounded-2xl border border-dashed border-line p-4 text-center">All caught up. Nothing is waiting for you.</p>}
+            <ul className="space-y-2">
+              {todo.map(t => (
+                <li key={t.text}>
+                  <Link to={t.to} className={`group flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 hover:border-primary/40 hover:shadow-sm ${focusRing}`}>
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${t.tone}`} aria-hidden="true"><t.icon size={18} /></span>
+                    <span className="flex-1 text-sm text-ink"><b className="text-base tabular-nums">{t.n}</b> {t.text}</span>
+                    <ChevronRight size={16} className="text-ink-muted group-hover:text-primary" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-ink-muted">What you did last</h3>
+            {!d.lastActions.length ? <p className="text-sm text-ink-muted">Your actions will show here.</p> : (
+              <ol className="space-y-1">
+                {d.lastActions.map(a => {
+                  const Icon = ENTITY_ICON[a.entityType] ?? History;
+                  const to = ENTITY_PAGE[a.entityType];
+                  const body = <><span className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0" aria-hidden="true"><Icon size={16} /></span><span className="flex-1 min-w-0"><span className="block text-sm text-ink first-letter:uppercase">You {ACTIVITY[a.action] ?? a.action}</span><span className="block text-xs text-ink-muted">{phDateTime(a.createdAt)}</span></span>{to && <ChevronRight size={16} className="text-ink-muted" aria-hidden="true" />}</>;
+                  return <li key={a.id}>{to ? <Link to={to} className={`flex items-center gap-3 rounded-xl p-2 hover:bg-primary-soft/50 ${focusRing}`}>{body}</Link> : <div className="flex items-center gap-3 p-2">{body}</div>}</li>;
+                })}
+              </ol>
+            )}
+          </div>
+        </div>
+      )}
+    </Panel>
   );
 }
