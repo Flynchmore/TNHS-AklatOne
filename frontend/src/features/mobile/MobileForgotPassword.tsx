@@ -136,12 +136,15 @@ export function MobileForgotPassword({ staff = false }: { staff?: boolean }) {
                 {loading && <Spinner />}
                 {loading ? "Verifying…" : "Verify code"}
               </button>
-              <button type="button" onClick={requestOtp} disabled={loading || resendCooldown > 0} className={`w-full min-h-11 text-sm text-primary font-medium disabled:opacity-60 rounded-lg ${focusRing}`}>
-                {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
-              </button>
-              <button type="button" onClick={() => { setStep("email"); setOtp(""); setError(""); setInfo(""); }} className={`w-full min-h-11 text-sm text-ink-muted hover:text-primary rounded-lg ${focusRing}`}>
-                Change email
-              </button>
+              {/* Two small actions side by side instead of two full-width rows with big gaps. */}
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={requestOtp} disabled={loading || resendCooldown > 0} className={`min-h-11 px-3 rounded-xl border border-primary/30 bg-surface text-[0.95rem] font-semibold text-primary hover:bg-primary-soft disabled:opacity-60 ${focusRing}`}>
+                  {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend code"}
+                </button>
+                <button type="button" onClick={() => { setStep("email"); setOtp(""); setError(""); setInfo(""); }} className={`min-h-11 px-3 rounded-xl border border-line-strong bg-surface text-[0.95rem] font-semibold text-ink hover:border-primary hover:text-primary ${focusRing}`}>
+                  Change email
+                </button>
+              </div>
             </form>
           )}
 
@@ -159,8 +162,8 @@ export function MobileForgotPassword({ staff = false }: { staff?: boolean }) {
             </form>
           )}
 
-          <p className="text-center text-sm pt-2">
-            <Link to={signIn} className={`${linkText} inline-block py-1`}>Back to Sign In</Link>
+          <p className="text-center">
+            <Link to={signIn} className={`${linkText} inline-block py-1 text-[0.95rem] font-semibold`}>Back to Sign In</Link>
           </p>
     </Shell>
   );

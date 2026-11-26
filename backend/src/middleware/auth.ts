@@ -6,13 +6,13 @@ import { loadSession } from "./session.js";
 export const authenticate: RequestHandler = async (req, res, next) => {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    return fail(res, 401, "Missing or invalid authorization header");
+    return fail(res, 401, "Please sign in to continue.");
   }
   let claims;
   try {
     claims = verifyToken(header.slice(7));
   } catch {
-    return fail(res, 401, "Invalid or expired token");
+    return fail(res, 401, "Your sign-in has expired. Please sign in again.");
   }
   try {
     const user = await loadSession(claims);

@@ -93,3 +93,19 @@ describe("a deleted member's Gmail can be used again", () => {
     expect((await request(app).delete(`/api/v1/users/${m.id}`).set("Authorization", `Bearer ${admin}`)).status).toBe(404);
   });
 });
+
+describe("a member deletes their own account", () => {
+  it("needs the password and DELETE, then the same Gmail can register again", async () => {
+    const app = createApp();
+    const u = `selfdel_${Date.now()}`;
+    const m = await newMember(app, u);
+    const as = { Authorization: `Bearer ${m.token}` };
+    expect((await request(app).delete("/api/v1/auth/account").set(as).send({ password: "wrong", confirm: "DELETE" })).status).toBe(400);
+    expect((await request(app).delete("/api/v1/auth/account").set(as).send({ password: "Test-Pass-2026!", confirm: "delete" })).status).toBe(400);
+    const ok = await request(app).delete("/api/v1/auth/account").set(as).send({ password: "Test-Pass-2026!", confirm: "DELETE" });
+    expect(ok.status).toBe(200);
+    expect((await request(app).get("/api/v1/auth/me").set(as)).status).toBe(401); // signed out everywhere
+    const again = await request(app).post("/api/v1/auth/register").send({ username: u, password: "Strong#Pass2026x", displayName: "Juan Dela Cruz", email: `${u}@example.test`, memberType: "Student", gradeSection: "9 - Rizal" });
+    expect(again.status).toBe(200);
+  });
+});

@@ -53,8 +53,14 @@ export function StaffAuthShell({ highlights, tagline, children }: { highlights: 
           <p className="relative hidden md:block text-xs text-white/80">Staff portal · Web and Desktop</p>
         </section>
 
-        {/* Right half: the form. */}
-        <section className="p-6 sm:p-10 flex flex-col justify-center ak-from-right">{children}</section>
+        {/* Right half: the form, on a soft blue tint with the school seal faint behind it (like the phone app's sign-in),
+            so the fields do not sit on plain white. The fields themselves stay white for reading. */}
+        <section className="relative isolate overflow-hidden p-6 sm:p-10 flex flex-col justify-center ak-from-right bg-gradient-to-br from-primary-soft via-surface to-primary-soft/70">
+          <img src="/tnhs-logo.png" alt="" aria-hidden="true" className="ak-watermark absolute -z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26rem] max-w-[95%] opacity-[0.13] pointer-events-none" />
+          <span className="absolute -z-10 -top-16 -right-16 w-56 h-56 rounded-full bg-primary/[0.07]" aria-hidden="true" />
+          <span className="absolute -z-10 -bottom-20 -left-16 w-60 h-60 rounded-full bg-accent/[0.12]" aria-hidden="true" />
+          {children}
+        </section>
       </main>
     </div>
   );

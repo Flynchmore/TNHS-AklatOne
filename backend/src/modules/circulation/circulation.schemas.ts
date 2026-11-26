@@ -10,7 +10,7 @@ export const borrowSchema = z.object({
   bookCopyId: z.string().cuid().optional(),
   copyCode: z.string().trim().min(1).max(64).optional(),
   bookId: z.string().cuid().optional(),
-  dueAt: z.coerce.date().optional().refine((d) => !d || d > new Date(), { message: "dueAt must be in the future" }),
+  dueAt: z.coerce.date().optional().refine((d) => !d || d > new Date(), { message: "The due date must be in the future." }),
   notes: z.string().max(500).optional(),
 })
   .refine((d) => Number(!!d.borrowerId) + Number(!!d.memberCode) === 1, { message: "Give the member (Member ID)", path: ["memberCode"] })

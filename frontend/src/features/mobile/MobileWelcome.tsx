@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { Search, ClipboardCheck, BellRing, IdCard, DoorOpen, ChevronRight, ChevronLeft, ShieldCheck, Cookie, FileText, Check, type LucideIcon } from "lucide-react";
+import { ChevronRight, ChevronLeft, ShieldCheck, Cookie, FileText, Check, type LucideIcon } from "lucide-react";
 import { btnPrimary, focusRing } from "../../components/mobile/ui";
 import { PrivacyText, TermsText } from "./MobileSettings";
+import { Illustration } from "../../components/WelcomeScenes";
 
 /** Bump when the Terms, Privacy Policy or storage use change, so members are asked again. */
 export const CONSENT_VERSION = "2026-11-25";
@@ -14,44 +15,20 @@ function saveConsent() {
   try { localStorage.setItem(KEY, JSON.stringify({ version: CONSENT_VERSION, acceptedAt: new Date().toISOString(), terms: true, storage: true })); } catch { /* private mode: asked again next time */ }
 }
 
-interface Slide { icon?: LucideIcon; title: string; text: string; chip?: string; chipTone: string }
+interface Slide { title: string; text: string }
 const SLIDES: Slide[] = [
-  { title: "Welcome to AklatOne", text: "The library of Tagumpay National High School, right in your pocket.", chipTone: "" },
-  { icon: Search, title: "Find any book", text: "Search the catalog by title, author or subject, and see right away how many copies are on the shelf.", chip: "Available: 3 of 5", chipTone: "bg-success-soft text-success" },
-  { icon: ClipboardCheck, title: "Request, then pick it up", text: "Tap Request to borrow. When the librarian approves, your receipt and due date appear in My Books. Up to 8 books, 7 days each.", chip: "Approved · Due in 7 days", chipTone: "bg-primary-soft text-primary" },
-  { icon: IdCard, title: "Your Library ID card", text: "No phone with you? Your Library ID card works too: show it at the desk to borrow and return books.", chip: "Member ID JC123456", chipTone: "bg-accent-soft text-on-accent" },
-  { icon: DoorOpen, title: "Time in at the library", text: "At the library door, open Visit Log and scan the QR code on the screen, or scan your card. Time In and Time Out are recorded for you.", chip: "Time In 7:42 AM", chipTone: "bg-info-soft text-info" },
-  { icon: BellRing, title: "Never miss a due date", text: "Reminders arrive in Alerts and by email. Keep favourites in folders and suggest books for the library.", chip: "Return tomorrow", chipTone: "bg-warning-soft text-warning" },
+  { title: "Welcome to AklatOne", text: "The library of Tagumpay National High School, right in your pocket." },
+  { title: "Find any book", text: "Search the catalog by title, author or subject, and see right away how many copies are on the shelf." },
+  { title: "Request, then pick it up", text: "Tap Request to borrow. When the librarian approves, your receipt and due date appear in My Books. Up to 8 books, 7 days each." },
+  { title: "Your Library ID card", text: "No phone with you? Your Library ID card works too: show it at the desk to borrow and return books." },
+  { title: "Time in at the library", text: "At the library door, open Visit Log and scan the QR code on the screen, or scan your card. Time In and Time Out are recorded for you." },
+  { title: "Never miss a due date", text: "Reminders arrive in Alerts and by email. Keep favourites in folders and suggest books for the library." },
 ];
 
 // Optional pictures for the slides: src/assets/welcome/1.webp ... 6.webp (see docs/reference/WELCOME-IMAGES.md).
 // A slide without a picture shows its drawn illustration instead.
 const PICTURES = import.meta.glob("../../assets/welcome/*.{webp,png,jpg}", { eager: true, import: "default" }) as Record<string, string>;
 const pictureOf = (n: number) => Object.entries(PICTURES).find(([path]) => new RegExp(`/${n}\\.(webp|png|jpg)$`).test(path))?.[1];
-
-/** The picture frame of a slide: the team's picture when there is one, otherwise an icon with a small preview of the app. */
-function Illustration({ s, n, active }: { s: Slide; n: number; active: boolean }) {
-  const picture = pictureOf(n + 1);
-  return (
-    <div className={`relative w-full max-w-xs aspect-[4/3] rounded-[2rem] bg-surface shadow-2xl overflow-hidden ${active ? "ak-scale" : ""}`}>
-      {picture ? <img src={picture} alt="" className="w-full h-full object-cover" /> : (
-        <div className="relative h-full flex items-center justify-center">
-          <span className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary-soft" aria-hidden="true" />
-          <span className="absolute -bottom-12 -left-8 w-36 h-36 rounded-full bg-accent-soft/70" aria-hidden="true" />
-          {s.icon ? (
-            <span className="relative w-28 h-28 rounded-[1.75rem] bg-gradient-to-br from-primary to-primary-strong text-on-primary flex items-center justify-center shadow-xl" aria-hidden="true"><s.icon size={56} strokeWidth={1.8} /></span>
-          ) : (
-            <span className="relative flex items-end">
-              <img src="/aklatone-icon.png" alt="AklatOne" className="w-28 h-28 rounded-[1.75rem] bg-white p-2 shadow-xl" />
-              <img src="/tnhs-logo.png" alt="Tagumpay National High School seal" className="w-14 h-14 rounded-full bg-white p-0.5 shadow-xl -ml-6" />
-            </span>
-          )}
-          {s.chip && <span className={`absolute bottom-4 right-4 text-xs font-bold px-3 py-1.5 rounded-full shadow-md ${s.chipTone} ${active ? "ak-from-right" : ""}`}>{s.chip}</span>}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** First launch of the member app: 6 full-screen swipeable tutorial slides, then Terms, Privacy and storage consent. */
 export function MobileWelcome({ onDone }: { onDone: () => void }) {
@@ -80,7 +57,7 @@ export function MobileWelcome({ onDone }: { onDone: () => void }) {
       <div className="relative h-full flex flex-col pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] px-6">
         <div className="flex justify-between items-center min-h-12">
           <span className="text-sm font-semibold text-white/85">{i + 1} / {SLIDES.length}</span>
-          <button type="button" onClick={() => setConsent(true)} className={`px-4 min-h-11 rounded-full text-sm font-semibold bg-white/15 hover:bg-white/25 ${focusRing}`}>Skip</button>
+          <button type="button" onClick={() => setConsent(true)} className={`px-5 min-h-11 rounded-full text-sm font-bold text-white bg-white/20 border border-white/50 hover:bg-white/30 ${focusRing}`}>Skip</button>
         </div>
 
         {/* Slides sit side by side; the track slides to the current one. */}
@@ -88,9 +65,9 @@ export function MobileWelcome({ onDone }: { onDone: () => void }) {
           <div className="flex h-full motion-safe:transition-transform motion-safe:duration-500 ease-[cubic-bezier(.2,.8,.2,1)]" style={{ transform: `translateX(-${i * 100}%)` }}>
             {SLIDES.map((s, n) => (
               <section key={s.title} role="group" aria-roledescription="slide" aria-label={`${n + 1} of ${SLIDES.length}: ${s.title}`} aria-hidden={n !== i} className="w-full shrink-0 h-full flex flex-col items-center justify-center text-center px-2">
-                <Illustration s={s} n={n} active={n === i} />
-                <h1 className={`mt-10 text-3xl font-bold leading-tight ${n === i ? "ak-slide" : ""}`}>{s.title}</h1>
-                <p className={`mt-3 text-base text-white/90 max-w-sm leading-relaxed ${n === i ? "ak-slide" : ""}`} style={{ animationDelay: ".08s" }}>{s.text}</p>
+                <Illustration n={n} active={n === i} picture={pictureOf(n + 1)} />
+                <h1 className="mt-10 text-3xl font-extrabold leading-tight text-white">{s.title}</h1>
+                <p className="mt-3 text-base text-white max-w-sm leading-relaxed">{s.text}</p>
               </section>
             ))}
           </div>
@@ -100,9 +77,9 @@ export function MobileWelcome({ onDone }: { onDone: () => void }) {
           {SLIDES.map((s, n) => <button key={s.title} type="button" role="tab" aria-selected={n === i} aria-label={`Slide ${n + 1}: ${s.title}`} onClick={() => go(n)} className={`h-2.5 rounded-full motion-safe:transition-all motion-safe:duration-300 ${focusRing} ${n === i ? "w-8 bg-white" : "w-2.5 bg-white/45"}`} />)}
         </div>
         <div className="flex gap-3">
-          {i > 0 && <button type="button" onClick={() => go(i - 1)} aria-label="Previous" className={`w-14 min-h-14 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center ${focusRing}`}><ChevronLeft size={22} aria-hidden="true" /></button>}
-          <button type="button" onClick={() => (i === last ? setConsent(true) : go(i + 1))} className={`flex-1 min-h-14 rounded-2xl bg-white text-primary-strong font-bold text-base shadow-xl flex items-center justify-center gap-2 active:scale-[0.97] motion-safe:transition ${focusRing}`}>
-            {i === last ? "Get started" : "Next"}<ChevronRight size={20} aria-hidden="true" />
+          {i > 0 && <button type="button" onClick={() => go(i - 1)} aria-label="Previous" className={`w-14 min-h-14 rounded-2xl bg-white/20 border-2 border-white/60 text-white flex items-center justify-center ${focusRing}`}><ChevronLeft size={24} strokeWidth={2.75} aria-hidden="true" /></button>}
+          <button type="button" onClick={() => (i === last ? setConsent(true) : go(i + 1))} className={`flex-1 min-h-14 rounded-2xl bg-accent text-on-accent font-extrabold text-lg tracking-wide shadow-xl flex items-center justify-center gap-2 active:scale-[0.97] motion-safe:transition ${focusRing}`}>
+            {i === last ? "Get started" : "Next"}<ChevronRight size={22} strokeWidth={2.75} aria-hidden="true" />
           </button>
         </div>
       </div>

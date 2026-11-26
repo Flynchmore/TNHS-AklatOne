@@ -22,9 +22,9 @@ describe("top active members", () => {
     const restore = avoidPhMidnight();
     try {
       const admin = await adminToken(app);
-      const m = await newMember(app, `top_${Date.now()}`, { gradeSection: "9 - Rizal" });
+      const m = await newMember(app, `top_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, { gradeSection: "9 - Rizal" });
       const code = (await prisma.user.findUnique({ where: { id: m.id } }))!.maskedId!;
-      const book = await request(app).post("/api/v1/catalog").set(as(admin)).send({ title: `Top Book ${Date.now()}`, copies: 2 });
+      const book = await request(app).post("/api/v1/catalog").set(as(admin)).send({ title: `Top Book ${Math.random().toString(36).slice(2, 9)}`, copies: 2 });
       expect((await request(app).post("/api/v1/circulation/borrow").set(as(admin)).send({ memberCode: code, bookId: book.body.data.id })).status).toBe(201);
       const r = await request(app).get("/api/v1/reports/top-members?period=day&limit=500").set(as(admin));
       expect(r.status).toBe(200);

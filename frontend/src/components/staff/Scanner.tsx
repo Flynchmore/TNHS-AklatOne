@@ -88,7 +88,7 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
       } catch (err) {
         const name = (err as { name?: string })?.name;
         setCamError(
-          !window.isSecureContext ? "The camera works only in the AklatOne app or on an HTTPS address. Type the code or use a USB scanner below."
+          !window.isSecureContext ? "The camera works only in the AklatOne app or on the library's secure web address. Type the code or use a USB scanner below."
           : name === "NotAllowedError" ? "Camera permission was refused. Allow the camera for this app or site in the settings, then try again."
           : name === "NotFoundError" ? "No camera was found. Type the code or use a USB scanner below."
           : name === "NotReadableError" ? "Another app is using the camera. Close it, then try again."

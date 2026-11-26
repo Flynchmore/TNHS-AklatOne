@@ -225,7 +225,7 @@ export function Printing() {
             <div>
               <label htmlFor="app-android" className={label}>Android download link</label>
               <input maxLength={300} id="app-android" type="url" value={appLinks.android} onChange={e => saveAppLinks({ ...appLinks, android: e.target.value.trim() })} className={input} />
-              <p className="text-xs text-ink-muted mt-1">Default: the APK on this school's server (must be https:// for members at home).</p>
+              <p className="text-xs text-ink-muted mt-1">Default: the AklatOne app file on the school's website. Members at home need the secure address (starts with https://).</p>
             </div>
             <div>
               <label htmlFor="app-ios" className={label}>iPhone link <span className="font-normal text-ink-muted">(App Store or TestFlight, optional)</span></label>

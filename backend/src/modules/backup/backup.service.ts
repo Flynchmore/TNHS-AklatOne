@@ -101,7 +101,7 @@ export async function restoreDatabase(sql: Buffer): Promise<void> {
   await new Promise<void>((ok, fail) => {
     const child = spawn("npx", ["prisma", "migrate", "deploy"], { cwd: resolve("."), env: { ...process.env, DATABASE_URL: env.DATABASE_ADMIN_URL || env.DATABASE_URL }, stdio: "ignore" });
     child.on("error", fail);
-    child.on("close", (code) => (code === 0 ? ok() : fail(new Error("Restored, but database migrations failed; run `npx prisma migrate deploy`."))));
+    child.on("close", (code) => (code === 0 ? ok() : fail(new Error("The backup was restored, but the last update step did not finish. Ask the ICT coordinator to restart the AklatOne server."))));
   });
 }
 

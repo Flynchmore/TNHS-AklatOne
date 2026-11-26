@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { DEFAULT_MAX, withRule, type Rule } from "../../lib/inputRules";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, ChevronLeft, GraduationCap, Briefcase, Search, type LucideIcon } from "lucide-react";
+import { AlertCircle, BookOpen, CheckCircle2, ChevronLeft, GraduationCap, Briefcase, Info, Search, type LucideIcon } from "lucide-react";
 import { cacheGet, cacheSet, isPhone, setReachable } from "../../lib/offline";
 import { apiFetch, apiUrl } from "../../lib/api";
 
@@ -30,9 +30,13 @@ const alertTone = {
 /** Message box. Errors use role="alert" so screen readers announce them; others use role="status". */
 export function Alert({ tone = "error", children, action }: { tone?: keyof typeof alertTone; children: ReactNode; action?: ReactNode }) {
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={`text-sm border p-3 rounded-xl ak-scale ${alertTone[tone]}`}>
-      {children}
-      {action && <div className="mt-2">{action}</div>}
+    // Icon + text that always wraps inside the box (never cut off), with room on every side.
+    <div role={tone === "error" ? "alert" : "status"} className={`flex items-start gap-2.5 text-sm leading-relaxed border px-4 py-3 rounded-xl ak-scale ${alertTone[tone]}`}>
+      {tone === "error" ? <AlertCircle size={18} className="shrink-0 mt-0.5" aria-hidden="true" /> : tone === "success" ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" aria-hidden="true" /> : <Info size={18} className="shrink-0 mt-0.5" aria-hidden="true" />}
+      <div className="min-w-0 flex-1 break-words whitespace-normal">
+        {children}
+        {action && <div className="mt-2">{action}</div>}
+      </div>
     </div>
   );
 }

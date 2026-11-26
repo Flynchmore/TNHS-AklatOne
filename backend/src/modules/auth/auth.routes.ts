@@ -4,11 +4,12 @@ import { z } from "zod";
 import { prisma } from "../../config/prisma.js";
 import { validate } from "../../middleware/validate.js";
 import { loginSchema, profileUpdateSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema, registerSchema, activateSchema } from "./auth.schemas.js";
-import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode, sendEmailCode, confirmEmail } from "./auth.service.js";
+import { login, verifyLoginOtp, signToken, updateProfile, requestOtp, verifyOtp, resetPassword, register, activate, sendPasswordCode, sendEmailCode, confirmEmail, verifyPassword } from "./auth.service.js";
 import { openSession } from "./sessions.routes.js";
 import { ok } from "../../common/response.js";
 import { newMemberId } from "../users/memberId.js";
 import { memberActivity } from "../reports/topMembers.js";
+import { deleteMemberAccount } from "../users/users.routes.js";
 import { authenticate } from "../../middleware/auth.js";
 import { fail } from "../../common/response.js";
 
@@ -46,7 +47,7 @@ const withProfile = async <T extends { user: { id: string } }>(r: T) => ({ ...r,
 authRouter.post("/login", validate({ body: loginSchema }), async (req, res, next) => {
   try {
     const result = await login(req.body.username, req.body.password).catch(failedSignIn(req, "password"));
-    if (result.kind === "otp") ok(res, { requiresOtp: true, email: result.email }, "OTP required");
+    if (result.kind === "otp") ok(res, { requiresOtp: true, email: result.email }, "Enter the 6-digit code sent to your email.");
     else if (result.kind === "activate") ok(res, { requiresActivation: true, email: result.email }, "Activation code sent");
     else ok(res, { requiresEmail: true, emailToken: result.emailToken }, "Add an email to continue");
   } catch (err) {
@@ -139,7 +140,7 @@ authRouter.post("/password-code", authenticate, async (req, res, next) => {
 authRouter.post("/forgot-password", validate({ body: forgotPasswordSchema }), async (req, res, next) => {
   try {
     const result = await requestOtp(req.body);
-    ok(res, result, "OTP sent");
+    ok(res, result, "Code sent");
   } catch (err) {
     next(err);
   }
@@ -148,8 +149,8 @@ authRouter.post("/forgot-password", validate({ body: forgotPasswordSchema }), as
 authRouter.post("/verify-otp", validate({ body: verifyOtpSchema }), async (req, res, next) => {
   try {
     const valid = await verifyOtp(req.body);
-    if (!valid) return fail(res, 400, "Invalid or expired OTP");
-    ok(res, { valid: true }, "OTP verified");
+    if (!valid) return fail(res, 400, "That code is wrong or has expired. Check the newest email, or send a new code.");
+    ok(res, { valid: true }, "Code accepted");
   } catch (err) {
     next(err);
   }
@@ -174,6 +175,18 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+/** A member deletes their own account (password + typing DELETE): a fresh start with the same Gmail is possible. */
+authRouter.delete("/account", authenticate, validate({ body: z.object({ password: z.string().min(1).max(128), confirm: z.literal("DELETE") }) }), async (req, res, next) => {
+  try {
+    if (req.user?.role !== "MEMBER") return fail(res, 403, "Only member accounts can be deleted here.");
+    const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { passwordHash: true } });
+    if (!me || !(await verifyPassword((req.body as { password: string }).password, me.passwordHash))) return fail(res, 400, "Wrong password.");
+    const why = await deleteMemberAccount(req.user.id, req.user.id);
+    if (why) return fail(res, 409, why);
+    ok(res, { deleted: true }, "Your account was deleted");
+  } catch (err) { next(err); }
 });
 
 authRouter.patch("/profile", authenticate, validate({ body: profileUpdateSchema }), async (req, res, next) => {

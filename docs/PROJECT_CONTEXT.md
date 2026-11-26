@@ -353,6 +353,15 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - docs/ISO25010-ALIGNMENT.md: ICT coordinator checklist mapping + the 45 ISO/IEC 25010 items with evidence, team estimate (3-4) and to-dos. First alignment step built: in-app Help (components/HelpGuide.tsx) in phone Settings > Help and staff Settings > Help.
 - Tests: backend 174 passed + 1 opt-in skipped (43 files), frontend 147 (33 files).
 
+## UI/UX polish, member self-delete, plain-language errors (2026-11-27)
+- Staff sign-in / setup / recover / forgot password (StaffAuthShell): the form side is a soft blue tint with the school seal faint behind the fields (like the phone sign-in), not plain white.
+- Forgot password (web/desktop + phone): Resend code and Change email side by side as small outlined buttons, bigger text, Back to Sign In right under. Alert (components/mobile/ui.tsx) now has an icon, roomier padding and always-wrapping text.
+- Welcome carousel (phone): Next is yellow with navy text (bg-accent / text-on-accent; was white with a token that turned light in dark mode = unreadable), bolder Skip/Previous, no moving text. Slides 2-6 show drawn scenes of the real screens (components/WelcomeScenes.tsx: search results, approved receipt, Library ID card, Visitor's Log, calendar + reminder); own pictures can still go in src/assets/welcome/1-6.webp.
+- Member deletes own account: phone Settings > Account > Delete my account (password + type DELETE) -> DELETE /auth/account (members only; same rules as the librarian's delete via shared deleteMemberAccount in users.routes.ts; audit user.selfDelete). The same Gmail can register again (test).
+- Plain-language messages: validation errors use the rule's own message or "Please check the <field> and try again." (friendlyZodMessage, tests/friendly-errors.test.ts); 401 "Please sign in to continue." / "Your sign-in has expired..."; no "OTP", "Idempotency-Key", "Resource", "Internal server error", "migrations", "HTTPS address" or "APK" in anything users read.
+- backend/.env.example lists COVER_DIR and UPLOAD_DIR. top-members.test.ts uses random names (the fixed test clock after PH midnight repeated Date.now()).
+- Tests: backend 176 passed + 1 opt-in skipped (44 files), frontend 147 (33 files).
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

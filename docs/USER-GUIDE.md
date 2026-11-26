@@ -92,3 +92,11 @@ someone else changed in the meantime are skipped and show the reason, so nothing
 Your **Library ID card** is enough: show it at the desk to borrow and return books, and scan it at the Visitor's
 Log kiosk (or type the Member ID on the card). Everything is recorded in the system the same way. Forgot your
 password? Use **Forgot password** in the app (needs your email) or ask the librarian.
+
+## Deleting an account (fresh start)
+
+- **Member:** phone app > Settings > **Delete my account**, type your password and DELETE. Your name, email, photo and
+  sign-in are removed; you can create a new account with the same email. Return borrowed books first.
+- **Librarian:** Members > View > **Delete this account** (type the Member ID). Borrowing history stays under the Member ID only.
+- **Help inside the apps:** phone Settings > Help, and staff Settings > Help.
+

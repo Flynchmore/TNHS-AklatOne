@@ -170,13 +170,13 @@ export async function verifyLoginOtp(username: string, otp: string): Promise<{ u
     throw Object.assign(new Error("Invalid credentials"), { status: 401 });
   }
   if (!user.otpCode || !user.otpExpiry) {
-    throw Object.assign(new Error("No OTP requested"), { status: 400 });
+    throw Object.assign(new Error("No code was sent yet. Ask for a new code."), { status: 400 });
   }
   if (!otpMatches(user.otpCode, otp)) {
-    throw Object.assign(new Error("Invalid OTP"), { status: 400 });
+    throw Object.assign(new Error("That code is wrong. Check the newest email, or send a new code."), { status: 400 });
   }
   if (new Date() > user.otpExpiry) {
-    throw Object.assign(new Error("OTP expired"), { status: 400 });
+    throw Object.assign(new Error("That code has expired. Send a new code."), { status: 400 });
   }
 
   // Clear OTP
@@ -285,9 +285,9 @@ export async function verifyOtp(input: { email: string; otp: string }): Promise<
 export async function resetPassword(input: { email: string; otp: string; newPassword: string }): Promise<AuthUser> {
   const user = await prisma.user.findFirst({ where: { email: input.email }, include: { role: true } });
   if (!user) throw Object.assign(new Error("User not found"), { status: 404 });
-  if (!user.otpCode || !user.otpExpiry) throw Object.assign(new Error("No OTP requested"), { status: 400 });
-  if (!otpMatches(user.otpCode, input.otp)) throw Object.assign(new Error("Invalid OTP"), { status: 400 });
-  if (new Date() > user.otpExpiry) throw Object.assign(new Error("OTP expired"), { status: 400 });
+  if (!user.otpCode || !user.otpExpiry) throw Object.assign(new Error("No code was sent yet. Ask for a new code."), { status: 400 });
+  if (!otpMatches(user.otpCode, input.otp)) throw Object.assign(new Error("That code is wrong. Check the newest email, or send a new code."), { status: 400 });
+  if (new Date() > user.otpExpiry) throw Object.assign(new Error("That code has expired. Send a new code."), { status: 400 });
 
   const passwordHash = await hashPassword(input.newPassword);
   const updated = await prisma.user.update({

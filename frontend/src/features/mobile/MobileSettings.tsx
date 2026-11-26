@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone, Backpack, FileWarning, HelpCircle } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Settings, Moon, Sun, KeyRound, ShieldCheck, FileText, Info, ChevronRight, Lock, Lightbulb, Newspaper, MonitorSmartphone, Backpack, FileWarning, HelpCircle, Trash2 } from "lucide-react";
 import { SignInSessions } from "../../components/SignInSessions";
 import { HelpGuide } from "../../components/HelpGuide";
 import { useAuth } from "../../features/auth/auth";
@@ -86,6 +86,7 @@ function SettingsHome() {
         <ul className={group}>
           <Row to="/m/settings/password" icon={KeyRound} label="Change password" hint="Update the password you sign in with" />
           <Row to="/m/settings/devices" icon={MonitorSmartphone} label="Sign-in devices" hint="See where your account is signed in" />
+          <Row to="/m/settings/delete" icon={Trash2} label="Delete my account" hint="Start fresh; your email can be used again" tone="bg-danger-soft text-danger" />
         </ul>
       </section>
       <section aria-labelledby="set-library">
@@ -106,6 +107,41 @@ function SettingsHome() {
           <Row to="/m/settings/about" icon={Info} label="About AklatOne" hint={`Version ${__APP_VERSION__}`} />
         </ul>
       </section>
+    </ScreenShell>
+  );
+}
+
+/** The member deletes their own account (fresh start): password + type DELETE. History stays under the Member ID. */
+function DeleteAccount() {
+  const auth = useAuth();
+  const toast = useToast();
+  const nav = useNavigate();
+  const [pw, setPw] = useState("");
+  const [typed, setTyped] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!pw) { setError("Type your password."); return; }
+    if (typed !== "DELETE") { setError("Type DELETE in capital letters to confirm."); return; }
+    setBusy(true);
+    const r = await mobileApi("/api/v1/auth/account", { method: "DELETE", token: auth.token, body: JSON.stringify({ password: pw, confirm: "DELETE" }) });
+    setBusy(false);
+    if (!r.ok) { setError(r.message ?? "Not deleted. Please try again."); return; }
+    auth.logout();
+    toast({ tone: "success", title: "Account deleted", message: "You can create a new account any time, even with the same email." });
+    nav("/m/login", { replace: true });
+  };
+  return (
+    <ScreenShell title="Delete my account" subtitle="Start fresh" back="/m/settings">
+      <form onSubmit={submit} noValidate className="bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4">
+        <Alert tone="warning">This removes your name, email, photo, Wishlist and sign-in. Your email and username can be used again to create a new account. Books you borrowed stay in the library's records under your Member ID only. Return any borrowed book first.</Alert>
+        {error && <Alert>{error}</Alert>}
+        <Field label="Your password" type="password" icon={<Lock size={18} />} autoComplete="current-password" value={pw} onChange={e => setPw(e.target.value)} />
+        <Field label="Type DELETE to confirm" autoCapitalize="characters" autoComplete="off" maxLength={6} value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} />
+        <button type="submit" disabled={busy || typed !== "DELETE" || !pw} className={`w-full min-h-12 rounded-2xl bg-danger text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] ${focusRing}`}>{busy ? <Spinner /> : <Trash2 size={18} aria-hidden="true" />}Delete my account</button>
+      </form>
     </ScreenShell>
   );
 }
@@ -279,6 +315,7 @@ export function MobileSettings() {
   if (page === "privacy") return <Privacy />;
   if (page === "terms") return <Terms />;
   if (page === "about") return <About />;
+  if (page === "delete") return <DeleteAccount />;
   if (page === "help") return <ScreenShell title="Help" subtitle="How to use AklatOne" back="/m/settings"><HelpGuide audience="member" /></ScreenShell>;
   return <SettingsHome />;
 }

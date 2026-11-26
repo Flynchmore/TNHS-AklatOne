@@ -15,7 +15,7 @@ const KEEP_DAYS = 30;
 export const idempotency: RequestHandler = async (req, res, next) => {
   const key = req.get("Idempotency-Key");
   if (!key || req.method === "GET") return next();
-  if (!KEY.test(key)) return fail(res, 400, "Invalid Idempotency-Key");
+  if (!KEY.test(key)) return fail(res, 400, "This change could not be sent. Please try again.");
   let userId: string;
   try {
     userId = verifyToken((req.get("Authorization") ?? "").replace(/^Bearer /, "")).id;
@@ -26,7 +26,7 @@ export const idempotency: RequestHandler = async (req, res, next) => {
   try {
     const prev = await prisma.idempotencyKey.findUnique({ where: { key } });
     if (prev) {
-      if (prev.userId !== userId || prev.method !== req.method || prev.path !== path) return fail(res, 422, "This Idempotency-Key was already used for a different request.");
+      if (prev.userId !== userId || prev.method !== req.method || prev.path !== path) return fail(res, 422, "This change was already sent in a different form. Refresh the page and try again.");
       res.setHeader("Idempotent-Replayed", "true");
       return res.status(prev.status).type("application/json").send(prev.body);
     }

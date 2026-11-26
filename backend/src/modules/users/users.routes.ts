@@ -182,7 +182,30 @@ usersRouter.patch("/:id", authenticate, requirePermission("users:write"), valida
   }
 });
 
-const DELETED_PREFIX = "deleted-member-";
+export const DELETED_PREFIX = "deleted-member-";
+
+/**
+ * Removes a member's personal data and frees the email and username (the person can sign up again with the same
+ * Gmail); borrowing history stays under the Member ID. Returns why it cannot be done, or null when done.
+ * Used by the librarian (DELETE /users/:id) and by the member (DELETE /auth/account).
+ */
+export async function deleteMemberAccount(memberId: string, actorId: string): Promise<string | null> {
+  const out = await prisma.borrowingTransaction.count({ where: { borrowerId: memberId, status: "ACTIVE" } });
+  if (out) return `There ${out === 1 ? "is" : "are"} still ${out} borrowed book(s). Return ${out === 1 ? "it" : "them"} first.`;
+  await prisma.$transaction(async (db) => {
+    await db.user.update({
+      where: { id: memberId },
+      data: {
+        username: `${DELETED_PREFIX}${new Date().toISOString().slice(0, 10)}-${memberId}`, email: null, displayName: "Deleted member",
+        avatarUrl: null, hobbies: null, gender: null, otpCode: null, otpExpiry: null, isActive: false, activationPending: false, sessionsRevokedAt: new Date(),
+      },
+    });
+    await db.borrowRequest.updateMany({ where: { memberId, status: "PENDING" }, data: { status: "CANCELLED" } });
+    await db.bookWatch.deleteMany({ where: { userId: memberId } });
+    await writeAuditTx(db, { actorId, action: actorId === memberId ? "user.selfDelete" : "user.delete", entityType: "User", entityId: memberId });
+  });
+  return null;
+}
 
 /**
  * Delete a member's account: the personal data is removed and the email and username become free again (the person
@@ -193,20 +216,8 @@ usersRouter.delete("/:id", authenticate, requirePermission("users:write"), valid
   try {
     const member = await findMember(req.params.id as string);
     if (!member || member.username.startsWith(DELETED_PREFIX)) return fail(res, 404, "Member not found");
-    const out = await prisma.borrowingTransaction.count({ where: { borrowerId: member.id, status: "ACTIVE" } });
-    if (out) return fail(res, 409, `This member still has ${out} borrowed book(s). Record the return first.`);
-    await prisma.$transaction(async (db) => {
-      await db.user.update({
-        where: { id: member.id },
-        data: {
-          username: `${DELETED_PREFIX}${new Date().toISOString().slice(0, 10)}-${member.id}`, email: null, displayName: "Deleted member",
-          avatarUrl: null, hobbies: null, gender: null, otpCode: null, otpExpiry: null, isActive: false, activationPending: false, sessionsRevokedAt: new Date(),
-        },
-      });
-      await db.borrowRequest.updateMany({ where: { memberId: member.id, status: "PENDING" }, data: { status: "CANCELLED" } });
-      await db.bookWatch.deleteMany({ where: { userId: member.id } });
-      await writeAuditTx(db, { actorId: req.user!.id, action: "user.delete", entityType: "User", entityId: member.id });
-    });
+    const why = await deleteMemberAccount(member.id, req.user!.id);
+    if (why) return fail(res, 409, why);
     ok(res, { deleted: true }, "Member account deleted");
   } catch (err) {
     next(err);
