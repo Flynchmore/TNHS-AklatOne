@@ -48,7 +48,8 @@ describe("Visitor's Log kiosk", () => {
     const today = (await request(app).get("/api/v1/visits/today").set(as(kiosk))).body.data.items.filter((v: { memberCode: string }) => v.memberCode === code);
     expect(today).toHaveLength(2);
     // The kiosk list carries no names.
-    expect(Object.keys(today[0]).sort()).toEqual(["id", "memberCode", "timeIn", "timeOut"]);
+    expect(Object.keys(today[0]).sort()).toEqual(["books", "id", "memberCode", "timeIn", "timeOut"]);
+    expect(today[0].books).toEqual([]); // titles of books borrowed today (none here)
     } finally { restoreClock(); }
   });
 
@@ -105,5 +106,21 @@ describe("Visitor's Log kiosk", () => {
     expect((await request(app).post("/api/v1/visits/phone").set(as(m.token)).send({ code: wrong[0] })).status).toBe(429);
     // Another member on the same Wi-Fi is not affected.
     expect((await request(app).post("/api/v1/visits/phone").set(as(other.token)).send({ code: wrong[0] })).status).toBe(400);
+  });
+});
+
+describe("Visitor's Log list: books borrowed today", () => {
+  it("shows the titles a visitor borrowed today next to the Member ID (no names)", async () => {
+    const restoreClock = avoidPhMidnight();
+    try {
+      const m = await newMember(app, `visit_book_${stamp}`);
+      const code = await codeOf(m.id);
+      const book = await request(app).post("/api/v1/catalog").set(as(admin)).send({ title: `Kiosk Book ${stamp}`, copies: 1 });
+      expect(book.status).toBe(201);
+      expect((await request(app).post("/api/v1/circulation/borrow").set(as(admin)).send({ memberCode: code, bookId: book.body.data.id })).status).toBe(201);
+      expect((await scan(code)).body.data.action).toBe("in");
+      const row = (await request(app).get("/api/v1/visits/today").set(as(kiosk))).body.data.items.find((v: { memberCode: string }) => v.memberCode === code);
+      expect(row.books).toEqual([`Kiosk Book ${stamp}`]);
+    } finally { restoreClock(); }
   });
 });

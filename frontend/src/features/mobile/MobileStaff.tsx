@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MEMBER_ID, formatMemberId } from "../../lib/memberId";
 import { BookUp, BookDown, BookPlus, LogOut, UserRound, ScanLine, CheckCircle2 } from "lucide-react";
 import { MobileAddBook } from "./MobileAddBook";
 import { useAuth } from "../auth/auth";
@@ -9,7 +10,6 @@ import { Alert, ScreenShell, SlidingTabs, Spinner, btnPrimary, btnSecondary, mob
 
 type Tab = "lend" | "return" | "add";
 interface Member { id: string; displayName: string | null; maskedId: string | null; memberType: string | null; gradeSection: string | null; department: string | null; isActive: boolean; activeLoans?: number }
-const MEMBER_ID = /^[A-Z]{2}\d{6}$/;
 const card = "bg-surface rounded-3xl shadow-sm border border-line p-5 space-y-4";
 
 /**
@@ -69,7 +69,7 @@ function Lend() {
       {!member ? (
         <>
           <h2 className="font-semibold text-primary-strong flex items-center gap-2"><UserRound size={18} aria-hidden="true" />1. Scan the Library ID card</h2>
-          <Scanner id="m-member" label="Member ID" placeholder="e.g. CA123456" autoFocus={false} onCode={findMember} />
+          <Scanner id="m-member" label="Member ID" placeholder="e.g. CA123456" format={formatMemberId} maxLength={8} autoFocus={false} onCode={findMember} />
         </>
       ) : (
         <>

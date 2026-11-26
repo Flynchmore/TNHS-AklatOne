@@ -14,7 +14,12 @@ let stopReminders = () => {};
 
 // The port is read back from the socket so nothing from the env object (which also holds secrets) is logged.
 const listeningPort = () => (server.address() as AddressInfo).port;
-const server = app.listen(env.PORT, () => {
+// Express 5 passes a listen error (e.g. the port is already used by another AklatOne API) to this callback.
+const server = app.listen(env.PORT, (err?: Error) => {
+  if (err) {
+    logger.fatal({ code: (err as Error & { code?: string }).code }, "AklatOne backend could not start: the port is already in use or not allowed");
+    process.exit(1);
+  }
   logger.info({ port: listeningPort() }, "AklatOne backend listening");
   stopBackups = startBackupSchedule();
   stopReminders = startReminderSchedule();

@@ -97,8 +97,16 @@ visitsRouter.post("/scan", authenticate, requirePermission(KIOSK_PERMISSION), va
 /** Today's visits for the kiosk screen: Member ID and times only. */
 visitsRouter.get("/today", authenticate, requirePermission(KIOSK_PERMISSION), async (_req, res, next) => {
   try {
-    const visits = await prisma.libraryVisit.findMany({ where: { day: phDay(new Date()) }, orderBy: { timeIn: "desc" }, take: 300, select: { id: true, timeIn: true, timeOut: true, member: { select: { maskedId: true } } } });
-    ok(res, { items: visits.map((v) => ({ id: v.id, memberCode: v.member.maskedId, timeIn: v.timeIn, timeOut: v.timeOut })) });
+    const day = phDay(new Date());
+    const visits = await prisma.libraryVisit.findMany({ where: { day }, orderBy: { timeIn: "desc" }, take: 300, select: { id: true, timeIn: true, timeOut: true, member: { select: { id: true, maskedId: true } } } });
+    // Books each visitor borrowed today (titles only, shown next to the Member ID so others see what is being read).
+    const lent = visits.length ? await prisma.borrowingTransaction.findMany({
+      where: { borrowerId: { in: [...new Set(visits.map((v) => v.member.id))] }, borrowedAt: { gte: new Date(`${day}T00:00:00+08:00`) } },
+      orderBy: { borrowedAt: "asc" }, select: { borrowerId: true, bookCopy: { select: { book: { select: { title: true } } } } },
+    }) : [];
+    const books = new Map<string, string[]>();
+    for (const t of lent) books.set(t.borrowerId, [...(books.get(t.borrowerId) ?? []), t.bookCopy.book.title]);
+    ok(res, { items: visits.map((v) => ({ id: v.id, memberCode: v.member.maskedId, timeIn: v.timeIn, timeOut: v.timeOut, books: books.get(v.member.id) ?? [] })) });
   } catch (err) { next(err); }
 });
 

@@ -188,3 +188,8 @@ html.ak-desktop body { padding-top: var(--ak-titlebar); }
   .ak-heart-dot { display: none; }
   .ak-toast-out { animation-duration: 1ms; }
 }
+
+/* Visitor's Log: bar under the phone QR empties in 30 s (the QR changes then). */
+@keyframes akCountdown { from { width: 100%; } to { width: 0%; } }
+.ak-countdown { animation: akCountdown 30s linear forwards; }
+@media (prefers-reduced-motion: reduce) { .ak-countdown { animation: none; } }

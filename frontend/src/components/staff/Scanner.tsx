@@ -9,7 +9,7 @@ import { nativeQr, scanQr } from "../../lib/phoneCamera";
  * be typed by hand, or the computer's camera reads a QR label. The same code is ignored for 2 seconds so one label
  * held in front of the camera counts once.
  */
-export function Scanner({ onCode, disabled = false, id = "scan-code", label: fieldLabel = "Copy code", placeholder = "e.g. NMT-001-01", autoFocus = true, inputMode }: { onCode: (code: string) => void; disabled?: boolean; id?: string; label?: string; placeholder?: string; autoFocus?: boolean; inputMode?: "numeric" }) {
+export function Scanner({ onCode, disabled = false, id = "scan-code", label: fieldLabel = "Copy code", placeholder = "e.g. NMT-001-01", autoFocus = true, inputMode, withCamera = true, format, maxLength = 100, hint = "(or type it / USB scanner, then Enter)", big = false }: { onCode: (code: string) => void; disabled?: boolean; id?: string; label?: string; placeholder?: string; autoFocus?: boolean; inputMode?: "numeric"; withCamera?: boolean; format?: (v: string) => string; maxLength?: number; hint?: string; big?: boolean }) {
   const [code, setCode] = useState("");
   const [camera, setCamera] = useState(false);
   const [camError, setCamError] = useState("");
@@ -76,14 +76,15 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
 
   return (
     <div className="space-y-3">
-      {/* Camera first (phone or computer camera, developer decision 2026-11-24); typing or a USB scanner second. */}
-      <button type="button" onClick={() => {
+      {/* Camera first (phone or computer camera, developer decision 2026-11-24); typing or a USB scanner second.
+          The Visitor's Log has no camera button (the librarian scans cards with the phone; a USB scanner types here). */}
+      {withCamera && <button type="button" onClick={() => {
         // Android app: Google's QR scanner screen (no HTTPS or web camera permission needed).
         if (nativeQr()) { setCamError(""); void scanQr().then(c => { if (c) emit(c); }, (e: Error) => setCamError(e.message)); return; }
         setCamera(c => !c);
       }} disabled={disabled} aria-pressed={camera} className={`${camera ? btn.secondary : btn.primary} w-full sm:w-auto`}>
         {camera ? <><CameraOff size={18} aria-hidden="true" />Stop camera</> : <><Camera size={18} aria-hidden="true" />Scan with camera</>}
-      </button>
+      </button>}
       {camError && <p role="alert" className="text-sm text-warning">{camError}</p>}
       {camera && (
         <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden bg-black">
@@ -94,13 +95,13 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
       {/* No <form> here: the scanner is often placed inside a dialog's form, and forms cannot be nested. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[14rem]">
-          <label htmlFor={id} className={label}>{fieldLabel} <span className="font-normal text-ink-muted">(or type it / USB scanner, then Enter)</span></label>
+          <label htmlFor={id} className={label}>{fieldLabel} {hint && <span className="font-normal text-ink-muted">{hint}</span>}</label>
           <div className="relative">
-            <ScanLine size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" aria-hidden="true" />
-            <input id={id} ref={field} value={code} onChange={e => setCode(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); record(); } }} disabled={disabled} autoFocus={autoFocus} autoComplete="off" spellCheck={false} inputMode={inputMode} placeholder={placeholder} className={`${input} pl-10 font-mono`} />
+            <ScanLine size={big ? 24 : 18} className={`absolute top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none ${big ? "left-4" : "left-3"}`} aria-hidden="true" />
+            <input id={id} ref={field} value={code} maxLength={maxLength} onChange={e => setCode(format ? format(e.target.value) : e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); record(); } }} disabled={disabled} autoFocus={autoFocus} autoComplete="off" spellCheck={false} inputMode={inputMode} placeholder={placeholder} className={`${input} font-mono ${big ? "!min-h-16 [@media(max-height:900px)]:!min-h-12 !text-2xl !rounded-2xl pl-14 tracking-[0.2em] uppercase" : "pl-10"}`} />
           </div>
         </div>
-        <button type="button" onClick={record} disabled={disabled || !code.trim()} className={btn.secondary}>Record</button>
+        <button type="button" onClick={record} disabled={disabled || !code.trim()} className={`${big ? btn.primary + " !min-h-16 [@media(max-height:900px)]:!min-h-12 !px-8 !text-lg" : btn.secondary}`}>Record</button>
       </div>
     </div>
   );

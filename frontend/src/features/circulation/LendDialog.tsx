@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MEMBER_ID, formatMemberId } from "../../lib/memberId";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookUp, UserRound, BookOpen, Search, AlertTriangle, CheckCircle2, Plus, X, WifiOff } from "lucide-react";
@@ -12,7 +13,6 @@ import { BookCover } from "../../components/mobile/ui";
 import { Badge, FormSection, StaffDialog, btn, btnSm, input, label } from "../../components/staff/ui";
 
 const LOAN_DAYS = 7; // shown only; the server sets the due date (backend/src/config/loanPolicy.ts)
-const MEMBER_ID = /^[A-Za-z]{2}\d{6}$/;
 
 interface Member { id: string; maskedId: string; displayName?: string | null; memberType?: string | null; gradeSection?: string | null; department?: string | null; activeLoans?: number; isActive: boolean }
 interface BookHit { id: string; title: string; authors?: string | null; isbn?: string | null; coverUrl?: string | null; serialNumber?: string | null; availability: { total: number; available: number } }
@@ -103,7 +103,7 @@ export function LendDialog({ open, onClose, onLent }: { open: boolean; onClose: 
             <button type="button" onClick={() => { setMemberCode(""); setMember(null); setPick(null); }} className={`${btn.ghost} ${btnSm}`} aria-label="Change member"><X size={14} aria-hidden="true" />Change</button>
           </div>
         ) : (
-          <Scanner id="lend-member" label="Member ID" placeholder="e.g. CA123456" onCode={findMember} />
+          <Scanner id="lend-member" label="Member ID" placeholder="e.g. CA123456" format={formatMemberId} maxLength={8} onCode={findMember} />
         )}
         {memberError && <p role="alert" className="flex gap-2 text-sm font-semibold text-danger"><AlertTriangle size={16} className="shrink-0" aria-hidden="true" />{memberError}</p>}
       </FormSection>
