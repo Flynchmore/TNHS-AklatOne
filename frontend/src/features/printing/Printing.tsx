@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, Library, BookUp, AlertTriangle, Users, PenLine, RotateCcw, QrCode, Search, IdCard, Smartphone, BookOpen, Send, CalendarClock, DoorOpen, Heart, type LucideIcon } from "lucide-react";
+import { Printer, Library, Trophy, BookUp, AlertTriangle, Users, PenLine, RotateCcw, QrCode, Search, IdCard, Smartphone, BookOpen, Send, CalendarClock, DoorOpen, Heart, type LucideIcon } from "lucide-react";
 import QRCode from "qrcode";
 import { apiFetch, apiUrl } from "../../lib/api";
 import { useAuth } from "../auth/auth";
@@ -13,7 +13,9 @@ import { CutLine, LibraryCard, type CardMember } from "../../components/LibraryC
 import { maskEmail } from "../../lib/privacy";
 import { PAPERS, PagedGrid, PagedTable, Pager, SinglePage, paperSize, usePageRule, usePaper, type PaperKey } from "./paper";
 
-type Kind = "inventory" | "borrowed" | "overdue" | "members" | "labels" | "cards" | "app";
+type Kind = "inventory" | "borrowed" | "overdue" | "members" | "top" | "labels" | "cards" | "app";
+type Period = "day" | "week" | "month";
+const PERIOD: Record<Period, string> = { day: "Today", week: "This school week", month: "This month" };
 interface AppLinks { android: string; ios: string }
 type Poster = { android: string; ios: string; androidSvg: string; iosSvg: string };
 interface Label { code: string; title: string; sub: string; svg: string }
@@ -45,7 +47,7 @@ async function all<T>(path: string, token: string | null): Promise<T[]> {
   return out;
 }
 
-const SHEETS: Record<Kind, { title: string; paper: string; hint: string; icon: LucideIcon; load: (token: string | null, cardOf?: string | null, links?: AppLinks) => Promise<Sheet> }> = {
+const SHEETS: Record<Kind, { title: string; paper: string; hint: string; icon: LucideIcon; load: (token: string | null, cardOf?: string | null, links?: AppLinks, period?: Period) => Promise<Sheet> }> = {
   inventory: {
     title: "Book inventory", paper: "Book inventory of AklatOne System", hint: "Every title with its copies", icon: Library,
     load: async (t) => {
@@ -98,6 +100,15 @@ const SHEETS: Record<Kind, { title: string; paper: string; hint: string; icon: L
       poster: { ...links, androidSvg: await qrSvg(links.android), iosSvg: await qrSvg(links.ios) },
     }),
   },
+  top: {
+    title: "Top active members", paper: "Top active members of AklatOne System", hint: "Most active today, this week or month", icon: Trophy,
+    load: async (t, _c, _l, period = "week") => {
+      const r = await apiFetch(`/api/v1/reports/top-members?period=${period}&limit=50`, { token: t });
+      if (!r.ok) throw new Error(r.message);
+      const d = r.data as { from: string; to: string; items: { maskedId: string | null; memberType: string | null; group: string | null; borrows: number; reviews: number; visits: number; score: number; books: string[] }[] };
+      return { columns: ["#", "Member ID", "Grade & section / Department", "Borrowed", "Reviews", "Visits", "Points", "Books borrowed"], rows: d.items.map((m, i) => [i + 1, m.maskedId ?? "—", m.group ?? m.memberType ?? "—", m.borrows, m.reviews, m.visits, m.score, m.books.join("; ") || "—"]) };
+    },
+  },
   members: {
     title: "Member list", paper: "Member list of AklatOne System", hint: "Active students and teachers", icon: Users,
     load: async (t) => {
@@ -135,10 +146,11 @@ export function Printing() {
   const [sigs, setSigs] = useState<Signatories>(() => loadSignatories("inventory"));
   const [editing, setEditing] = useState(false);
   const kinds = (Object.keys(SHEETS) as Kind[]).filter(k => (k !== "members" && k !== "cards") || hasPerm("users:read"));
+  const [period, setPeriod] = useState<Period>("week");
   const reprint = kind === "cards" ? cardOf : null;
   const [appLinks, setAppLinks] = useState<AppLinks>(loadAppLinks);
   const saveAppLinks = (v: AppLinks) => { setAppLinks(v); try { localStorage.setItem(APP_KEY, JSON.stringify(v)); } catch { /* private mode */ } };
-  const sheet = useQuery({ queryKey: ["print", kind, reprint, kind === "app" ? appLinks : null], queryFn: () => SHEETS[kind].load(token, reprint, appLinks), enabled: !!token });
+  const sheet = useQuery({ queryKey: ["print", kind, reprint, kind === "app" ? appLinks : null, kind === "top" ? period : null], queryFn: () => SHEETS[kind].load(token, reprint, appLinks, period), enabled: !!token });
   const s = SHEETS[kind];
   const pick = (k: Kind) => { setKind(k); setPage(0); setSigs(loadSignatories(k)); if (cardOf) setParams({}, { replace: true }); };
   const cards = sheet.data?.cards;
@@ -190,7 +202,7 @@ export function Printing() {
             <button type="button" onClick={() => setEditing(true)} className={btn.secondary}><PenLine size={16} aria-hidden="true" />Edit names &amp; signatures</button>
             <button type="button" onClick={print} disabled={!sheet.data} className={btn.primary}><Printer size={18} aria-hidden="true" />Print</button>
           </>} />
-        <div role="radiogroup" aria-label="List to print" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+        <div role="radiogroup" aria-label="List to print" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {kinds.map(k => {
             const o = SHEETS[k];
             const on = k === kind;
@@ -240,6 +252,13 @@ export function Printing() {
             </select>
           </label>
         )}
+        {kind === "top" && (
+          <label className="flex items-center gap-2 text-sm font-semibold text-ink">Period
+            <select value={period} onChange={e => { setPeriod(e.target.value as Period); setPage(0); }} className={`${input} ak-select !w-auto !min-h-10`}>
+              {(Object.keys(PERIOD) as Period[]).map(p => <option key={p} value={p}>{PERIOD[p]}</option>)}
+            </select>
+          </label>
+        )}
         <div className="ml-auto"><Pager page={page} total={pages} onPage={setPage} /></div>
         {cards && <p className="w-full text-sm text-ink-muted">{reprint ? "Reprint of one member's card." : `Cards of new members${(sheet.data?.cardsWaiting ?? 0) > cards.length ? ` (${cards.length} of ${sheet.data!.cardsWaiting} waiting; the next batch shows after these are marked as printed)` : ""}. Cut along the dashed lines; laminate them so they last.`}</p>}
       </div>
@@ -273,7 +292,7 @@ export function Printing() {
             </SinglePage>
           )
           : sheet.data ? (
-            <PagedTable size={size} title={s.paper} columns={sheet.data.columns} rows={sheet.data.rows} page={page} onPages={onPages} note={`${count} row(s)`}
+            <PagedTable size={size} title={kind === "top" ? `${s.paper} · ${PERIOD[period]}` : s.paper} columns={sheet.data.columns} rows={sheet.data.rows} page={page} onPages={onPages} note={`${count} row(s)`}
               footer={<div className="grid grid-cols-2 gap-10 break-inside-avoid" style={{ paddingTop: "12mm" }}>{signer(sigs.preparedLabel, sigs.preparedName, sigs.preparedTitle)}{signer(sigs.notedLabel, sigs.notedName, sigs.notedTitle)}</div>} />
           ) : null}
       </div>

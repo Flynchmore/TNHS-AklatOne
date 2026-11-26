@@ -151,6 +151,7 @@ export const openApiSpec = {
     "/reports/circulation": { get: auth("/reports", "Borrowing records in a date range", "reports:read") },
     "/reports/popular-books": { get: auth("/reports", "Most borrowed books", "reports:read") },
     "/reports/overdue": { get: auth("/reports", "Overdue borrowed books", "reports:read") },
+    "/reports/top-members": { get: auth("/reports", "Most active members today / this week / this month (?period=day|week|month): Member ID, photo, grade-section, borrows, reviews, visits") },
     "/reports/this-week": { get: auth("/reports", "Books used this school week (Monday-Friday, PH time; ?day= any day of the week): borrowed/returned/visits per day, titles", "reports:read") },
     "/reports/export.xlsx": { get: auth("/reports", "All report lists as one Excel file (from, to)", "reports:read") },
 

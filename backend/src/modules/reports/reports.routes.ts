@@ -1,3 +1,4 @@
+import { topMembers } from "./topMembers.js";
 import { Router } from "express";
 import { prisma } from "../../config/prisma.js";
 import { ok } from "../../common/response.js";
@@ -106,7 +107,7 @@ reportsRouter.get("/this-week", authenticate, requirePermission("reports:read"),
     const days = schoolWeek(day);
     const start = new Date(`${days[0]}T00:00:00+08:00`), end = new Date(`${days[4]}T23:59:59.999+08:00`);
     const [lent, returned, visits] = await Promise.all([
-      prisma.borrowingTransaction.findMany({ where: { borrowedAt: { gte: start, lte: end }, status: { not: "CANCELLED" } }, select: { borrowedAt: true, borrowerId: true, bookCopy: { select: { book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } } } }),
+      prisma.borrowingTransaction.findMany({ where: { borrowedAt: { gte: start, lte: end }, status: { not: "CANCELLED" } }, orderBy: { borrowedAt: "asc" }, select: { borrowedAt: true, borrowerId: true, borrower: { select: { maskedId: true, memberType: true, gradeSection: true, department: true } }, bookCopy: { select: { barcode: true, book: { select: { id: true, title: true, authors: true, isbn: true, coverUrl: true } } } } } }),
       prisma.borrowingTransaction.findMany({ where: { returnedAt: { gte: start, lte: end } }, select: { returnedAt: true } }),
       prisma.libraryVisit.findMany({ where: { day: { in: days } }, select: { day: true, memberId: true } }),
     ]);
@@ -119,7 +120,17 @@ reportsRouter.get("/this-week", authenticate, requirePermission("reports:read"),
       days: days.map((d) => ({ day: d, borrowed: lentBy.get(d) ?? 0, returned: backBy.get(d) ?? 0, visits: visitBy.get(d) ?? 0 })),
       totals: { borrowed: lent.length, returned: returned.length, titles: titles.size, borrowers: new Set(lent.map((l) => l.borrowerId)).size, visits: visits.length, visitors: new Set(visits.map((v) => v.memberId)).size },
       books: [...titles.values()].sort((a, b) => b.times - a.times || a.title.localeCompare(b.title)).slice(0, 20),
+      // Who borrowed what, Monday to Friday (by Member ID, no names).
+      loans: lent.map((l) => ({ at: l.borrowedAt, day: phDate(l.borrowedAt), memberId: l.borrower.maskedId, group: (l.borrower.memberType === "Teacher" ? l.borrower.department : l.borrower.gradeSection) ?? null, title: l.bookCopy.book.title, copy: l.bookCopy.barcode })),
     });
+  } catch (err) { next(err); }
+});
+
+/** Most active members today, this school week or this month (Member ID, photo and grade-section only). */
+reportsRouter.get("/top-members", authenticate, requirePermission("reports:read"), async (req, res, next) => {
+  try {
+    const period = req.query.period === "day" || req.query.period === "month" ? req.query.period : "week";
+    ok(res, { period, ...(await topMembers(period, Math.min(Number(req.query.limit) || 10, 50))) });
   } catch (err) { next(err); }
 });
 

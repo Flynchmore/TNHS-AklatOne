@@ -31,6 +31,31 @@ fn open_in_browser(url: &str) {
   let _ = std::process::Command::new("xdg-open").arg(url).spawn();
 }
 
+/// A free file name in `dir`: "report.xlsx", then "report (1).xlsx", "report (2).xlsx", ...
+fn free_name(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+  let path = std::path::Path::new(name);
+  let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("download");
+  let ext = path.extension().and_then(|s| s.to_str()).map(|e| format!(".{e}")).unwrap_or_default();
+  let mut candidate = dir.join(format!("{stem}{ext}"));
+  let mut n = 1;
+  while candidate.exists() {
+    candidate = dir.join(format!("{stem} ({n}){ext}"));
+    n += 1;
+  }
+  candidate
+}
+
+/// Saves an exported file (Excel report, catalog, template, backup) straight into the computer's Downloads folder and
+/// returns where it went. Only the file name part of `name` is used, so nothing can be written outside Downloads.
+#[tauri::command]
+fn save_to_downloads(app: tauri::AppHandle, name: String, data: Vec<u8>) -> Result<String, String> {
+  let dir = app.path().download_dir().map_err(|e| e.to_string())?;
+  let file = std::path::Path::new(&name).file_name().and_then(|s| s.to_str()).filter(|s| !s.is_empty()).unwrap_or("download");
+  let target = free_name(&dir, file);
+  std::fs::write(&target, data).map_err(|e| e.to_string())?;
+  Ok(target.to_string_lossy().into_owned())
+}
+
 #[tauri::command]
 fn secret_get(key: String) -> Result<Option<String>, String> {
   match entry(&key)?.get_password() {
@@ -56,7 +81,7 @@ fn secret_delete(key: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![secret_get, secret_set, secret_delete])
+    .invoke_handler(tauri::generate_handler![secret_get, secret_set, secret_delete, save_to_downloads])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -105,6 +130,16 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn downloads_never_overwrite_a_file() {
+    let dir = std::env::temp_dir().join(format!("aklatone-dl-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    assert_eq!(free_name(&dir, "report.xlsx"), dir.join("report.xlsx"));
+    std::fs::write(dir.join("report.xlsx"), b"x").unwrap();
+    assert_eq!(free_name(&dir, "report.xlsx"), dir.join("report (1).xlsx"));
+    std::fs::remove_dir_all(&dir).unwrap();
+  }
 
   #[test]
   fn only_the_newspaper_pages_open_outside() {

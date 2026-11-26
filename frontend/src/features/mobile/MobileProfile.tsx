@@ -11,6 +11,7 @@ import {
 import { Alert, Field, ListState, MemberTypePicker, ScreenShell, SlidingTabs, Spinner, btnPrimary, btnSecondary, focusRing, mobileApi, useSlideDirection, type MemberType, type TabDef } from "../../components/mobile/ui";
 import { PhotoCropper } from "../../components/mobile/PhotoCropper";
 import { SplineArea } from "../../components/SplineArea";
+import { ColumnChart, DonutChart, TONE } from "../../components/Charts";
 import { fmtDuration, lastDays, readUsage } from "../../components/mobile/screenTime";
 import { phISODate } from "../../lib/dates";
 import { GRADE_SECTION, GRADE_SECTION_ERROR, GRADE_SECTION_HINT, formatGradeSection } from "../../lib/gradeSection";
@@ -423,7 +424,7 @@ function StatsPanel({ txs, loading, userId, now }: { txs: Tx[]; loading: boolean
             {time.loans.borrowedNow.map(b => <li key={b.title} className="flex justify-between gap-2 text-sm rounded-xl bg-page px-3 py-2"><span className="truncate text-ink">{b.title}</span><span className="font-semibold text-ink shrink-0">{b.days === 0 ? "since today" : `${b.days} day${b.days === 1 ? "" : "s"} so far`}</span></li>)}
           </ul>
         )}
-        <SplineArea title="Books borrowed per month" height={170} points={months} />
+        <ColumnChart title="Books borrowed per month" height={150} labels={months.slice(-6).map(m => m.label)} series={[{ name: "Books", values: months.slice(-6).map(m => m.value), color: TONE.blue }]} />
       </section>
 
       <section aria-labelledby="st-return" className={card}>
@@ -431,6 +432,7 @@ function StatsPanel({ txs, loading, userId, now }: { txs: Tx[]; loading: boolean
           <h2 id="st-return" className="font-semibold text-primary-strong flex items-center gap-2"><BookCheck size={18} aria-hidden="true" />Return record</h2>
           {ret.total > 0 && <span className="text-xs font-semibold text-ink">{Math.round((ret.onTime / ret.total) * 100)}% on time</span>}
         </div>
+        {ret.total > 0 && <DonutChart title="How your books came back" centerLabel="returned" data={[{ label: "Returned on time", value: ret.onTime, color: TONE.green }, { label: "Returned late", value: ret.late, color: TONE.amber }, { label: "Came back torn", value: ret.torn, color: TONE.red }, { label: "Lost", value: ret.missing, color: TONE.gray }]} />}
         {ret.total === 0 ? <p className="text-sm text-ink-muted">No returned books yet.</p> : (
           <ul className="space-y-2.5">
             {rows.map(r => (

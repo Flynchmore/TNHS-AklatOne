@@ -74,7 +74,7 @@ export function Inventory() {
 
   const exportExcel = async () => {
     if (!shownId) return;
-    try { await downloadXlsx(token, `/api/v1/inventory/audits/${shownId}/export.xlsx`, "aklatone-inventory.xlsx"); toast({ tone: "success", title: "Report exported", message: "Not found, records to check and scanned copies are in the Excel file." }); }
+    try { const where = await downloadXlsx(token, `/api/v1/inventory/audits/${shownId}/export.xlsx`, "aklatone-inventory.xlsx"); toast({ tone: "success", title: "Report exported", message: `Saved to ${where}. ` + "Not found, records to check and scanned copies are in the Excel file." }); }
     catch (e) { toast({ tone: "error", title: "Export failed", message: (e as Error).message }); }
   };
 
@@ -85,7 +85,7 @@ export function Inventory() {
     <div className="space-y-6">
       <PageHeader icon={ClipboardCheck} title="Inventory audit" subtitle="Scan every copy on the shelves; AklatOne lists the copies that were not found."
         actions={<>
-          {r && <button type="button" onClick={exportExcel} disabled={!online} className={btn.secondary}><FileDown size={18} aria-hidden="true" />Export Excel</button>}
+          {r && <button type="button" onClick={exportExcel} disabled={!online} className={btn.success}><FileDown size={18} aria-hidden="true" />Export Excel</button>}
           {canWrite && !open && <button type="button" onClick={() => setStarting(true)} disabled={!online} className={btn.success}><PlayCircle size={18} aria-hidden="true" />Start audit</button>}
           {canWrite && isOpen && <button type="button" onClick={() => setClosing(true)} disabled={!online} className={btn.primary}><Lock size={18} aria-hidden="true" />Close audit</button>}
         </>} />

@@ -50,8 +50,8 @@ export function BackupPanel() {
       const res = await fetch(apiUrl("/api/v1/backup/download"), { method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: myPw, ...(backupPw ? { password: backupPw } : {}) }) });
       if (!res.ok) throw new Error(await errorOf(res));
       const name = fileNameOf(res, "aklatone-backup.sql.gz");
-      saveBlob(await res.blob(), name);
-      toast({ tone: "success", title: "Backup downloaded", message: backupPw ? `${name} is protected; keep the backup password safe, it cannot be recovered.` : `${name}. Keep it somewhere safe: it contains members' personal data.` });
+      const where = await saveBlob(await res.blob(), name);
+      toast({ tone: "success", title: "Backup downloaded", message: backupPw ? `Saved to ${where}. ${name} is protected; keep the backup password safe, it cannot be recovered.` : `Saved to ${where}. Keep it somewhere safe: it contains members' personal data.` });
       setBackupPw(""); setBackupPw2("");
     } catch (e) {
       toast({ tone: "error", title: "Backup failed", message: (e as Error).message });
@@ -78,8 +78,8 @@ export function BackupPanel() {
     if (!myPw) { toast({ tone: "error", title: "Enter your password", message: "Type your password at the top of this panel first." }); return; }
     const res = await fetch(apiUrl(`/api/v1/backup/files/${encodeURIComponent(b.name)}/download`), { method: "POST", headers: { ...auth, "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: myPw }) });
     if (!res.ok) { toast({ tone: "error", title: "Download failed", message: await errorOf(res) }); return; }
-    saveBlob(await res.blob(), b.name);
-    toast({ tone: "success", title: "Backup downloaded", message: b.name });
+    const where = await saveBlob(await res.blob(), b.name);
+    toast({ tone: "success", title: "Backup downloaded", message: `Saved to ${where}.` });
   };
 
   const disabled = !online;

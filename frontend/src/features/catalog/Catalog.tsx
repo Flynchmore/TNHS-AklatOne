@@ -97,7 +97,7 @@ export function Catalog() {
     refreshAll();
   };
   const exportExcel = async () => {
-    try { await downloadXlsx(token, "/api/v1/catalog/export.xlsx", "aklatone-books.xlsx"); toast({ tone: "success", title: "Catalog exported", message: "The Excel file was downloaded." }); }
+    try { const where = await downloadXlsx(token, "/api/v1/catalog/export.xlsx", "aklatone-books.xlsx"); toast({ tone: "success", title: "Catalog exported", message: `Saved to ${where}.` }); }
     catch (e) { toast({ tone: "error", title: "Export failed", message: (e as Error).message }); }
   };
 
@@ -110,8 +110,8 @@ export function Catalog() {
         actions={<>
           <RefreshButton what="books" onRefresh={async () => { const r = await refetch(); copies.refetch(); return { isError: r.isError, data: r.data?.items }; }} />
           {hasPerm("copies:read") && <Link to="/inventory" className={btn.secondary}><ClipboardCheck size={18} aria-hidden="true" />Inventory audit</Link>}
-          {canWrite && <button type="button" onClick={exportExcel} disabled={!online} title={online ? undefined : "Needs a connection to the server"} className={btn.secondary}><FileDown size={18} aria-hidden="true" />Export Excel</button>}
-          {canWrite && <button type="button" onClick={() => setImporting(true)} disabled={!online} title={online ? undefined : "Needs a connection to the server"} className={btn.secondary}><FileSpreadsheet size={18} aria-hidden="true" />Import Excel</button>}
+          {canWrite && <button type="button" onClick={exportExcel} disabled={!online} title={online ? undefined : "Needs a connection to the server"} className={btn.success}><FileDown size={18} aria-hidden="true" />Export Excel</button>}
+          {canWrite && <button type="button" onClick={() => setImporting(true)} disabled={!online} title={online ? undefined : "Needs a connection to the server"} className={`${btn.secondary} !border-success/50 !text-success hover:!bg-success-soft`}><FileSpreadsheet size={18} aria-hidden="true" />Import Excel</button>}
           {canWrite && <button type="button" onClick={() => setEditing("new")} className={btn.success}><Plus size={18} aria-hidden="true" />Add book</button>}
         </>}
       />

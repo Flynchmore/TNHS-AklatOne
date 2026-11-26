@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { FileSpreadsheet, Upload, AlertTriangle, EyeOff, PlusCircle, PencilLine, XCircle, Info } from "lucide-react";
+import { FileSpreadsheet, Upload, AlertTriangle, EyeOff, PlusCircle, PencilLine, XCircle, Info, FileDown } from "lucide-react";
 import { apiFetch, apiUrl } from "../../lib/api";
 import { downloadXlsx, errorOf } from "../../lib/download";
 import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
-import { Badge, FormSection, Segmented, StaffDialog, btn, input, label, table } from "../../components/staff/ui";
+import { Badge, FormSection, Segmented, StaffDialog, btn, btnSm, input, label, table } from "../../components/staff/ui";
 
 interface Preview {
   token: string; rows: number; unchanged: number; ignoredColumns: string[];
@@ -56,7 +56,7 @@ export function ImportDialog({ open, onClose, onDone }: { open: boolean; onClose
   };
 
   const template = async () => {
-    try { await downloadXlsx(token, "/api/v1/catalog/import-template.xlsx", "aklatone-books-template.xlsx"); }
+    try { const where = await downloadXlsx(token, "/api/v1/catalog/import-template.xlsx", "aklatone-books-template.xlsx"); toast({ tone: "success", title: "Template saved", message: `Saved to ${where}. Fill in the rows (the columns are ready), then import it here.` }); }
     catch (e) { toast({ tone: "error", title: "Download failed", message: (e as Error).message }); }
   };
 
@@ -70,7 +70,8 @@ export function ImportDialog({ open, onClose, onDone }: { open: boolean; onClose
           : <button type="submit" disabled={busy || !file} className={btn.primary}>{busy ? "Checking…" : "Check file"}</button>}
       </>}>
       <FormSection title="1. Choose the file" icon={Upload}>
-        <p className="text-sm text-ink-muted">Columns: Title (required), Author, ISBN, Serial No., Publisher, Year, Subject, Wattpad, Genre, Description, Copies, Hidden. Other columns are ignored. <button type="button" onClick={template} className="text-primary font-semibold underline">Download the template</button></p>
+        <p className="text-sm text-ink-muted">Columns: Title (required), Author, ISBN, Serial No., Publisher, Year, Subject, Wattpad, Genre, Description, Copies, Hidden. Other columns are ignored.</p>
+        <button type="button" onClick={template} className={`${btn.success} ${btnSm}`}><FileDown size={14} aria-hidden="true" />Download the Excel template (.xlsx)</button>
         <div>
           <label htmlFor="import-file" className={label}>Excel file (.xlsx, up to 10 MB)</label>
           <input id="import-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={e => { setFile(e.target.files?.[0] ?? null); setPreview(null); }} className={`${input} file:mr-3 file:rounded-xl file:border-0 file:bg-primary-soft file:px-3 file:py-1.5 file:text-primary file:font-semibold`} />
