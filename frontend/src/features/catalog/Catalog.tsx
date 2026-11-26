@@ -10,7 +10,7 @@ import { Stars } from "../../components/Stars";
 import { RefreshButton } from "../../components/RefreshButton";
 import { Badge, EmptyState, FormSection, PageHeader, Skeleton, StaffDialog, btn, btnSm, card, input, label, table, select, SearchField } from "../../components/staff/ui";
 import { CopiesDialog } from "./CopiesDialog";
-import { BookCover } from "../../components/mobile/ui";
+import { Alert, BookCover } from "../../components/mobile/ui";
 import { queuedToast, useOnline } from "../../lib/offline";
 import { ImportDialog } from "./ImportDialog";
 import { downloadXlsx } from "../../lib/download";
@@ -284,7 +284,7 @@ function BookDialog({ book, onClose, onSaved, newTitle = "" }: { book: Book | "n
         <button type="submit" disabled={saving} className={btn.primary}>{saving ? "Saving…" : isNew ? "Add book" : "Save changes"}</button>
       </>}
     >
-      {error && <p role="alert" className="text-sm text-danger bg-danger-soft border border-danger/30 rounded-2xl p-3">{error}</p>}
+      {error && <Alert>{error}</Alert>}
       <FormSection title="Book information" icon={Info}>
         {field("Title *", "title", { required: true, maxLength: 255 })}
         <div className="grid sm:grid-cols-2 gap-4">

@@ -1,3 +1,4 @@
+import { purgeUser } from "../../common/purgeUser.js";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../config/prisma.js";
@@ -70,10 +71,8 @@ setupRouter.post("/recover", validate({ body: recoverSchema }), async (req, res,
       if (!roleId) throw Object.assign(new Error("LIBRARIAN role is missing. Run the database seed first."), { status: 500 });
       if (!(await recoveryKeyMatches(db, recoveryKey))) throw Object.assign(new Error("That recovery key is not valid."), { status: 400 });
       const old = await db.user.findMany({ where: { roleId, isActive: true }, select: { id: true, email: true, displayName: true } });
-      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      for (const o of old) {
-        await db.user.update({ where: { id: o.id }, data: { isActive: false, sessionsRevokedAt: new Date(), email: null, username: `replaced-librarian-${stamp}-${o.id}` } });
-      }
+      // The replaced librarian account is deleted for good (fresh start: its email can make a new account).
+      for (const o of old) await purgeUser(db, o.id);
       if (await db.user.findFirst({ where: { OR: [{ email }, { username: email }] } })) throw Object.assign(new Error("An account with this email already exists. Use another email."), { status: 409 });
       const u = await db.user.create({ data: { username: email, email, displayName: name, position, department, passwordHash, roleId } });
       await writeAuditTx(db, { actorId: u.id, action: "setup.recover", entityType: "User", entityId: u.id, metadata: { replaced: old.map((o) => o.id) } });

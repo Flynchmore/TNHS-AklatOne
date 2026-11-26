@@ -12,6 +12,7 @@ import { isStrongPassword } from "../../common/passwordStrength.js";
 import { sendWelcomeEmail } from "../../common/email.js";
 import { hashPassword } from "../auth/auth.service.js";
 import { pickMemberId } from "./memberId.js";
+import { FORMER_USERNAME, purgeUser, removeUserFiles } from "../../common/purgeUser.js";
 import { gradeSectionField } from "../../common/gradeSection.js";
 
 export const usersRouter = Router();
@@ -71,7 +72,7 @@ usersRouter.get("/", authenticate, requirePermission("users:read"), async (req, 
       role: { name: "MEMBER" },
       // Self-registered accounts appear once they are activated by their emailed code; deleted accounts never come back.
       activationPending: false,
-      NOT: { username: { startsWith: DELETED_PREFIX } },
+      NOT: { username: FORMER_USERNAME },
       ...(type ? { memberType: type } : {}),
       ...(status !== undefined ? { isActive: status } : {}),
       ...(q ? { OR: [{ username: { contains: q } }, { displayName: { contains: q } }, { email: { contains: q } }, { gradeSection: { contains: q } }, { maskedId: { contains: q } }] } : {}),
@@ -182,40 +183,31 @@ usersRouter.patch("/:id", authenticate, requirePermission("users:write"), valida
   }
 });
 
-export const DELETED_PREFIX = "deleted-member-";
-
 /**
- * Removes a member's personal data and frees the email and username (the person can sign up again with the same
- * Gmail); borrowing history stays under the Member ID. Returns why it cannot be done, or null when done.
+ * Deletes a member's account for good: the user row and everything personal are removed from the database, so the
+ * email and username are completely free for a fresh account. Borrowing records and visits stay (counted under a
+ * shared "Former member"). Returns why it cannot be done, or null when done.
  * Used by the librarian (DELETE /users/:id) and by the member (DELETE /auth/account).
  */
 export async function deleteMemberAccount(memberId: string, actorId: string): Promise<string | null> {
   const out = await prisma.borrowingTransaction.count({ where: { borrowerId: memberId, status: "ACTIVE" } });
   if (out) return `There ${out === 1 ? "is" : "are"} still ${out} borrowed book(s). Return ${out === 1 ? "it" : "them"} first.`;
-  await prisma.$transaction(async (db) => {
-    await db.user.update({
-      where: { id: memberId },
-      data: {
-        username: `${DELETED_PREFIX}${new Date().toISOString().slice(0, 10)}-${memberId}`, email: null, displayName: "Deleted member",
-        avatarUrl: null, hobbies: null, gender: null, otpCode: null, otpExpiry: null, isActive: false, activationPending: false, sessionsRevokedAt: new Date(),
-      },
-    });
+  const member = await prisma.user.findUnique({ where: { id: memberId }, select: { maskedId: true } });
+  const files = await prisma.$transaction(async (db) => {
     await db.borrowRequest.updateMany({ where: { memberId, status: "PENDING" }, data: { status: "CANCELLED" } });
-    await db.bookWatch.deleteMany({ where: { userId: memberId } });
-    await writeAuditTx(db, { actorId, action: actorId === memberId ? "user.selfDelete" : "user.delete", entityType: "User", entityId: memberId });
+    const stored = await purgeUser(db, memberId);
+    // The audit entry keeps only the Member ID (no name or email), so the deletion itself is still traceable.
+    await writeAuditTx(db, { actorId: actorId === memberId ? null : actorId, action: actorId === memberId ? "user.selfDelete" : "user.delete", entityType: "User", entityId: memberId, metadata: { memberId: member?.maskedId ?? null } });
+    return stored;
   });
+  await removeUserFiles(files);
   return null;
 }
 
-/**
- * Delete a member's account: the personal data is removed and the email and username become free again (the person
- * can sign up again with the same Gmail). Borrowing history stays, counted under the old Member ID only.
- * Not while the member still has borrowed books.
- */
 usersRouter.delete("/:id", authenticate, requirePermission("users:write"), validate({ params: idParamSchema }), async (req, res, next) => {
   try {
     const member = await findMember(req.params.id as string);
-    if (!member || member.username.startsWith(DELETED_PREFIX)) return fail(res, 404, "Member not found");
+    if (!member || member.username === FORMER_USERNAME) return fail(res, 404, "Member not found");
     const why = await deleteMemberAccount(member.id, req.user!.id);
     if (why) return fail(res, 409, why);
     ok(res, { deleted: true }, "Member account deleted");

@@ -92,7 +92,7 @@ function Lend() {
           <form onSubmit={search} className="space-y-2" role="search">
             <label htmlFor="m-lend-q" className="block text-sm font-medium text-ink">No QR label? Search the title or serial number</label>
             <div className="flex gap-2">
-              <input id="m-lend-q" value={q} onChange={e => setQ(e.target.value)} maxLength={100} placeholder="e.g. Noli Me Tangere or NMT-001" className="flex-1 min-h-12 rounded-xl border border-line-strong bg-surface px-3 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus" />
+              <input id="m-lend-q" value={q} onChange={e => setQ(e.target.value)} maxLength={100} placeholder="e.g. Noli Me Tangere or NMT-001" className="flex-1 min-w-0 min-h-12 rounded-xl border border-line-strong bg-surface px-3 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus" />
               <button type="submit" disabled={q.trim().length < 2} className={`${btnSecondary} !w-auto px-4`}>Search</button>
             </div>
           </form>

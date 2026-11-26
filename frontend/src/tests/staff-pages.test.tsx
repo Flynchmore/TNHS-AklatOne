@@ -68,8 +68,10 @@ describe("staff portal pages", () => {
     expect(await screen.findByText("JT123456")).toBeInTheDocument();
     expect(screen.getByText("10 - Rizal")).toBeInTheDocument();
     expect(screen.queryByText(/Juana Testcase/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Deactivate JT123456" }));
-    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    // The librarian chooses between deactivating and deleting the account.
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate or delete JT123456" }));
+    expect(screen.getByRole("button", { name: "Delete account" })).toBeDisabled(); // until the Member ID is typed
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate account" }));
     expect(await screen.findByText("Member deactivated")).toBeInTheDocument();
     expect(patches[0]!.url).toContain("/api/v1/users/m1/status");
     expect(JSON.parse(patches[0]!.body)).toEqual({ isActive: false });

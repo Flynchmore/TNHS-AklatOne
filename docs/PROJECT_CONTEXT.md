@@ -362,6 +362,14 @@ Facts from the developer: DepEd textbooks have no ISBN barcode and are not in Op
 - backend/.env.example lists COVER_DIR and UPLOAD_DIR. top-members.test.ts uses random names (the fixed test clock after PH midnight repeated Date.now()).
 - Tests: backend 176 passed + 1 opt-in skipped (44 files), frontend 147 (33 files).
 
+## Delete for good, scroll to errors, scanner check (2026-11-27)
+- Deleting an account now removes the user row from the database (common/purgeUser.ts purgeUser): borrowing transactions, borrow requests and Library visits move to one shared inactive "former-member" account (no email, cannot sign in, hidden from Members, excluded from rankings) so counts and copy history stay; everything personal cascades (sessions, alerts, favourites, ratings/reviews, views, app time, suggestions, waits, school-issued books, lost-book reports + their files). Used by DELETE /users/:id, DELETE /auth/account (phone) and librarian replacement (setup/recover and scripts/reopen-librarian-setup.mjs now delete the old librarian rows instead of renaming them). Audit keeps only the Member ID. The same email/username can make a fresh account (tests in member-id.test.ts and librarian-recovery.test.ts; recovery test restores the e2e librarians afterwards).
+- Staff Members: the account button opens "Account of <Member ID>" with two choices: Deactivate / Activate, or Delete for good (type the Member ID).
+- Errors scroll into view: the shared Alert (components/mobile/ui.tsx) scrolls itself to the centre when an error appears (phone Create account, staff Setup / Recover / Sign in / Forgot password); staff Add/Edit member and book dialogs use the same Alert.
+- Scanner: the camera button is a large card (QR icon, "Scan with camera", tip or the Android download progress). Checked in Chrome with a fake camera: librarian Lend read a real e2e Member ID QR, found the member through the API (Member ID only) and moved to step 2; an unknown code shows the server's answer. Backend links tested: /visits/phone, /catalog/by-copy, /circulation/borrow + /return with copyCode; OCR guessBookInfo unit-tested. Native Android camera (ML Kit) still needs a real phone (no emulator here).
+- Dev DB still has 2 old renamed librarian rows (replaced-librarian-*) from before this change; not deleted (ask the developer).
+- Tests: backend 177 passed + 1 opt-in skipped (44 files), frontend 147 (33 files).
+
 ## Unresolved
 - Dev MariaDB (3307) moved to ~/.local/share/aklatone-mariadb/data on 2026-11-19; runs as user service aklatone-mariadb (starts at login, 127.0.0.1 only). See development-environment.md. Backups: ~/aklatone-backups/.
 - Dev DB was once changed with db push; migrations lagged the schema until 20261119220000_add_user_profile_otp_fields (now applied/resolved on dev and e2e). Use migrations, not db push.

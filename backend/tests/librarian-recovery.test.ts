@@ -13,10 +13,10 @@ const librarian = (n: string) => ({ name: "Maria Santos", position: "School Libr
 
 describe("librarian recovery key", () => {
   // The e2e database keeps its own librarians as they were before this test.
-  let before: { id: string; username: string; email: string | null; isActive: boolean }[] = [];
+  let before: Awaited<ReturnType<typeof prisma.user.findMany>> = [];
 
   it("makes a new key only after the password is entered again, then the key replaces the librarian account", async () => {
-    before = await prisma.user.findMany({ where: { role: { name: "LIBRARIAN" } }, select: { id: true, username: true, email: true, isActive: true } });
+    before = await prisma.user.findMany({ where: { role: { name: "LIBRARIAN" } } });
     const admin = await adminToken(app);
     expect((await request(app).post("/api/v1/setup/recovery-key").set(as(admin)).send({ currentPassword: "wrong" })).status).toBe(400);
     const made = await request(app).post("/api/v1/setup/recovery-key").set(as(admin)).send({ currentPassword: "TestPass123!" });
@@ -36,6 +36,8 @@ describe("librarian recovery key", () => {
     const newLib = await signIn(app, `recover_a_${stamp}@example.test`, PW);
     expect((await request(app).get("/api/v1/auth/me").set(as(newLib))).body.data.role).toBe("LIBRARIAN");
     expect(await prisma.user.count({ where: { role: { name: "LIBRARIAN" }, isActive: true } })).toBe(1);
+    // The replaced librarian accounts are gone from the database, not just turned off.
+    expect(await prisma.user.count({ where: { id: { in: before.filter(b => b.isActive).map(b => b.id) } } })).toBe(0);
 
     // Replacing that librarian again frees its Gmail: the new account may use the very same address.
     const again = await request(app).post("/api/v1/setup/recover").send({ ...librarian("a"), recoveryKey: first.body.data.recoveryKey });
@@ -44,8 +46,8 @@ describe("librarian recovery key", () => {
   });
 
   afterAll(async () => {
-    // Put the e2e librarians back and remove the test librarian, so other test files see the database as before.
-    await prisma.user.updateMany({ where: { username: { startsWith: "recover_" } }, data: { isActive: false } });
-    for (const b of before) await prisma.user.update({ where: { id: b.id }, data: { username: b.username, email: b.email, isActive: b.isActive } });
+    // Recovery deletes replaced librarians for good: remove the test librarians and put the e2e ones back as they were.
+    await prisma.user.deleteMany({ where: { username: { startsWith: "recover_" } } });
+    for (const b of before) await prisma.user.upsert({ where: { id: b.id }, create: b as never, update: { username: b.username, email: b.email, isActive: b.isActive } });
   });
 });

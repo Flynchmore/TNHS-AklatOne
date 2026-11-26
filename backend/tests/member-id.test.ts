@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
+import { prisma } from "../src/config/prisma.js";
 import { initials } from "../src/modules/users/memberId.js";
 import { adminToken, newMember } from "./helpers.js";
 
@@ -87,7 +88,8 @@ describe("a deleted member's Gmail can be used again", () => {
     const again = await request(app).post("/api/v1/users").set("Authorization", `Bearer ${admin}`)
       .send({ username: u, password: "Strong#Pass2026x", displayName: "Juan Dela Cruz", memberType: "Student", email: `${u}@example.test` });
     expect(again.status).toBe(201);
-    // The deleted account is gone from the Members list and cannot be deleted twice.
+    // The deleted account is gone from the database (not only hidden) and cannot be deleted twice.
+    expect(await prisma.user.findUnique({ where: { id: m.id } })).toBeNull();
     const list = (await request(app).get(`/api/v1/users?status=all&q=${u}`).set("Authorization", `Bearer ${admin}`)).body.data.items;
     expect(list.map((x: { id: string }) => x.id)).toEqual([again.body.data.id]);
     expect((await request(app).delete(`/api/v1/users/${m.id}`).set("Authorization", `Bearer ${admin}`)).status).toBe(404);
@@ -107,5 +109,25 @@ describe("a member deletes their own account", () => {
     expect((await request(app).get("/api/v1/auth/me").set(as)).status).toBe(401); // signed out everywhere
     const again = await request(app).post("/api/v1/auth/register").send({ username: u, password: "Strong#Pass2026x", displayName: "Juan Dela Cruz", email: `${u}@example.test`, memberType: "Student", gradeSection: "9 - Rizal" });
     expect(again.status).toBe(200);
+  });
+});
+
+describe("deleting a member who borrowed before", () => {
+  it("removes the account but keeps the borrowing record under the shared Former member", async () => {
+    const app = createApp();
+    const admin = await adminToken(app);
+    const as = { Authorization: `Bearer ${admin}` };
+    const u = `hist_${Date.now()}`;
+    const m = await newMember(app, u);
+    const code = (await prisma.user.findUniqueOrThrow({ where: { id: m.id } })).maskedId!;
+    const book = await request(app).post("/api/v1/catalog").set(as).send({ title: `History Book ${u}`, copies: 1 });
+    const lent = await request(app).post("/api/v1/circulation/borrow").set(as).send({ memberCode: code, bookId: book.body.data.id });
+    expect(lent.status).toBe(201);
+    expect((await request(app).delete(`/api/v1/users/${m.id}`).set(as)).status).toBe(409); // still borrowed
+    expect((await request(app).post("/api/v1/circulation/return").set(as).send({ transactionId: lent.body.data.id })).status).toBe(200);
+    expect((await request(app).delete(`/api/v1/users/${m.id}`).set(as)).status).toBe(200);
+    const tx = await prisma.borrowingTransaction.findUniqueOrThrow({ where: { id: lent.body.data.id }, include: { borrower: { select: { username: true, email: true } } } });
+    expect(tx.borrower).toEqual({ username: "former-member", email: null });
+    expect(await prisma.user.count({ where: { OR: [{ username: u }, { email: `${u}@example.test` }] } })).toBe(0);
   });
 });

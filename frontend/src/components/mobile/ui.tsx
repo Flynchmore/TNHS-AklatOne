@@ -29,9 +29,13 @@ const alertTone = {
 
 /** Message box. Errors use role="alert" so screen readers announce them; others use role="status". */
 export function Alert({ tone = "error", children, action }: { tone?: keyof typeof alertTone; children: ReactNode; action?: ReactNode }) {
+  // An error scrolls itself into view (e.g. a long sign-up form): the user sees at once why nothing was created.
+  const box = useRef<HTMLDivElement>(null);
+  const text = typeof children === "string" ? children : "";
+  useEffect(() => { if (tone === "error") box.current?.scrollIntoView?.({ behavior: "smooth", block: "center" }); }, [tone, text]);
   return (
     // Icon + text that always wraps inside the box (never cut off), with room on every side.
-    <div role={tone === "error" ? "alert" : "status"} className={`flex items-start gap-2.5 text-sm leading-relaxed border px-4 py-3 rounded-xl ak-scale ${alertTone[tone]}`}>
+    <div ref={box} role={tone === "error" ? "alert" : "status"} className={`flex items-start gap-2.5 text-sm leading-relaxed border px-4 py-3 rounded-xl ak-scale ${alertTone[tone]}`}>
       {tone === "error" ? <AlertCircle size={18} className="shrink-0 mt-0.5" aria-hidden="true" /> : tone === "success" ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" aria-hidden="true" /> : <Info size={18} className="shrink-0 mt-0.5" aria-hidden="true" />}
       <div className="min-w-0 flex-1 break-words whitespace-normal">
         {children}

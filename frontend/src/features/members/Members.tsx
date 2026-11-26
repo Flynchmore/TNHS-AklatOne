@@ -12,7 +12,7 @@ import { useAuth } from "../auth/auth";
 import { useToast } from "../../components/Toast";
 import { RefreshButton } from "../../components/RefreshButton";
 import { Badge, EmptyState, FormSection, PageHeader, Segmented, Skeleton, StaffDialog, btn, btnSm, input, label, table, select, SearchField } from "../../components/staff/ui";
-import { StrengthMeter, loanStatus, passwordStrength } from "../../components/mobile/ui";
+import { Alert, StrengthMeter, loanStatus, passwordStrength } from "../../components/mobile/ui";
 import { phDate } from "../../lib/dates";
 import { fmtDuration } from "../../components/mobile/screenTime";
 import { queuedToast } from "../../lib/offline";
@@ -182,19 +182,11 @@ export function Members() {
                   <td className={`${table.td} tabular-nums`}><span className="text-ink font-semibold">{m.activeLoans ?? 0} now</span><div className="text-xs text-ink-muted">{m.totalLoans ?? 0} in all</div></td>
                   <td className={table.td}><Badge tone={m.isActive ? "success" : "muted"}>{m.isActive ? "Active" : "Deactivated"}</Badge></td>
                   <td className={table.td}>
-                    {confirm === m.id ? (
-                      <div className="flex flex-wrap justify-end gap-2 ak-fade">
-                        <span className="text-xs text-ink-muted self-center">{m.isActive ? "Deactivate?" : "Activate?"}</span>
-                        <button className={`${m.isActive ? btn.danger : btn.success} ${btnSm}`} disabled={toggle.isPending} onClick={() => toggle.mutate(m)}>Yes</button>
-                        <button className={`${btn.ghost} ${btnSm}`} onClick={() => setConfirm(null)}>No</button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end gap-2">
-                        <button className={`${btn.secondary} ${btnSm}`} onClick={() => setViewing(m)} aria-label={`View ${memberId(m)}`}><Eye size={14} aria-hidden="true" />View</button>
-                        {canWrite && <button className={`${btn.secondary} ${btnSm}`} onClick={() => setEditing(m)} aria-label={`Edit ${memberId(m)}`}><Pencil size={14} aria-hidden="true" />Edit</button>}
-                        {canWrite && <button className={`${btn.secondary} ${btnSm} ${m.isActive ? "!text-danger hover:!border-danger hover:!bg-danger-soft" : "!text-success hover:!border-success hover:!bg-success-soft"}`} onClick={() => setConfirm(m.id)} aria-label={`${m.isActive ? "Deactivate" : "Activate"} ${memberId(m)}`}>{m.isActive ? <UserX size={14} aria-hidden="true" /> : <UserCheck size={14} aria-hidden="true" />}</button>}
-                      </div>
-                    )}
+                    <div className="flex justify-end gap-2">
+                      <button className={`${btn.secondary} ${btnSm}`} onClick={() => setViewing(m)} aria-label={`View ${memberId(m)}`}><Eye size={14} aria-hidden="true" />View</button>
+                      {canWrite && <button className={`${btn.secondary} ${btnSm}`} onClick={() => setEditing(m)} aria-label={`Edit ${memberId(m)}`}><Pencil size={14} aria-hidden="true" />Edit</button>}
+                      {canWrite && <button className={`${btn.secondary} ${btnSm} ${m.isActive ? "!text-danger hover:!border-danger hover:!bg-danger-soft" : "!text-success hover:!border-success hover:!bg-success-soft"}`} onClick={() => setConfirm(m.id)} aria-label={`Deactivate or delete ${memberId(m)}`}>{m.isActive ? <UserX size={14} aria-hidden="true" /> : <UserCheck size={14} aria-hidden="true" />}</button>}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -211,6 +203,8 @@ export function Members() {
         </nav>
       )}
 
+      <AccountDialog member={shown.find(x => x.id === confirm) ?? null} busy={toggle.isPending} onToggle={m => toggle.mutate(m)} onClose={() => setConfirm(null)}
+        onDeleted={() => { setConfirm(null); ["members", "summary", "recent-activity"].forEach(k => qc.invalidateQueries({ queryKey: [k] })); }} />
       <MemberDialog member={editing} onClose={() => setEditing(null)} onSaved={() => ["members", "summary", "recent-activity"].forEach(k => qc.invalidateQueries({ queryKey: [k] }))} />
       <MemberDetails member={viewing} onClose={() => setViewing(null)} />
     </div>
@@ -288,7 +282,7 @@ function MemberDialog({ member, onClose, onSaved }: { member: Member | "new" | n
         <button type="submit" disabled={saving} className={btn.primary}>{saving ? "Saving…" : isNew ? "Add member" : "Save changes"}</button>
       </>}
     >
-      {error && <p role="alert" className="text-sm text-danger bg-danger-soft border border-danger/30 rounded-2xl p-3">{error}</p>}
+      {error && <Alert>{error}</Alert>}
       <FormSection title="Role *" icon={student ? GraduationCap : Briefcase}>
         <Segmented label="Role" value={form.memberType} onChange={t => setForm(f => ({ ...f, memberType: t }))} options={[{ key: "Student", label: "Student" }, { key: "Teacher", label: "Teacher" }]} />
         <p className="text-xs text-ink-muted">Only the details for the chosen role are asked and shown.</p>
@@ -417,7 +411,7 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
           </div>
           {hasPerm("users:write") && (
             <FormSection title="Delete this account" icon={UserX}>
-              <p className="text-sm text-ink">Removes the member's name, email, photo and sign-in. The email and username can be used again (for example, to sign up again with the same Gmail). Borrowing history stays, under the Member ID only. Books still borrowed must be returned first.</p>
+              <p className="text-sm text-ink">Removes the account from AklatOne for good: name, email, username, photo and sign-in. The same email can then create a fresh account. Borrowing records stay, counted as "Former member". Books still borrowed must be returned first.</p>
               {!deleting ? <button type="button" onClick={() => { setDeleting(true); setTyped(""); }} className={`${btn.secondary} ${btnSm} w-fit !text-danger hover:!border-danger hover:!bg-danger-soft`}><UserX size={14} aria-hidden="true" />Delete account</button> : (
                 <div className="flex flex-wrap items-end gap-2">
                   <div><label htmlFor="del-confirm" className={label}>Type {memberId(m)} to confirm</label><input id="del-confirm" value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} maxLength={8} className={`${input} !w-48 font-mono`} autoComplete="off" /></div>
@@ -429,6 +423,47 @@ function MemberDetails({ member, onClose }: { member: Member | null; onClose: ()
           )}
         </>
       )}
+    </StaffDialog>
+  );
+}
+
+/**
+ * The librarian chooses: deactivate (cannot sign in, can be turned on again, everything kept) or delete for good (the
+ * account is removed from AklatOne, so the email can start a fresh account; borrowing records stay as "Former member").
+ */
+function AccountDialog({ member, busy, onToggle, onDeleted, onClose }: { member: Member | null; busy: boolean; onToggle: (m: Member) => void; onDeleted: () => void; onClose: () => void }) {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [typed, setTyped] = useState("");
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { setTyped(""); setError(""); }, [member]);
+  if (!member) return <StaffDialog open={false} onClose={onClose} title="Member account">{null}</StaffDialog>;
+  const id = memberId(member);
+  const remove = async () => {
+    setRemoving(true); setError("");
+    const r = await apiFetch(`/api/v1/users/${member.id}`, { method: "DELETE", token });
+    setRemoving(false);
+    if (!r.ok) { setError(r.message ?? "Not deleted. Please try again."); return; }
+    toast({ tone: "success", title: "Account deleted", message: `${id} was removed from AklatOne. Its email can be used for a new account.` });
+    onDeleted();
+  };
+  return (
+    <StaffDialog open onClose={onClose} title={`Account of ${id}`} subtitle={memberGroup(member)} icon={UserX} wide>
+      {error && <Alert>{error}</Alert>}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <section className="rounded-2xl border border-line bg-page p-4 space-y-3">
+          <h3 className="font-bold text-ink flex items-center gap-2">{member.isActive ? <UserX size={18} className="text-warning" aria-hidden="true" /> : <UserCheck size={18} className="text-success" aria-hidden="true" />}{member.isActive ? "Deactivate" : "Activate"}</h3>
+          <p className="text-sm text-ink-muted">{member.isActive ? "The member cannot sign in until you activate the account again. Everything is kept." : "The member can sign in again with the same account."}</p>
+          <button type="button" disabled={busy} onClick={() => onToggle(member)} className={`${member.isActive ? btn.secondary : btn.success} ${btnSm}`}>{member.isActive ? "Deactivate account" : "Activate account"}</button>
+        </section>
+        <section className="rounded-2xl border border-danger/40 bg-danger-soft/40 p-4 space-y-3">
+          <h3 className="font-bold text-danger flex items-center gap-2"><UserX size={18} aria-hidden="true" />Delete for good</h3>
+          <p className="text-sm text-ink">Removes the account from AklatOne: name, email, username, photo, sign-in, favourites and reviews. The same email can then create a fresh account. Borrowing records stay, counted as "Former member". Borrowed books must be returned first.</p>
+          <div><label htmlFor="acc-confirm" className={label}>Type {id} to confirm</label><input id="acc-confirm" value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} maxLength={8} autoComplete="off" className={`${input} font-mono !w-48`} /></div>
+          <button type="button" disabled={typed !== member.maskedId || removing} onClick={() => void remove()} className={`${btn.danger} ${btnSm}`}>{removing ? "Deleting…" : "Delete account"}</button>
+        </section>
+      </div>
     </StaffDialog>
   );
 }

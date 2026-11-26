@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { Camera, CameraOff, Flashlight, ScanLine } from "lucide-react";
+import { Camera, CameraOff, Flashlight, ScanLine, ScanQrCode } from "lucide-react";
 import { btn, input, label } from "./ui";
 import { nativeQr, scanQr } from "../../lib/phoneCamera";
 
@@ -114,10 +114,17 @@ export function Scanner({ onCode, disabled = false, id = "scan-code", label: fie
         // Android app: Google's QR scanner screen (no HTTPS or web camera permission needed).
         if (nativeQr()) { setCamError(""); void scanQr(setNativeStatus).then(c => { setNativeStatus(""); if (c) emit(c); }, (e: Error) => { setNativeStatus(""); setCamError(e.message); }); return; }
         setCamera(c => !c);
-      }} disabled={disabled} aria-pressed={camera} className={`${camera ? btn.secondary : btn.primary} w-full sm:w-auto`}>
-        {camera ? <><CameraOff size={18} aria-hidden="true" />Stop camera</> : <><Camera size={18} aria-hidden="true" />Scan with camera</>}
+      }} disabled={disabled || !!nativeStatus} aria-pressed={camera} aria-label={camera ? "Stop camera" : "Scan with camera"}
+        className={camera ? `${btn.secondary} w-full sm:w-auto` : "group w-full flex items-center gap-4 rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-white px-4 py-3.5 text-left shadow-lg active:scale-[0.98] motion-safe:transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30"}>
+        {camera ? <><CameraOff size={18} aria-hidden="true" />Stop camera</> : (
+          <>
+            <span className="w-12 h-12 shrink-0 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center" aria-hidden="true">{nativeStatus ? <Camera size={24} className="animate-pulse" /> : <ScanQrCode size={26} />}</span>
+            <span className="flex-1 min-w-0"><span className="block text-base font-bold">Scan with camera</span><span className="block text-xs text-white/85">{nativeStatus || "Point the camera at the QR code. It reads by itself."}</span></span>
+            <Camera size={20} className="shrink-0 opacity-80 group-hover:opacity-100" aria-hidden="true" />
+          </>
+        )}
       </button>}
-      {nativeStatus && <p role="status" className="text-sm text-primary font-semibold">{nativeStatus}</p>}
+      {nativeStatus && <p role="status" className="sr-only">{nativeStatus}</p>}
       {camError && <p role="alert" className="text-sm text-warning">{camError}</p>}
       {camera && (
         <div className={`relative w-full max-w-md aspect-video rounded-2xl overflow-hidden bg-black ring-4 motion-safe:transition ${seen ? "ring-success" : "ring-transparent"}`}>
