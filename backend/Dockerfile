@@ -1,5 +1,5 @@
 # AklatOne API (Express + Prisma). Build: docker build -t aklatone-api ./backend
-FROM node:24-bookworm-slim AS build
+FROM node:25-bookworm-slim AS build
 WORKDIR /app
 # bcrypt is a native module: build tools are needed only in this stage.
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ openssl && rm -rf /var/lib/apt/lists/*
@@ -9,7 +9,7 @@ COPY . .
 # Dev dependencies stay: the Prisma CLI is needed at start to apply migrations.
 RUN npx prisma generate && npm run build
 
-FROM node:24-bookworm-slim
+FROM node:25-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 # mariadb-client provides mariadb-dump / mariadb for Settings > Backup and Restore.
